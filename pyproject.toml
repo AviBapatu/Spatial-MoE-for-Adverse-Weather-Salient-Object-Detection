@@ -1,0 +1,25 @@
+[project]
+name = "spatial-moe-for-adverse-weather-salient-object-detection"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "AviBapatu", email = "avinashreddybapatu2006@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "albumentations",
+    "matplotlib",
+    "numpy",
+    "opencv-python",
+    "timm",
+    "torch",
+    "torchvision",
+]
+
+[project.scripts]
+spatial-moe-for-adverse-weather-salient-object-detection = "spatial_moe_for_adverse_weather_salient_object_detection:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
