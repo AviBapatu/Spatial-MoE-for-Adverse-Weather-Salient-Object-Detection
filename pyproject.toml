@@ -8,13 +8,13 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
-    "albumentations",
-    "matplotlib",
-    "numpy",
-    "opencv-python",
-    "timm",
-    "torch",
-    "torchvision",
+    "albumentations>=2.0.8",
+    "matplotlib>=3.11.1",
+    "numpy>=2.5.2",
+    "opencv-python>=5.0.0.93",
+    "timm>=1.0.28",
+    "torch>=2.13.0",
+    "torchvision>=0.28.0",
 ]
 
 [project.scripts]
