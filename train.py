@@ -37,9 +37,20 @@ def main():
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--data_dir", type=str, default="data/WXSOD")
     parser.add_argument("--grad_accum_steps", type=int, default=4, help="Gradient accumulation steps")
-    parser.add_argument("--image_size", type=int, default=384)
+    parser.add_argument("--image_size", type=int, default=256)
     parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument(
+        "--max_samples", type=int, default=None,
+        help="Limit dataset to N samples per split for smoke testing (e.g. --max_samples 50)"
+    )
     args = parser.parse_args()
+    
+    # Smoke-test mode: auto-reduce epochs, grad accumulation, and batch size for speed/memory
+    if args.max_samples is not None:
+        print(f"\n*** SMOKE TEST MODE: {args.max_samples} samples, overriding epochs=3, grad_accum=1, batch_size=2 ***\n")
+        args.epochs = min(args.epochs, 3)
+        args.grad_accum_steps = 1
+        args.batch_size = min(args.batch_size, 2)
     
     device = torch.device(args.device)
     use_amp = device.type == "cuda"
@@ -48,7 +59,8 @@ def main():
     # 1. Setup Dataloaders
     train_loader, test_synth_loader, test_real_loader = get_dataloaders(
         root_dir=args.data_dir, batch_size=args.batch_size,
-        image_size=args.image_size, num_workers=args.num_workers
+        image_size=args.image_size, num_workers=args.num_workers,
+        max_samples=args.max_samples
     )
     
     if len(train_loader) == 0:

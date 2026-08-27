@@ -3,7 +3,7 @@ import torch.nn as nn
 import timm
 
 class MultiScaleBackbone(nn.Module):
-    def __init__(self, model_name='pvt_v2_b4', pretrained=True, d=256):
+    def __init__(self, model_name='pvt_v2_b2', pretrained=True, d=256):
         super().__init__()
         
         # Instantiate hierarchical backbone using timm
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     print("Testing MultiScaleBackbone...")
     
     # Instantiate backbone with dimension d=256
-    model = MultiScaleBackbone(model_name='pvt_v2_b4', pretrained=False, d=256)
+    model = MultiScaleBackbone(model_name='pvt_v2_b2', pretrained=False, d=256)
     
     # Create dummy tensor of shape (1, 3, 384, 384)
     dummy_input = torch.randn(1, 3, 384, 384)
