@@ -9,11 +9,12 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 class WXSODDataset(Dataset):
-    def __init__(self, root_dir="data/WXSOD", split="train", image_size=384):
+    def __init__(self, root_dir="data/WXSOD", split="train", image_size=384, max_samples=None):
         super().__init__()
         self.root_dir = root_dir
         self.split = split
         self.image_size = image_size
+        self.max_samples = max_samples
         
         # Determine paths based on split
         if split == "train":
@@ -44,6 +45,11 @@ class WXSODDataset(Dataset):
             if stem in self.gt_map:
                 self.samples.append((img_path, self.gt_map[stem], stem))
         
+        # Limit dataset size for smoke tests / debugging
+        if self.max_samples is not None:
+            self.samples = self.samples[:self.max_samples]
+            print(f"[Dataset] '{split}' limited to {len(self.samples)} samples (max_samples={max_samples})")
+        
         # Setup albumentations transforms
         if self.split == "train":
             self.transform = A.Compose([
@@ -64,10 +70,6 @@ class WXSODDataset(Dataset):
         return len(self.samples)
         
     def _compute_edge_map(self, mask):
-        """
-        Compute edge map from mask using Laplacian operator.
-        """
-        # Ensure it's numpy for OpenCV
         if isinstance(mask, torch.Tensor):
             mask_np = mask.numpy()
         else:
@@ -84,8 +86,8 @@ class WXSODDataset(Dataset):
             
         return torch.from_numpy(edge_map).unsqueeze(0).float()
 
-    def __getitem__(self, idx):
-        img_path, gt_path, name = self.samples[idx]
+    def __getitem__(self, index):
+        img_path, gt_path, name = self.samples[index]
         
         # Read image
         image = cv2.imread(img_path)
@@ -122,13 +124,22 @@ class WXSODDataset(Dataset):
             'name': name
         }
 
-def get_dataloaders(root_dir="data/WXSOD", image_size=384, batch_size=4, num_workers=4):
+def get_dataloaders(root_dir="data/WXSOD", image_size=384, batch_size=4, num_workers=4, max_samples=None):
     """
     Returns data loaders for train, test_synthetic, and test_real.
+    
+    Args:
+        max_samples: If set, cap each split to this many samples. Useful for
+                     quick smoke tests (e.g. max_samples=50).
     """
-    train_dataset = WXSODDataset(root_dir=root_dir, split="train", image_size=image_size)
-    test_synth_dataset = WXSODDataset(root_dir=root_dir, split="test/synthetic", image_size=image_size)
-    test_real_dataset = WXSODDataset(root_dir=root_dir, split="test/real", image_size=image_size)
+    # For test splits during a smoke test, use a smaller cap so val still runs
+    test_max = max_samples // 5 if max_samples is not None else None
+    if test_max is not None:
+        test_max = max(test_max, batch_size)  # at least one full batch
+
+    train_dataset = WXSODDataset(root_dir=root_dir, split="train", image_size=image_size, max_samples=max_samples)
+    test_synth_dataset = WXSODDataset(root_dir=root_dir, split="test/synthetic", image_size=image_size, max_samples=test_max)
+    test_real_dataset = WXSODDataset(root_dir=root_dir, split="test/real", image_size=image_size, max_samples=test_max)
     
     # drop_last=True for train to handle batch norm issues with size 1
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, drop_last=True)

@@ -12,14 +12,15 @@ dependencies = [
     "matplotlib>=3.11.1",
     "numpy>=2.5.2",
     "opencv-python>=5.0.0.93",
+    "tensorboard",
     "timm>=1.0.28",
     "torch>=2.13.0",
     "torchvision>=0.28.0",
+    "tqdm",
 ]
 
-[project.scripts]
-spatial-moe-for-adverse-weather-salient-object-detection = "spatial_moe_for_adverse_weather_salient_object_detection:main"
+[tool.pyright]
+extraPaths = ["."]
 
-[build-system]
-requires = ["uv_build>=0.12.5,<0.13.0"]
-build-backend = "uv_build"
+[tool.uv]
+package = false
