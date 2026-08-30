@@ -6,21 +6,34 @@ readme = "README.md"
 authors = [
     { name = "AviBapatu", email = "avinashreddybapatu2006@gmail.com" }
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "albumentations>=2.0.8",
+    "fastapi>=0.141.1",
     "matplotlib>=3.11.1",
-    "numpy>=2.5.2",
-    "opencv-python>=5.0.0.93",
+    "numpy<2.0.0",
+    "opencv-python<5.0.0.93",
+    "pysodmetrics>=1.6.2",
+    "python-multipart>=0.0.32",
     "tensorboard",
     "timm>=1.0.28",
     "torch>=2.13.0",
     "torchvision>=0.28.0",
     "tqdm",
+    "uvicorn>=0.52.4",
 ]
 
 [tool.pyright]
 extraPaths = ["."]
+executionEnvironments = [{ root = "." }]
+include = ["."]
+venvPath = "."
+venv = ".venv"
 
 [tool.uv]
 package = false
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

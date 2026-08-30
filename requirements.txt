@@ -5,3 +5,6 @@ albumentations
 opencv-python
 numpy
 matplotlib
+tqdm
+pysodmetrics
+scikit-learn
