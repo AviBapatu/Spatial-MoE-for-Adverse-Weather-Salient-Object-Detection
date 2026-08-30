@@ -9,7 +9,8 @@ from tqdm import tqdm
 
 from src.dataset import get_dataloaders
 from src.model import SpatialMoESODNet
-from src.losses import CombinedMoELoss
+from src.loss import SpatialMoELoss
+from src.config import ExperimentConfig
 
 def calculate_mae(pred, target):
     """Mean Absolute Error"""
@@ -68,8 +69,22 @@ def main():
         return
         
     # 2. Model, Loss, Optimizer
-    model = SpatialMoESODNet().to(device)
-    criterion = CombinedMoELoss(moe_weight=0.01)
+    config = ExperimentConfig.load("experiments/baseline_v1.json")
+    model = SpatialMoESODNet(
+        use_deep_supervision=config.model.deep_supervision,
+        num_experts=config.model.num_experts,
+        window_size=config.model.window_size
+    ).to(device)
+    criterion = SpatialMoELoss(
+        lambda_iou=config.loss.iou_weight,
+        lambda_ssim=config.loss.ssim_weight,
+        lambda_boundary=config.loss.boundary_weight,
+        lambda_lb=config.loss.load_balance_weight,
+        lambda_importance=config.loss.importance_weight,
+        lambda_z=config.loss.z_loss_weight,
+        lambda_aux_boundary=config.loss.aux_boundary_weight,
+        lambda_deep_supervision=config.loss.deep_supervision_weight
+    )
     
     optimizer = AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     scheduler = CosineAnnealingLR(optimizer, T_max=args.epochs)
@@ -97,10 +112,19 @@ def main():
             
             # Forward with mixed precision
             with autocast(device_type=device.type, enabled=use_amp):
-                sal_pred, edge_pred, routing_probs = model(images)
+                out, moe_outputs = model(images)
             
-            loss, loss_dict = criterion(sal_pred, edge_pred, masks, edges, routing_probs)
-            loss = loss / args.grad_accum_steps
+            loss_dict = criterion(
+                saliency_logits=out.saliency_logits,
+                edge_logits=out.boundary_logits,
+                moe_outputs=moe_outputs,
+                target=masks,
+                gt_boundary=edges,
+                aux_logits_16=out.aux_logits_16,
+                aux_logits_8=out.aux_logits_8,
+                aux_logits_4=out.aux_logits_4
+            )
+            loss = loss_dict['L_total'] / args.grad_accum_steps
             
             # Backward with gradient scaling
             assert isinstance(loss, torch.Tensor)  # Explicit type for GradScaler
@@ -121,8 +145,8 @@ def main():
             
             # Compute Metrics (detach to save memory)
             with torch.no_grad():
-                mae = calculate_mae(sal_pred, masks)
-                f_beta = calculate_f_beta(sal_pred, masks)
+                mae = calculate_mae(out.saliency_logits, masks)
+                f_beta = calculate_f_beta(out.saliency_logits, masks)
             train_mae += mae
             
             # Logging
@@ -130,7 +154,7 @@ def main():
                 'Loss': f"{loss.item() * args.grad_accum_steps:.4f}", 
                 'MAE': f"{mae:.4f}",
                 'F_beta': f"{f_beta:.4f}",
-                'LB': f"{loss_dict['moe_load_balancing']:.4f}"
+                'LB': f"{loss_dict['L_lb']:.4f}"
             })
             
         train_loss /= len(train_loader)
@@ -141,21 +165,24 @@ def main():
         model.eval()
         val_mae = 0.0
         val_fbeta = 0.0
+        total_val_samples = 0
         
         if len(test_synth_loader) > 0:
             with torch.no_grad():
                 for batch in tqdm(test_synth_loader, desc=f"Epoch {epoch+1}/{args.epochs} [Val]"):
                     images = batch['image'].to(device)
                     masks = batch['mask'].to(device)
+                    b_size = images.size(0)
                     
                     with autocast(device_type=device.type, enabled=use_amp):
-                        sal_pred, _, _ = model(images)
+                        out, _ = model(images)
                     
-                    val_mae += calculate_mae(sal_pred, masks)
-                    val_fbeta += calculate_f_beta(sal_pred, masks)
+                    val_mae += calculate_mae(out.saliency_logits, masks) * b_size
+                    val_fbeta += calculate_f_beta(out.saliency_logits, masks) * b_size
+                    total_val_samples += b_size
                     
-            val_mae /= len(test_synth_loader)
-            val_fbeta /= len(test_synth_loader)
+            val_mae /= total_val_samples
+            val_fbeta /= total_val_samples
             
             print(f"Epoch {epoch+1} Summary: Train Loss={train_loss:.4f}, Val MAE={val_mae:.4f}, Val F-beta={val_fbeta:.4f}")
             
