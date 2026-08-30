@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spatial-MoE Saliency Demo</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Spatial-MoE</h1>
+            <p>Adverse-Weather Salient Object Detection</p>
+        </header>
+
+        <main>
+            <div class="upload-section" id="drop-zone">
+                <input type="file" id="file-input" accept="image/*" hidden>
+                <div class="upload-content">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                    </svg>
+                    <p>Click or drag an image to detect salient objects</p>
+                </div>
+            </div>
+
+            <div class="loading" id="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Processing with Spatial-MoE...</p>
+            </div>
+
+            <div class="results-container" id="results" style="display: none;">
+                <div class="images-grid">
+                    <div class="image-box">
+                        <h3>Original Image</h3>
+                        <img id="original-image" src="" alt="Original">
+                    </div>
+                    <div class="image-box">
+                        <h3>Predicted Mask</h3>
+                        <img id="predicted-mask" src="" alt="Prediction">
+                    </div>
+                </div>
+
+                <div class="stats-panel">
+                    <div class="stat-item">
+                        <span class="stat-label">Inference Time</span>
+                        <span class="stat-value" id="stat-time">-- ms</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Model Resolution</span>
+                        <span class="stat-value" id="stat-model-res">320x320</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Original Resolution</span>
+                        <span class="stat-value" id="stat-orig-res">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Max Confidence</span>
+                        <span class="stat-value" id="stat-conf">--</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
