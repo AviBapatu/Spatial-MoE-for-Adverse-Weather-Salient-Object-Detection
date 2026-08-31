@@ -23,8 +23,20 @@ async def lifespan(app: FastAPI):
     global model, transform
     print(f"Loading model on {device}...")
     try:
-        model = SpatialMoESODNet(num_experts=6).to(device)
-        checkpoint = torch.load("checkpoints/best.pth", map_location=device, weights_only=False)
+        checkpoint_path = "checkpoints/best_new_1.pth"
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+        
+        model_cfg = checkpoint.get('config', {}).get('model', {})
+        use_deep_supervision = model_cfg.get('deep_supervision', True)
+        num_experts = model_cfg.get('num_experts', 6)
+        window_size = model_cfg.get('window_size', 8)
+        
+        model = SpatialMoESODNet(
+            num_experts=num_experts,
+            window_size=window_size,
+            use_deep_supervision=use_deep_supervision
+        ).to(device)
+        
         clean_state_dict = {k.replace('module.', ''): v for k, v in checkpoint['model_state_dict'].items()}
         model.load_state_dict(clean_state_dict, strict=False)
         model.eval()
@@ -73,8 +85,11 @@ async def predict(file: UploadFile = File(...)):
         
         # Inference (with TTA)
         with torch.no_grad():
-            pred_sal, _, _ = model(input_tensor)
-            pred_sal_flipped, _, _ = model(input_tensor_flipped)
+            out, _ = model(input_tensor)
+            out_flipped, _ = model(input_tensor_flipped)
+            
+            pred_sal = torch.sigmoid(out.saliency_logits)
+            pred_sal_flipped = torch.sigmoid(out_flipped.saliency_logits)
             
             # Flip the flipped prediction back
             pred_sal_flipped_back = torch.flip(pred_sal_flipped, dims=[3])

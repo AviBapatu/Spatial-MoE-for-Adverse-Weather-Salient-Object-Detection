@@ -38,3 +38,10 @@ logs/
 outputs/
 runs/
 *.log
+
+# Evaluation Results
+evaluation/**
+!evaluation/**/
+!evaluation/**/summary.txt
+
+.env

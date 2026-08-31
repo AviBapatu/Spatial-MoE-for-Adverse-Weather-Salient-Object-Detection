@@ -102,8 +102,10 @@ def evaluate(model, dataloader, output_dir, use_tta=False):
                 # Boundary metrics update
                 gt_bin = (gt_orig > 127).astype(np.float32)
                 gt_bound = compute_boundary(gt_bin)
-                global_boundary.step(pred_orig, gt_bound)
-                weather_boundary[weather].step(pred_orig, gt_bound)
+                pred_bin = (pred_orig > 0.5).astype(np.float32)
+                pred_bound = compute_boundary(pred_bin)
+                global_boundary.step(pred_bound, gt_bound)
+                weather_boundary[weather].step(pred_bound, gt_bound)
                 
     results = {
         "global": {**global_metrics.get_results(), **global_boundary.get_results(), "sample_count": sum(weather_counts.values())},

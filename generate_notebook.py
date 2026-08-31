@@ -661,7 +661,10 @@ print(f"FINAL AUDIT STATUS: {FINAL_STATUS}")
     add_markdown("## 22_evaluate")
     add_code("""if RUN_MODE in ["TRAIN", "EVALUATE"]:
     print("Evaluating Best Checkpoint...")
-    subprocess.run(["python", "-m", "src.evaluate"], cwd=PROJECT_ROOT, check=True)
+    best_ckpt = os.path.join(CHECKPOINT_ROOT, "best.pth")
+    if not os.path.exists(best_ckpt):
+        best_ckpt = os.path.join(CHECKPOINT_ROOT, "latest.pth")
+    subprocess.run(["python", "-m", "src.evaluate", "--checkpoint", best_ckpt, "--dataset", "both"], cwd=PROJECT_ROOT, check=True)
 """)
 
     notebook = {

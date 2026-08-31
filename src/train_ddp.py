@@ -28,6 +28,27 @@ from torch.optim import AdamW
 from src.optimization import get_parameter_groups, freeze_backbone, unfreeze_backbone, WarmupCosineScheduler, OptimizationEngine
 from src.config import ExperimentConfig
 from src.experiment import setup_experiment_run, update_registry_status
+from src import hf_sync
+
+def default_checkpoint_base():
+    """Kaggle and local VS Code share this file, so the checkpoint root
+    can't be hardcoded to /kaggle/working. CHECKPOINT_ROOT env var wins if
+    set; otherwise default to /kaggle/working when present (Kaggle), else
+    a local ./checkpoints dir next to the project."""
+    override = os.environ.get("CHECKPOINT_ROOT")
+    if override:
+        return override
+    if os.path.isdir("/kaggle/working"):
+        return "/kaggle/working/WXSOD_Checkpoints"
+    return os.path.join(_project_root, "checkpoints")
+
+def default_preflight_base():
+    override = os.environ.get("PREFLIGHT_ROOT")
+    if override:
+        return override
+    if os.path.isdir("/kaggle/working"):
+        return "/kaggle/working/WXSOD_Preflight"
+    return os.path.join(_project_root, "preflight")
 
 def set_rng_states(states, device):
     random.setstate(states['python'])
@@ -116,6 +137,7 @@ def main():
     
     rank = None
     config = None
+    hf_pusher = None
     try:
         rank = int(os.environ["RANK"])
         local_rank = int(os.environ["LOCAL_RANK"])
@@ -176,10 +198,10 @@ def main():
         
         # Override directories if preflight
         if args.preflight:
-            base_dir = "/kaggle/working/WXSOD_Preflight"
+            base_dir = default_preflight_base()
             args.max_optimizer_steps = args.max_optimizer_steps or 5
         else:
-            base_dir = "/kaggle/working/WXSOD_Checkpoints"
+            base_dir = default_checkpoint_base()
             # Overwrite prevention
             if os.path.exists(os.path.join(base_dir, "training_complete.json")) and not args.overwrite:
                 raise RuntimeError("TRAINING ALREADY COMPLETE. Use --overwrite to bypass.")
@@ -192,6 +214,15 @@ def main():
                 json.dump(config.to_dict(), f, indent=4)
             with open(os.path.join(base_dir, "final_config_sha256"), "w") as f:
                 f.write(cfg_hash)
+
+        # Non-blocking HF pusher: rank 0 writes checkpoints to local disk as
+        # before (fast), then hands the file off to a background thread so
+        # the upload never stalls the training loop or the DDP barrier.
+        # Disabled automatically (no-op enqueue) if HF_REPO_ID isn't set,
+        # so local-only runs still work without touching HF at all.
+        hf_pusher = None
+        if rank == 0 and not args.preflight and os.environ.get("HF_REPO_ID"):
+            hf_pusher = hf_sync.AsyncCheckpointPusher()
             
         checkpoint_dir = base_dir
             
@@ -299,7 +330,7 @@ def main():
         # Resume
         if args.resume:
             if args.resume == "latest":
-                source_ckpt_dir = "/kaggle/working/WXSOD_Checkpoints" if args.preflight else checkpoint_dir
+                source_ckpt_dir = default_checkpoint_base() if args.preflight else checkpoint_dir
                 ckpt_path = os.path.join(source_ckpt_dir, "latest.pth")
             else:
                 ckpt_path = args.resume
@@ -455,6 +486,12 @@ def main():
                                     }
                                     with open(os.path.join(checkpoint_dir, "checkpoint_manifest.json"), "w") as mf:
                                         json.dump(manifest, mf)
+
+                                    if hf_pusher is not None:
+                                        hf_pusher.enqueue_checkpoint(
+                                            final_path, name="latest.pth",
+                                            extra_meta={"epoch": epoch, "global_step": engine.global_step, "config_hash": config_hash},
+                                        )
                                 except Exception as e:
                                     print(f"CHECKPOINT WRITE FAILED: {e}")
                             dist.barrier()
@@ -574,6 +611,12 @@ def main():
                         _ = torch.load(tmp_path, map_location='cpu', weights_only=False)
                         os.replace(tmp_path, final_path)
                         print(f"  -> New best model saved to {final_path}!", flush=True)
+
+                        if hf_pusher is not None:
+                            hf_pusher.enqueue_checkpoint(
+                                final_path, name="best.pth",
+                                extra_meta={"epoch": epoch + 1, "global_step": engine.global_step, "best_metric": best_mae, "config_hash": config_hash},
+                            )
                     except Exception as e:
                         print(f"BEST CHECKPOINT WRITE FAILED: {e}", flush=True)
                     
@@ -614,7 +657,8 @@ def main():
         if rank == 0:
             if not args.preflight and not global_stop_flag[0]:
                 update_registry_status("experiments", config.run_id, "COMPLETED", val_metric_val=str(best_mae), best_epoch=str(best_mae_epoch), best_step=str(best_mae_step))
-                with open(os.path.join(base_dir, "training_complete.json"), "w") as f:
+                completion_path = os.path.join(base_dir, "training_complete.json")
+                with open(completion_path, "w") as f:
                     json.dump({
                         "status": "COMPLETE",
                         "epoch": epoch if 'epoch' in locals() else start_epoch,
@@ -622,6 +666,8 @@ def main():
                         "best_checkpoint": "best.pth",
                         "config_hash": cfg_hash
                     }, f, indent=4)
+                if hf_pusher is not None:
+                    hf_pusher.enqueue_json(completion_path, name="training_complete.json")
             elif args.preflight:
                 with open(os.path.join(base_dir, "preflight_results.json"), "w") as f:
                     json.dump({
@@ -646,6 +692,12 @@ def main():
         print(f"Exception on Rank {int(os.environ.get('RANK', 0))}: {e}")
         raise e
     finally:
+        # Kaggle can tear the session down right after the script exits, so
+        # any still-queued checkpoint pushes need to finish (or clearly time
+        # out) BEFORE we destroy the process group and return, not after.
+        if hf_pusher is not None:
+            print("[hf_sync] Flushing pending checkpoint pushes before exit...")
+            hf_pusher.close(timeout=900)
         if dist.is_initialized():
             dist.destroy_process_group()
 
