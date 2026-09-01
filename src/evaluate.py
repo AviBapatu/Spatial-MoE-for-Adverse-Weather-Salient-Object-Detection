@@ -44,7 +44,7 @@ def reverse_geometry(pred_tensor, meta):
     assert pred_original.shape == (orig_h, orig_w)
     return pred_original
 
-def evaluate(model, dataloader, output_dir, use_tta=False):
+def evaluate(model, dataloader, output_dir, use_tta=False, ablation_cfg=None):
     model.eval()
     device = next(model.parameters()).device
     
@@ -63,13 +63,13 @@ def evaluate(model, dataloader, output_dir, use_tta=False):
             names = batch['name']
             
             # Forward pass
-            out, _ = model(images)
+            out, _ = model(images, ablation_cfg=ablation_cfg)
             pred_prob = torch.sigmoid(out.saliency_logits)
             
             if use_tta:
                 # Horizontal flip
                 images_flipped = torch.flip(images, dims=[-1])
-                out_flipped, _ = model(images_flipped)
+                out_flipped, _ = model(images_flipped, ablation_cfg=ablation_cfg)
                 pred_prob_flipped = torch.sigmoid(out_flipped.saliency_logits)
                 pred_prob_unflipped = torch.flip(pred_prob_flipped, dims=[-1])
                 pred_prob = 0.5 * pred_prob + 0.5 * pred_prob_unflipped
@@ -187,6 +187,9 @@ def main():
         
         results = evaluate(model, loader, ds_out_dir, use_tta=(args.tta == 'hflip'))
         
+        import time
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        
         # Save manifest
         manifest = {
             "checkpoint": args.checkpoint,
@@ -199,14 +202,17 @@ def main():
             "model_hash": model_hash
         }
         
-        with open(os.path.join(ds_out_dir, "evaluation_manifest.json"), "w") as f:
+        manifest_filename = f"evaluation_manifest_{ds_name}_{timestamp}.json"
+        with open(os.path.join(ds_out_dir, manifest_filename), "w") as f:
             json.dump(manifest, f, indent=4)
             
-        with open(os.path.join(ds_out_dir, "metrics.json"), "w") as f:
+        metrics_filename = f"metrics_{ds_name}_{timestamp}.json"
+        with open(os.path.join(ds_out_dir, metrics_filename), "w") as f:
             json.dump(results, f, indent=4)
             
         # Summary TXT
-        with open(os.path.join(ds_out_dir, "summary.txt"), "w") as f:
+        summary_filename = f"summary_{ds_name}_{timestamp}.txt"
+        with open(os.path.join(ds_out_dir, summary_filename), "w") as f:
             f.write(f"--- {ds_name.upper()} RESULTS ---\n")
             f.write(f"Global Sample Count: {results['global']['sample_count']}\n")
             for k, v in results['global'].items():
