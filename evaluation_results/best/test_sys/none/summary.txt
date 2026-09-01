@@ -1,0 +1,122 @@
+--- TEST_SYS RESULTS ---
+Global Sample Count: 1500
+MAE: 0.0192
+S_measure: 0.9139
+E_adaptive: 0.9591
+E_mean: 0.9585
+E_max: 0.9633
+F_adaptive: 0.8822
+F_mean: 0.8886
+F_max: 0.9015
+boundary_MAE: 0.5494
+boundary_F1: 0.1494
+
+--- WEATHER-WISE RESULTS ---
+
+Weather: clean (Count: 167)
+  MAE: 0.0142
+  S_measure: 0.9329
+  E_adaptive: 0.9690
+  E_mean: 0.9700
+  E_max: 0.9746
+  F_adaptive: 0.9007
+  F_mean: 0.9101
+  F_max: 0.9228
+  boundary_MAE: 0.5347
+  boundary_F1: 0.1611
+
+Weather: dark (Count: 156)
+  MAE: 0.0199
+  S_measure: 0.9049
+  E_adaptive: 0.9539
+  E_mean: 0.9500
+  E_max: 0.9548
+  F_adaptive: 0.8682
+  F_mean: 0.8725
+  F_max: 0.8836
+  boundary_MAE: 0.5448
+  boundary_F1: 0.1584
+
+Weather: fog (Count: 166)
+  MAE: 0.0166
+  S_measure: 0.9308
+  E_adaptive: 0.9696
+  E_mean: 0.9709
+  E_max: 0.9754
+  F_adaptive: 0.9078
+  F_mean: 0.9128
+  F_max: 0.9255
+  boundary_MAE: 0.5375
+  boundary_F1: 0.1472
+
+Weather: light (Count: 166)
+  MAE: 0.0215
+  S_measure: 0.9091
+  E_adaptive: 0.9623
+  E_mean: 0.9617
+  E_max: 0.9680
+  F_adaptive: 0.8846
+  F_mean: 0.8903
+  F_max: 0.9046
+  boundary_MAE: 0.5326
+  boundary_F1: 0.1577
+
+Weather: rain (Count: 179)
+  MAE: 0.0200
+  S_measure: 0.9173
+  E_adaptive: 0.9542
+  E_mean: 0.9513
+  E_max: 0.9556
+  F_adaptive: 0.8867
+  F_mean: 0.8909
+  F_max: 0.9030
+  boundary_MAE: 0.5465
+  boundary_F1: 0.1442
+
+Weather: rainafog (Count: 172)
+  MAE: 0.0237
+  S_measure: 0.8902
+  E_adaptive: 0.9384
+  E_mean: 0.9410
+  E_max: 0.9459
+  F_adaptive: 0.8464
+  F_mean: 0.8547
+  F_max: 0.8691
+  boundary_MAE: 0.5686
+  boundary_F1: 0.1400
+
+Weather: rainasnow (Count: 166)
+  MAE: 0.0194
+  S_measure: 0.9152
+  E_adaptive: 0.9637
+  E_mean: 0.9619
+  E_max: 0.9668
+  F_adaptive: 0.8863
+  F_mean: 0.8916
+  F_max: 0.9032
+  boundary_MAE: 0.5640
+  boundary_F1: 0.1477
+
+Weather: snow (Count: 172)
+  MAE: 0.0189
+  S_measure: 0.9192
+  E_adaptive: 0.9647
+  E_mean: 0.9638
+  E_max: 0.9685
+  F_adaptive: 0.8877
+  F_mean: 0.8940
+  F_max: 0.9068
+  boundary_MAE: 0.5502
+  boundary_F1: 0.1550
+
+Weather: snowafog (Count: 156)
+  MAE: 0.0189
+  S_measure: 0.9051
+  E_adaptive: 0.9567
+  E_mean: 0.9563
+  E_max: 0.9616
+  F_adaptive: 0.8707
+  F_mean: 0.8800
+  F_max: 0.8950
+  boundary_MAE: 0.5679
+  boundary_F1: 0.1359
