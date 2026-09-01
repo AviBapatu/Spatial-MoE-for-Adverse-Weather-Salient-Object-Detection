@@ -45,3 +45,8 @@ evaluation/**
 !evaluation/**/summary.txt
 
 .env
+
+# Ignore all individual prediction images from Hugging Face downloads, 
+# but keep the important qualitative_grid.png and JSON/TXT metrics
+evaluation_results/best/**/*.png
+evaluation_results/force_expert_out/**/*.png
