@@ -137,7 +137,7 @@ def _get_token(explicit=None):
     if not token:
         # Kaggle Secrets fallback, so notebooks never need a plaintext token.
         try:
-            from kaggle_secrets import UserSecretsClient
+            from kaggle_secrets import UserSecretsClient  # type: ignore
             token = UserSecretsClient().get_secret("HF_TOKEN")
         except Exception:
             pass
