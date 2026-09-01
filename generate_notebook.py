@@ -22,9 +22,50 @@ def create_notebook():
             "source": [line + "\n" for line in text.split("\n")]
         })
 
+    # CELL 00: HF Sync (Manual Trigger)
+    add_markdown("## 00_hf_sync")
+    add_code("""# uncomment and run this if you want to manually push your latest checkpoints to Hugging Face
+# import os
+# import sys
+# import subprocess
+# from kaggle_secrets import UserSecretsClient
+# from huggingface_hub import hf_hub_download
+#
+# # 1. Set credentials safely (bypassing Cell 01)
+# os.environ["HF_TOKEN"] = UserSecretsClient().get_secret("HF_TOKEN")
+# os.environ["HF_REPO_ID"] = "Avi2006/spatial-moe-results"
+# PROJECT_ROOT = "/kaggle/working/spatial_moe_sod"
+#
+# # 2. Download ONLY the latest code (bypasses Checkpoint downloads)
+# print("Downloading latest code...")
+# zip_path = hf_hub_download(
+#     repo_id=os.environ["HF_REPO_ID"], repo_type="dataset",
+#     filename="code/spatial_moe_sod_code.zip", token=os.environ["HF_TOKEN"],
+# )
+# subprocess.run(["unzip", "-q", "-o", zip_path, "-d", PROJECT_ROOT], check=True)
+# print("Code updated!")
+#
+# # 3. Now run the push script
+# sys.path.insert(0, PROJECT_ROOT)
+# from src.hf_sync import push_checkpoint
+#
+# ckpt_dir = "/kaggle/working/WXSOD_Checkpoints"
+# for name in ["best.pth", "latest.pth", "training_complete.json", "latest_prev.pth"]:
+#     path = os.path.join(ckpt_dir, name)
+#     if os.path.exists(path):
+#         print(f"Uploading {name}...")
+#         push_checkpoint(path, name=name)
+# print("Done!")
+""")
+
     # CELL 01: Config
     add_markdown("## 01_config")
-    add_code("""# Configuration & Modes
+    add_code("""import os
+import json
+import shutil
+import hashlib
+
+# Configuration & Modes
 # RUN_MODE strictly governs the allowed execution path.
 # Allowed: "VALIDATE", "TRAIN", "RESUME", "EVALUATE"
 RUN_MODE = "VALIDATE"
@@ -32,9 +73,14 @@ RUN_MODE = "VALIDATE"
 DATA_SOURCE = "GOOGLE_DRIVE"
 DATA_FILE_ID = "1SSELvRYI-cwd9mzA8dWLbv4o1IffjkoW"
 
-PROJECT_INPUT_ZIP = "/kaggle/input/spatial-moe-code/spatial_moe_sod_code.zip"
-MANIFEST_INPUT = "/kaggle/input/spatial-moe-code/project_manifest.json"
-PREVIOUS_OUTPUT_DATASET = None
+# --- Hugging Face Hub is now the single source of truth for code + checkpoints ---
+# HF_TOKEN is read from a Kaggle Secret (Add-ons > Secrets > add "HF_TOKEN"),
+# never hardcoded. HF_REPO_ID is the one repo holding both code/ and checkpoints/.
+from kaggle_secrets import UserSecretsClient
+HF_TOKEN = UserSecretsClient().get_secret("HF_TOKEN")
+HF_REPO_ID = "Avi2006/spatial-moe-results"
+os.environ["HF_TOKEN"] = HF_TOKEN
+os.environ["HF_REPO_ID"] = HF_REPO_ID
 
 PROJECT_ROOT = "/kaggle/working/spatial_moe_sod"
 CHECKPOINT_ROOT = "/kaggle/working/WXSOD_Checkpoints"
@@ -43,6 +89,10 @@ RESUME_TEST_ROOT = "/kaggle/working/WXSOD_ResumeTest"
 
 NUM_GPUS = 2
 FINAL_EPOCHS = 50
+
+# These get exported so train_ddp.py picks them up
+os.environ["CHECKPOINT_ROOT"] = CHECKPOINT_ROOT
+os.environ["PREFLIGHT_ROOT"] = PREFLIGHT_ROOT
 
 # Global state for dynamic final audit gate
 GATES = {
@@ -72,6 +122,77 @@ def mark_gate(gate, status, msg="", evidence="", run_id=None, config_hash=None):
         print(f"[{gate}] FAIL -> PASS transition authorized (run_id: {run_id}, config_hash: {config_hash})")
     print(f"[{gate}] -> {status} {msg}")
     GATES[gate] = status
+
+# --- Auto-fetch checkpoint from Hugging Face Hub (replaces the old Google Drive flow) ---
+def _sha256_file(path, chunk_size=1 << 20):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        while True:
+            chunk = f.read(chunk_size)
+            if not chunk:
+                break
+            h.update(chunk)
+    return h.hexdigest()
+
+def fetch_checkpoint_from_hf(repo_id, token, dest_root):
+    from huggingface_hub import hf_hub_download
+    from huggingface_hub.utils import EntryNotFoundError
+    os.makedirs(dest_root, exist_ok=True)
+
+    try:
+        manifest_path = hf_hub_download(
+            repo_id=repo_id, repo_type="dataset",
+            filename="checkpoints/checkpoint_manifest.json", token=token,
+        )
+    except EntryNotFoundError:
+        mark_gate("CHECKPOINT_CHECK", "NOT_RUN", msg="No checkpoint manifest on HF yet — training from scratch.")
+        return False
+
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    files_meta = manifest.get("files", {})
+
+    fetched_any = False
+    for name in ("latest.pth", "best.pth"):
+        meta = files_meta.get(name)
+        if meta is None:
+            continue
+        local_path = os.path.join(dest_root, name)
+        if os.path.exists(local_path) and _sha256_file(local_path) == meta.get("sha256"):
+            print(f"{name}: local copy already matches HF (sha256 match), skipping download.")
+            fetched_any = True
+            continue
+        try:
+            downloaded = hf_hub_download(
+                repo_id=repo_id, repo_type="dataset",
+                filename=f"checkpoints/{name}", token=token,
+            )
+        except EntryNotFoundError:
+            continue
+        shutil.copy2(downloaded, local_path)
+        actual = _sha256_file(local_path)
+        if meta.get("sha256") and actual != meta["sha256"]:
+            mark_gate("CHECKPOINT_CHECK", "FAIL", msg=f"{name}: sha256 mismatch after download")
+            raise RuntimeError(f"{name}: downloaded sha256 {actual} != manifest sha256 {meta['sha256']}")
+        print(f"{name}: pulled from HF -> {local_path}")
+        fetched_any = True
+
+    if fetched_any:
+        shutil.copy2(manifest_path, os.path.join(dest_root, "checkpoint_manifest.json"))
+        mark_gate("CHECKPOINT_CHECK", "PASS", msg=f"Fetched checkpoint(s) from {repo_id} -> {dest_root}")
+    else:
+        mark_gate("CHECKPOINT_CHECK", "NOT_RUN", msg="Manifest present but no checkpoint files found.")
+    return fetched_any
+
+
+CHECKPOINT_AVAILABLE = fetch_checkpoint_from_hf(HF_REPO_ID, HF_TOKEN, CHECKPOINT_ROOT)
+
+if CHECKPOINT_AVAILABLE:
+    if RUN_MODE == "TRAIN":
+        print("Checkpoint found on HF — switching RUN_MODE to RESUME")
+        RUN_MODE = "RESUME"
+else:
+    print("No checkpoint found on HF — will train from scratch.")
 """)
 
     # CELL 02: Environment
@@ -194,34 +315,35 @@ import json
 import hashlib
 import shutil
 import os
+import subprocess
+from huggingface_hub import hf_hub_download
 
 os.makedirs(PROJECT_ROOT, exist_ok=True)
+print(f"Downloading code from {os.environ['HF_REPO_ID']}...")
 
-KAGGLE_UNZIPPED_DIR = "/kaggle/input/datasets/avinashreddybapatu/spatial-moe-code/spatial_moe_sod_code"
+manifest_path = hf_hub_download(
+    repo_id=os.environ["HF_REPO_ID"], repo_type="dataset",
+    filename="code/project_manifest.json", token=os.environ["HF_TOKEN"],
+)
+zip_path = hf_hub_download(
+    repo_id=os.environ["HF_REPO_ID"], repo_type="dataset",
+    filename="code/spatial_moe_sod_code.zip", token=os.environ["HF_TOKEN"],
+)
 
-if os.path.exists(KAGGLE_UNZIPPED_DIR):
-    print(f"Using pre-unzipped Kaggle directory: {KAGGLE_UNZIPPED_DIR}")
-    shutil.copytree(KAGGLE_UNZIPPED_DIR, PROJECT_ROOT, dirs_exist_ok=True)
-elif os.path.exists(PROJECT_INPUT_ZIP):
-    if os.path.exists(MANIFEST_INPUT):
-        with open(MANIFEST_INPUT, "r") as f:
-            manifest = json.load(f)
+with open(manifest_path, "r") as f:
+    manifest = json.load(f)
+
+# Verify ZIP
+sha256 = hashlib.sha256()
+with open(zip_path, "rb") as f:
+    for chunk in iter(lambda: f.read(4096), b""):
+        sha256.update(chunk)
         
-        sha256 = hashlib.sha256()
-        with open(PROJECT_INPUT_ZIP, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                sha256.update(chunk)
-                
-        if sha256.hexdigest() != manifest["archive_sha256"]:
-            mark_gate("PROJECT_CHECK", "FAIL", "ZIP SHA256 mismatch!")
-            raise RuntimeError("Project source archive corrupted or outdated.")
-            
-    subprocess.run(["unzip", "-q", "-o", PROJECT_INPUT_ZIP, "-d", PROJECT_ROOT], check=True)
-elif os.path.exists("src"):
-    print("Using local src directory fallback.")
-    shutil.copytree("src", os.path.join(PROJECT_ROOT, "src"), dirs_exist_ok=True)
-else:
-    raise FileNotFoundError(f"Neither {KAGGLE_UNZIPPED_DIR}, {PROJECT_INPUT_ZIP}, nor local 'src' found.")
+if sha256.hexdigest() != manifest["archive_sha256"]:
+    mark_gate("PROJECT_CHECK", "FAIL", "ZIP SHA256 mismatch!")
+    raise RuntimeError("Project source archive corrupted or outdated.")
+
+subprocess.run(["unzip", "-q", "-o", zip_path, "-d", PROJECT_ROOT], check=True)
 
 # Post-unzip existence assertions
 required_files = ["src/train_ddp.py", "src/smoke_test.py", "src/model.py", "src/optimization.py", "src/evaluate.py"]
@@ -238,19 +360,28 @@ mark_gate("PROJECT_CHECK", "PASS")
     # CELL 06: Dependencies
     add_markdown("## 06_dependencies")
     add_code("""import importlib
-deps = ["torch", "torchvision", "timm", "albumentations", "cv2", "numpy"]
+import subprocess
+deps = {
+    "torch": "torch", 
+    "torchvision": "torchvision", 
+    "timm": "timm", 
+    "albumentations": "albumentations", 
+    "opencv-python-headless": "cv2", 
+    "numpy": "numpy", 
+    "pysodmetrics": "py_sod_metrics"
+}
 env_data = {}
 all_passed = True
-for dep in deps:
+for pip_name, mod_name in deps.items():
     try:
-        mod = importlib.import_module(dep)
-        env_data[dep] = getattr(mod, "__version__", "unknown")
+        mod = importlib.import_module(mod_name)
+        env_data[pip_name] = getattr(mod, "__version__", "unknown")
     except ImportError:
-        print(f"Missing dependency: {dep}. Installing...")
-        subprocess.run(["pip", "install", "-q", dep], check=True)
+        print(f"Missing dependency: {pip_name}. Installing...")
+        subprocess.run(["pip", "install", "-q", pip_name], check=True)
         try:
-            mod = importlib.import_module(dep)
-            env_data[dep] = getattr(mod, "__version__", "unknown")
+            mod = importlib.import_module(mod_name)
+            env_data[pip_name] = getattr(mod, "__version__", "unknown")
         except ImportError:
             all_passed = False
 
@@ -461,6 +592,7 @@ else:
     from src.train_ddp import get_config_hash
     canonical_hash = get_config_hash(canonical_cfg, "model_config_hash")
     
+    if pf_data.get("status") == "PASS":
         mark_gate("PREFLIGHT_DRY_RUN_CHECK", "PASS", run_id=pf_data.get("run_id"), config_hash=pf_data.get("config_hash"))
     else:
         mark_gate("PREFLIGHT_DRY_RUN_CHECK", "FAIL")
@@ -597,34 +729,7 @@ print(f"FINAL AUDIT STATUS: {FINAL_STATUS}")
         raise RuntimeError("TRAINING ALREADY COMPLETE. Cannot resume.")
         
     if not os.path.exists(local_latest):
-        if PREVIOUS_OUTPUT_DATASET is None:
-            raise RuntimeError("latest.pth not found in /kaggle/working and PREVIOUS_OUTPUT_DATASET is None. Configure it to recover checkpoint.")
-            
-        persisted_latest = f"/kaggle/input/{PREVIOUS_OUTPUT_DATASET}/latest.pth"
-        persisted_manifest = f"/kaggle/input/{PREVIOUS_OUTPUT_DATASET}/checkpoint_manifest.json"
-        
-        if not os.path.exists(persisted_latest):
-            raise RuntimeError(f"Could not find {persisted_latest}")
-            
-        print("Recovering checkpoint from persisted input dataset...")
-        os.makedirs(CHECKPOINT_ROOT, exist_ok=True)
-        if os.path.isdir(persisted_latest):
-            print(f"Kaggle unzipped {persisted_latest}, re-zipping...")
-            import zipfile
-            needs_prefix = os.path.exists(os.path.join(persisted_latest, "version"))
-            prefix = "archive" if needs_prefix else ""
-            with zipfile.ZipFile(local_latest, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                for root, dirs, files in os.walk(persisted_latest):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, persisted_latest)
-                        if prefix:
-                            arcname = os.path.join(prefix, arcname)
-                        zipf.write(file_path, arcname)
-        else:
-            shutil.copy2(persisted_latest, local_latest)
-        if os.path.exists(persisted_manifest):
-            shutil.copy2(persisted_manifest, os.path.join(CHECKPOINT_ROOT, "checkpoint_manifest.json"))
+        raise RuntimeError("latest.pth not found in /kaggle/working/WXSOD_Checkpoints and could not be fetched from Hugging Face.")
             
     with open(os.path.join(PROJECT_ROOT, "experiments/baseline_v1.json"), "r") as f:
         runtime_cfg = json.load(f)
@@ -664,8 +769,200 @@ print(f"FINAL AUDIT STATUS: {FINAL_STATUS}")
     best_ckpt = os.path.join(CHECKPOINT_ROOT, "best.pth")
     if not os.path.exists(best_ckpt):
         best_ckpt = os.path.join(CHECKPOINT_ROOT, "latest.pth")
-    subprocess.run(["python", "-m", "src.evaluate", "--checkpoint", best_ckpt, "--dataset", "both"], cwd=PROJECT_ROOT, check=True)
+    subprocess.run(["python", "-m", "src.evaluate", "--checkpoint", best_ckpt, "--dataset", "both", "--data_dir", valid_root], cwd=PROJECT_ROOT, check=True)
 """)
+
+
+    # CELL 23: 3a. Compute cost script
+    add_markdown("## 23_compute_cost (3a)")
+    add_code('''!pip install thop huggingface_hub --quiet
+
+import os, json, torch
+from src.model import SpatialMoESODNet
+from src.dataset import get_dataloaders
+import time
+from thop import profile
+
+RESULTS_DIR = "/kaggle/working/WXSOD_EvalResults"
+os.makedirs(RESULTS_DIR, exist_ok=True)
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+model = SpatialMoESODNet(dim=256, num_experts=8, k=2, window_size=7, use_deep_supervision=False).to(device)
+checkpoint = torch.load("/kaggle/working/WXSOD_Checkpoints/best.pth", map_location=device, weights_only=False)
+model.load_state_dict(checkpoint['model_state_dict'])
+model.eval()
+
+train_loader, val_loader, test_sys_loader, test_real_loader = get_dataloaders(
+    root_dir=valid_root,
+    image_size=384, batch_size=1, num_workers=2
+)
+
+def save_json(name, data):
+    path = os.path.join(RESULTS_DIR, name)
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+    print(f"Saved {path}")
+
+dummy = torch.randn(1, 3, 384, 384).to(device)
+macs, params = profile(model, inputs=(dummy,), verbose=False)
+
+with torch.no_grad():
+    for _ in range(10):
+        model(dummy)  # warmup
+    if device == "cuda": torch.cuda.synchronize()
+    start = time.time()
+    N = 50
+    for _ in range(N):
+        model(dummy)
+    if device == "cuda": torch.cuda.synchronize()
+    elapsed = time.time() - start
+fps = N / elapsed
+
+compute_cost = {"params_M": round(params/1e6, 2), "macs_G": round(macs/1e9, 2), "fps": round(fps, 2)}
+print(compute_cost)
+save_json("compute_cost.json", compute_cost)
+''')
+
+    # CELL 24: 3b. Routing entropy comparison script
+    add_markdown("## 24_routing_entropy (3b)")
+    add_code('''from collections import defaultdict
+
+def collect_entropy_stats(model, dataloader, device, max_batches=None):
+    model.eval()
+    scale_entropies = defaultdict(list)
+    with torch.no_grad():
+        for i, batch in enumerate(dataloader):
+            if max_batches and i >= max_batches:
+                break
+            images = batch['image'].to(device)
+            _, moe_outputs = model(images)  # [out_4, out_8, out_16]
+            for scale_name, out in zip(["scale_4", "scale_8", "scale_16"], moe_outputs):
+                scale_entropies[scale_name].append(out.entropy.mean().item())
+    return {k: (sum(v)/len(v)) for k, v in scale_entropies.items()}
+
+sys_entropy = collect_entropy_stats(model, test_sys_loader, device)
+real_entropy = collect_entropy_stats(model, test_real_loader, device)
+
+entropy_comparison = {"synthetic": sys_entropy, "real": real_entropy}
+print(entropy_comparison)
+save_json("entropy_comparison.json", entropy_comparison)
+''')
+
+    # CELL 25: 3c. Qualitative figure script
+    add_markdown("## 25_qualitative_figure (3c)")
+    add_code('''# Peek at a few real-test samples and their weather labels to pick from
+test_real_ds = test_real_loader.dataset
+
+snow_idx, rain_or_fog_idx, light_idx = -1, -1, -1
+
+# Simple logic to find examples (you can adjust this as needed based on actual stems/labels)
+for idx in range(len(test_real_ds)):
+    stem = test_real_ds.samples[idx][2]
+    weather = stem.split('-')[0].lower() # Assuming format like snow-001 or similar
+    
+    # Just grab some generic ones if parsing is hard
+    if 'snow' in weather or 'snow' in stem.lower():
+        snow_idx = idx
+    elif 'rain' in weather or 'rain' in stem.lower() or 'fog' in weather or 'fog' in stem.lower():
+        rain_or_fog_idx = idx
+    elif 'light' in weather or 'light' in stem.lower() or 'sun' in stem.lower():
+        light_idx = idx
+        
+    if snow_idx != -1 and rain_or_fog_idx != -1 and light_idx != -1:
+        break
+
+# Fallback
+if snow_idx == -1: snow_idx = 0
+if rain_or_fog_idx == -1: rain_or_fog_idx = 1
+if light_idx == -1: light_idx = 2
+
+import matplotlib.pyplot as plt
+import cv2
+import numpy as np
+
+def make_qualitative_grid(model, dataset, indices, device, save_path):
+    fig, axes = plt.subplots(len(indices), 3, figsize=(9, 3*len(indices)))
+    model.eval()
+    with torch.no_grad():
+        for row, idx in enumerate(indices):
+            sample = dataset[idx]
+            image = sample['image'].unsqueeze(0).to(device)
+            gt_path = sample['meta']['gt_path']
+            out, _ = model(image)
+            pred = torch.sigmoid(out.saliency_logits)[0,0].cpu().numpy()
+            gt = cv2.imread(gt_path, cv2.IMREAD_GRAYSCALE)
+            
+            # De-normalize image for display
+            img_disp = sample['image'].permute(1,2,0).cpu().numpy()
+            img_disp = (img_disp - img_disp.min()) / (img_disp.max() - img_disp.min() + 1e-8)
+            
+            axes[row,0].imshow(img_disp); axes[row,0].set_title(f"Input (idx {idx})")
+            axes[row,1].imshow(gt, cmap='gray'); axes[row,1].set_title("GT")
+            axes[row,2].imshow(pred, cmap='gray'); axes[row,2].set_title("Prediction")
+            for ax in axes[row]: ax.axis('off')
+    plt.tight_layout()
+    save_path_full = os.path.join(RESULTS_DIR, save_path)
+    plt.savefig(save_path_full, dpi=200)
+    print(f"Saved to {save_path_full}")
+
+make_qualitative_grid(model, test_real_ds, [snow_idx, rain_or_fog_idx, light_idx], device, "qualitative_grid.png")
+''')
+
+    # CELL 26: 3d. Sanity ablation
+    add_markdown("## 26_sanity_ablation (3d)")
+    add_code('''from src.evaluate import evaluate as eval_fn
+
+# Run evaluate with forced expert id
+forced_results = eval_fn(
+    model, 
+    test_real_loader, 
+    output_dir=os.path.join(RESULTS_DIR, "force_expert_out"),
+    use_tta=False, 
+    ablation_cfg={'scale': 8, 'expert_id': 0}
+)
+print("Forced Expert Results:")
+print(forced_results)
+save_json("force_expert_ablation.json", forced_results)
+''')
+
+    # CELL 27: 3e. Upload results to Hugging Face
+    add_markdown("## 27_upload_results (3e)")
+    add_code('''import os
+import shutil
+import glob
+from huggingface_hub import login, HfApi, create_repo
+from kaggle_secrets import UserSecretsClient
+
+# Copy evaluation metrics and summaries to RESULTS_DIR before uploading
+eval_dir = "/kaggle/working/spatial_moe_sod/evaluation"
+if os.path.exists(eval_dir):
+    for ext in ["*.txt", "*.json"]:
+        for filepath in glob.glob(f"{eval_dir}/**/{ext}", recursive=True):
+            dest = os.path.join(RESULTS_DIR, os.path.basename(filepath))
+            shutil.copy(filepath, dest)
+            print(f"Copied {os.path.basename(filepath)} to RESULTS_DIR")
+
+try:
+    hf_token = UserSecretsClient().get_secret("HF_TOKEN")
+    login(token=hf_token)
+
+    # Use the single central repository defined earlier
+    REPO_ID = os.environ.get("HF_REPO_ID", "Avi2006/spatial-moe-results")
+
+    create_repo(REPO_ID, repo_type="dataset", exist_ok=True, private=True)
+
+    api = HfApi()
+    api.upload_folder(
+        folder_path=RESULTS_DIR,
+        repo_id=REPO_ID,
+        repo_type="dataset",
+        path_in_repo="evaluation_results"
+    )
+    print(f"Uploaded to https://huggingface.co/datasets/{REPO_ID}/tree/main/evaluation_results")
+except Exception as e:
+    print(f"Failed to upload to Hugging Face: {e}")
+''')
 
     notebook = {
         "cells": cells,
