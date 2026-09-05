@@ -29,20 +29,25 @@ class SpatialMoESODNet(nn.Module):
         
         # Counterfactual ablation setup
         force_4, force_8, force_16 = None, None, None
+        random_routing = False
+        disable_entropy = False
         if ablation_cfg is not None:
             if ablation_cfg.get('scale') == 4: force_4 = ablation_cfg.get('expert_id')
             if ablation_cfg.get('scale') == 8: force_8 = ablation_cfg.get('expert_id')
             if ablation_cfg.get('scale') == 16: force_16 = ablation_cfg.get('expert_id')
+            random_routing = ablation_cfg.get('random_routing', False)
+            disable_entropy = ablation_cfg.get('disable_entropy', False)
 
         # Pass intermediate features through independent MoE layers
-        out_4 = self.moe_4(res_4, force_expert_id=force_4)
-        out_8 = self.moe_8(res_8, force_expert_id=force_8)
-        out_16 = self.moe_16(res_16, force_expert_id=force_16)
+        out_4 = self.moe_4(res_4, force_expert_id=force_4, random_routing=random_routing)
+        out_8 = self.moe_8(res_8, force_expert_id=force_8, random_routing=random_routing)
+        out_16 = self.moe_16(res_16, force_expert_id=force_16, random_routing=random_routing)
         
         # Fuse routed features in Decoder
         decoder_out = self.decoder(
             out_4.features, out_8.features, out_16.features, 
-            out_4.entropy, out_8.entropy, out_16.entropy
+            out_4.entropy, out_8.entropy, out_16.entropy,
+            disable_entropy=disable_entropy
         )
         
         return decoder_out, [out_4, out_8, out_16]

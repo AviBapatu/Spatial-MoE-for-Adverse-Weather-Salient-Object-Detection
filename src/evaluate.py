@@ -58,7 +58,7 @@ def evaluate(model, dataloader, output_dir, use_tta=False, ablation_cfg=None):
     os.makedirs(output_dir, exist_ok=True)
     
     with torch.no_grad():
-        for batch in tqdm(dataloader, desc="Evaluating"):
+        for batch in tqdm(dataloader, desc="Evaluating", disable=True):
             images = batch['image'].to(device)
             names = batch['name']
             

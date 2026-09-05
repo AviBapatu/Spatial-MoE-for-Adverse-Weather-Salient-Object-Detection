@@ -18,11 +18,12 @@ class EntropyFusionBlock(nn.Module):
         self.proj_entropy = nn.Conv2d(1, out_dim, 1)
         self.scale = nn.Parameter(torch.tensor(0.1))
         
-    def forward(self, Y, entropy):
+    def forward(self, Y, entropy, disable_entropy: bool = False):
+        y_proj = self.proj_y(Y)
+        if disable_entropy:
+            return y_proj
         # Normalize entropy approximately to [0, 1] assuming K=2
         entropy_norm = entropy / math.log(2.0 + 1e-8)
-        
-        y_proj = self.proj_y(Y)
         e_proj = self.proj_entropy(entropy_norm)
         return y_proj + self.scale * e_proj
 
@@ -244,10 +245,10 @@ class SpatialMoEDecoder(nn.Module):
             self.aux_head_8 = nn.Conv2d(dim, 1, 1)
             self.aux_head_4 = nn.Conv2d(dim, 1, 1)
             
-    def forward(self, Y_4, Y_8, Y_16, H_4, H_8, H_16):
-        F16 = self.fuse_16(Y_16, H_16)
-        F8_local = self.fuse_8(Y_8, H_8)
-        F4_local = self.fuse_4(Y_4, H_4)
+    def forward(self, Y_4, Y_8, Y_16, H_4, H_8, H_16, disable_entropy: bool = False):
+        F16 = self.fuse_16(Y_16, H_16, disable_entropy=disable_entropy)
+        F8_local = self.fuse_8(Y_8, H_8, disable_entropy=disable_entropy)
+        F4_local = self.fuse_4(Y_4, H_4, disable_entropy=disable_entropy)
         
         F16_up = F.interpolate(F16, size=F8_local.shape[-2:], mode='bilinear', align_corners=False)
         F8 = self.cross_attn_16_to_8(q_x=F16_up, kv_x=F8_local)

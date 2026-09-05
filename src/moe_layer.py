@@ -59,7 +59,7 @@ class SpatialMoELayer(nn.Module):
         # Shazeer-style noisy routing linear projection
         self.noise_linear = nn.Linear(dim, num_experts)
         
-    def forward(self, x, force_expert_id=None):
+    def forward(self, x, force_expert_id=None, random_routing: bool = False):
         B, C, H, W = x.shape
         N_tokens = H * W
         
@@ -100,6 +100,10 @@ class SpatialMoELayer(nn.Module):
         
         # --- Routing ---
         clean_logits = self.router_mlp(router_input) # [B, H*W, E]
+        
+        # Ablation: replace learned routing with random logits
+        if random_routing:
+            clean_logits = torch.randn_like(clean_logits)
         
         if self.training and self.router_noise_enabled:
             noise_std = self.router_noise_scale * F.softplus(self.noise_linear(x_tokens))
