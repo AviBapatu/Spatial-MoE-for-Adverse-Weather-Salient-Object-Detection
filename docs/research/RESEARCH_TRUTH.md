@@ -173,6 +173,37 @@ Source: `evaluation/best_new_1/test_real/none/metrics.json`
 | Compound weather degrades most on synthetic: rainafog (MAE=0.0237) | test_sys metrics |
 | Real-world MAE slightly better than synthetic: 0.0168 vs 0.0192 | global metrics comparison |
 
+### 2.6 Forced-Expert Ablation Results
+
+All tokens at scale 4 forced to expert 0, evaluated on test_real (554 images).
+
+| Metric | Normal | Forced Expert 0 | Delta |
+|--------|--------|-----------------|-------|
+| MAE | 0.0168 | 0.0170 | +0.0002 (+1.2%) |
+| S_measure | 0.9151 | 0.9139 | -0.0012 (-0.1%) |
+| F_mean | 0.8747 | 0.8713 | -0.0034 (-0.4%) |
+
+Source: `evaluation_results/force_expert_ablation.json`
+
+### 2.7 Routing Entropy
+
+| Split | Scale 4 | Scale 8 | Scale 16 |
+|-------|---------|---------|----------|
+| Synthetic | 0.6910 | 0.6931 | 0.6800 |
+| Real | 0.6912 | 0.6931 | 0.6822 |
+
+Source: `evaluation_results/entropy_comparison.json`
+
+### 2.8 Computational Cost
+
+| Metric | Value |
+|--------|-------|
+| Parameters | 66.27M |
+| MACs | 278.2G |
+| FPS | 3.83 |
+
+Source: `evaluation_results/compute_cost.json`
+
 ---
 
 ## 3. Forbidden Claims
@@ -183,10 +214,16 @@ Do not make these claims without explicit evidence:
 - "Expert X specializes in weather Y" — no interpretability analysis completed
 - "Routing entropy correlates with difficulty" — no analysis done
 - "Method works on [untested dataset]" — only WXSOD tested
-- Any claim about computational efficiency (FLOPs, latency) — not measured
+- Any claim about computational efficiency (FLOPs, latency) — not measured against baselines
 - Any claim about generalization to domains beyond WXSOD
 - Any claim about the model's behavior on clean SOD benchmarks (DUTS, ECSSD, etc.)
-- That ablation studies have been conducted — none have been run
+- That ablation studies have been conducted — none have been run through the ablation system
+- "Token-level routing causes improvement" — no non-routing baseline exists
+- "MoE causes improvement" — no non-MoE baseline exists
+- "Entropy fusion causes improvement" — no entropy ON/OFF ablation exists
+- "Independent per-scale routing is better" — no independent vs shared comparison exists
+- "The model generalizes from synthetic to real" — no controlled domain-shift experiment
+- "Experts specialize by weather" — no per-expert assignment analysis exists
 
 ---
 
@@ -194,16 +231,35 @@ Do not make these claims without explicit evidence:
 
 | Claim | Status | What's Needed |
 |-------|--------|---------------|
-| Exact parameter count | Not verified | Run model parameter counting |
+| Exact parameter count | VERIFIED: 66.27M | `evaluation_results/compute_cost.json` |
 | Training epochs completed | Unknown | No training logs in repo |
-| Comparison to SOTA methods | Not done | Need to run baselines |
-| Ablation study results | Not run | Ablation code exists but no registry.csv |
-| Router interpretability analysis | Not run | Diagnostics code exists but disabled in training |
-| Boundary F1 comparison to SOTA | Not done | Need literature survey of boundary metrics |
-| Whether `router_variant` or `moe_type` config fields are actually read by code | Unknown | Code inspection needed |
-| Whether backbone_lr and new_module_lr differ in practice | Unknown | Both set to 1e-4 in config |
+| Comparison to SOTA methods | NOT DONE | Need to run baselines |
+| Ablation study results | NOT RUN | Ablation system exists but zero runs in registry.csv |
+| Router interpretability analysis | NOT RUN | Diagnostics exist but disabled in training (`train_ddp.py:560`) |
+| Boundary F1 comparison to SOTA | NOT DONE | Need literature survey |
+| Whether `router_variant` or `moe_type` config fields are consumed | VERIFIED: NOT consumed | Code inspection: forward path ignores both fields |
+| Whether backbone_lr and new_module_lr differ | NOT APPLICABLE | Both set to 1e-4 in config |
+| Whether experts specialize | NOT TESTED | Need per-expert assignment statistics |
+| Whether entropy fusion helps | NOT TESTED | Need ON/OFF ablation |
+| Whether MoE helps vs shared MLP | NOT TESTED | Need non-MoE baseline |
 
 ---
 
-*Last updated: 2026-08-31. Based on full code audit of repository state.*
+## 5. Audit Summary (2026-09-02)
+
+**Checkpoint identity:** `best.pth` and `best_new_1.pth` are the same model (hash `2cd252ad3a3581e1c65961b828857d70`).
+
+**Boundary metric discrepancy:** `evaluation_results/best/` has different boundary metrics than `evaluation/best_new_1/`. The latter is canonical (matches timestamped re-run).
+
+**Core metric consistency:** MAE, S_measure, E_*, F_* are identical across all 6 evaluation runs of the same model. Evaluation pipeline is deterministic.
+
+**Key finding from forced-expert ablation:** Routing appears non-critical — forcing one scale to one expert causes only 1.2% MAE increase. This could indicate over-parameterization or lack of specialization.
+
+**What the experiments support:** Performance reporting (weather-wise MAE/S/F/E on two test sets) and architectural description.
+
+**What the experiments do NOT support:** Any causal claim about design choices, SOTA comparison, efficiency claims, specialization claims.
+
+---
+
+*Last updated: 2026-09-02. Post-experiment audit.*
 *This file must be updated when new experimental results are obtained or new implementation details are verified.*

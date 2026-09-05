@@ -1,153 +1,158 @@
-# FINAL_CLAIM_EVIDENCE_MATRIX.md — Claim-by-Claim Evidence Assessment
+# FINAL CLAIM → EVIDENCE MATRIX
 
-Each row: claim → our evidence → prior evidence → closest counterexample → exact difference → required experiment → confidence → recommended wording.
-
----
-
-## CLAIM A: Token-level spatial MoE for single-RGB SOD
-
-**Our implementation evidence:**
-- `src/moe_layer.py:62-165`: Each spatial token gets independent routing decision via top-k selection
-- `src/moe_layer.py:111-112`: `torch.topk(noisy_logits, k=self.k, dim=-1)` operates on `[B, H*W, E]`
-- `src/model.py:14-16`: Three independent `SpatialMoELayer` instances, one per scale
-- RESEARCH_TRUTH.md lines 20-26
-
-**Prior-work evidence:**
-- MMSOD (IJCNN 2025): MoE for SOD, routes at modality level
-- CMFNet (IEEE TMM 2026): MoE for RGB-D SOD, routes at scale level
-- CMoE (AAAI 2026): MoE for SOD, routes at modality level
-- M4-SAM (CVPR 2026): MoE for video SOD, routes at modality level
-- PSOD (IEEE TIP 2025): MoE for SOD, routes at task level
-- WM-MoE (2023): Token-level routing for image restoration, not SOD
-- SegMoTE (CVPR 2026): Token-level MoE for medical segmentation, not SOD
-- MoE-SPNet (2018): Pixel-wise gating for scene parsing, not SOD
-
-**Closest counterexample:** WM-MoE performs token-level routing but for image restoration (pixel regression), not SOD (pixel classification with topology constraints).
-
-**Exact technical difference:** We route individual spatial tokens in a single-RGB-modality SOD pipeline. All existing MoE-SOD papers route at modality, task, or scale level. WM-MoE routes tokens but targets a different task.
-
-**Required experiment:** None for the claim itself — the implementation is verified. For the paper, compare against MoE-SOD baselines (MMSOD, CMFNet) to demonstrate the value of token-level routing.
-
-**Confidence:** HIGH
-
-**Recommended wording:** "We apply token-level spatial MoE routing to salient object detection, where each spatial position independently selects experts based on local feature statistics. Prior MoE work in SOD routes at the modality or task level [refs], while token-level routing has been explored for image restoration [WM-MoE] and medical segmentation [SegMoTE] but not for SOD."
+**Audit date:** 2026-09-02
+**Purpose:** Map every major paper claim to its supporting/countervailing evidence.
 
 ---
 
-## CLAIM B: Routing without explicit weather labels or a dedicated weather-specific branch
+## Claim A: Token-level spatial routing is useful for SOD
 
-**Our implementation evidence:**
-- `src/moe_layer.py:96-112`: Router uses only spatial content features (DWConv3x3 + MLP). No weather branch, no weather labels, no CLIP features.
-- `experiments/baseline_v1.json`: No weather-related config fields
-- RESEARCH_TRUTH.md: No weather labels used in training pipeline
-
-**Prior-work evidence:**
-- WM-MoE (2023): Routes without weather labels at test time, BUT uses a dedicated weather feature branch trained via WGF-CL contrastive learning with weather-type labels during training
-- MoFME (AAAI 2024): Uncertainty-aware routing without weather labels
-- MoE-WeatherNet (2025): Decoupled content/weather gating without explicit labels
-- CLIP-based methods (LDR, DA2Diff, M2Restore): Use CLIP degradation priors
-
-**Closest counterexample:** WM-MoE achieves label-free routing at test time via a weather feature branch. However, WM-MoE uses weather labels during training (via contrastive learning) and has a dedicated weather-specific branch. Our method has NO weather-specific component at all.
-
-**Exact technical difference:** WM-MoE: weather branch (contrastive learning with weather labels) → router. Our method: spatial content features only → router. The distinction is: (1) no weather branch exists in our architecture, (2) no weather labels are used at any stage (train or test), (3) routing emerges purely from spatial content statistics.
-
-**Required experiment:** Ablation: add a weather branch (like WM-MoE) and show it doesn't help or hurts. Also: analyze whether the router learns weather-relevant features without supervision (interpretability analysis).
-
-**Confidence:** MEDIUM-HIGH
-
-**Recommended wording:** "Unlike WM-MoE [ref], which requires a dedicated weather feature branch trained via contrastive learning with weather-type labels, our router operates purely on spatial content features with no weather-specific component. No weather labels are used at any stage of training or inference."
+| Evidence Type | Status | Details |
+|---------------|--------|---------|
+| Implementation | EXISTS | Token-level router implemented: DWConv3x3 + MLP, noisy top-k (k=2), true sparse dispatch (`src/moe_layer.py:49-141`) |
+| Literature | EXISTS | V-MoE (NeurIPS 2021) established token-level routing for ViT classification; M³ViT (NeurIPS 2022) for multi-task |
+| Experiment | **NOT TESTED** | No ablation comparing routed vs non-routed model. No non-MoE baseline exists. |
+| Counterevidence | NONE | — |
+| **Status** | **NOT TESTED** | |
+| **Recommended wording** | "We design a token-level spatial router... [describe architecture]. Token-level routing has shown efficacy in classification (V-MoE) and multi-task learning (M³ViT); we adapt it to dense SOD." — Present as design choice, not empirically validated contribution. |
 
 ---
 
-## CLAIM C: Independent routers and independent expert pools at multiple feature scales
+## Claim B: No weather-specific component is useful/sufficient
 
-**Our implementation evidence:**
-- `src/model.py:14-16`: `self.moe_4 = SpatialMoELayer(...)`, `self.moe_8 = SpatialMoELayer(...)`, `self.moe_16 = SpatialMoELayer(...)` — three completely independent instances
-- Each has its own router weights, expert pool, and noise parameters
-- `src/model.py:38-40`: Each processes features at its own scale independently
-
-**Prior-work evidence:**
-- WM-MoE (2023): Multi-scale experts (DWConv 1/3/5/7) but single WEAR router for all scales
-- M3KE (2026): Hierarchical routing (image→patch→pixel), not independent per-scale
-- HoME (2025): Two-level routing (local groups → global aggregation), but in 3D medical segmentation
-- MoE-SPNet (2018): Pixel-wise gating for multi-level features, but single gating mechanism
-
-**Closest counterexample:** WM-MoE has multi-scale experts but uses a single router. HoME has hierarchical routing (local→global) but operates in 3D medical imaging with a fundamentally different architecture.
-
-**Exact technical difference:** We have 3 completely independent `SpatialMoELayer` instances, each with its own router MLP, expert pool, and noise parameters. Prior work either uses a single router across scales (WM-MoE) or hierarchical routing (HoME, M3KE) where later stages depend on earlier ones.
-
-**Required experiment:** Ablation: share one router across all three scales and compare. Also: share expert pools across scales and compare.
-
-**Confidence:** HIGH
-
-**Recommended wording:** "Each pyramid scale has its own independent router and expert pool, allowing different routing decisions at different receptive fields. Prior multi-scale MoE work uses a single router across scales [WM-MoE] or hierarchical routing [HoME, M3KE], not independent per-scale routing."
+| Evidence Type | Status | Details |
+|---------------|--------|---------|
+| Implementation | EXISTS | Model has no weather label input at train or test time (`src/model.py` — no weather conditioning) |
+| Literature | EXISTS | WM-MoE (2023), MoWE (2023), Zhu et al. (CVPR 2023) all use weather-conditioned routing |
+| Experiment | **NOT TESTED** | No ablation comparing weather-conditioned vs label-free routing |
+| Counterevidence | NONE | — |
+| **Status** | **NOT TESTED** | |
+| **Recommended wording** | "Unlike WM-MoE and MoWE, our method does not require weather labels at train or test time." — Present as architectural design, not as empirically validated superiority. |
 
 ---
 
-## CLAIM D: Routing entropy used explicitly by the decoder
+## Claim C: Independent per-scale routing is useful
 
-**Our implementation evidence:**
-- `src/moe_layer.py:151-152`: `entropy = -torch.sum(topk_gates * torch.log(topk_gates + 1e-9), dim=-1)` → `[B, 1, H_s, W_s]`
-- `src/decoder.py:14-27`: `EntropyFusionBlock` normalizes entropy by log(2), projects via Conv2d, adds to features with learnable scale
-- `src/decoder.py:247-250`: Each scale's features are fused with entropy before cross-attention
-- `src/model.py:44-46`: Entropy maps passed from MoE layers to decoder
-
-**Prior-work evidence:**
-- Pavlitska et al. (ICCVW 2025): Computes gate entropy per token for uncertainty estimation in MoE semantic segmentation. Used for OOD detection, NOT as decoder input feature.
-- UGRAN (Yuan et al., TIP 2025): Uses uncertainty maps for decoder refinement in SOD. But this is PREDICTION uncertainty (from saliency maps), NOT routing entropy.
-- GeMoE (2026): Uses gating entropy for K-selection. Not decoder input.
-- Adaptive-K (2026): Uses routing entropy for dynamic K. Not decoder input.
-- Lee et al. (ASE 2025): Routing entropy for OOD detection. Not decoder input.
-
-**Closest counterexample:** Pavlitska et al. compute gate entropy per token and use it for uncertainty estimation. UGRAN uses uncertainty maps for decoder refinement. However, neither feeds routing entropy as an explicit spatial feature channel into the decoder.
-
-**Exact technical difference:** Our `EntropyFusionBlock` takes the per-token routing entropy map, normalizes it, projects it via Conv2d, and adds it to the feature map with a learnable scale parameter. This is a specific architectural wiring choice where routing uncertainty becomes an explicit input to downstream dense prediction processing. Prior work uses entropy for OOD detection, K-selection, or routing control — not as a decoder feature.
-
-**Required experiment:** Ablation: remove EntropyFusionBlock entirely and measure impact on SOD metrics, especially boundary performance.
-
-**Confidence:** HIGH
-
-**Recommended wording:** "We feed per-token routing entropy as an explicit feature channel into the decoder via a learnable fusion block. Prior work uses routing entropy for out-of-distribution detection [Pavlitska et al.] or dynamic K-selection [GeMoE, Adaptive-K], but not as an input to downstream dense prediction."
+| Evidence Type | Status | Details |
+|---------------|--------|---------|
+| Implementation | EXISTS | Three independent `SpatialMoELayer` instances at scales 1/4, 1/8, 1/16 (`src/model.py:14-16`) |
+| Literature | EXISTS | Multi-scale MoE precedent in M³ViT (task-conditioned); no prior work does independent per-scale routing for SOD |
+| Experiment | **NOT TESTED** | No ablation comparing independent vs shared routing. No single-scale routing baseline. |
+| Counterevidence | NONE | — |
+| **Status** | **NOT TESTED** | |
+| **Recommended wording** | "We deploy independent routers at each pyramid scale... [describe architecture]." — Present as design choice, not empirically validated. |
 
 ---
 
-## CLAIM E: MoE specifically for adverse-weather SOD
+## Claim D: Routing entropy in the decoder is useful
 
-**Our implementation evidence:**
-- `src/model.py`: SpatialMoESODNet architecture
-- `src/dataset.py`: WXSOD dataset with weather labels (used only for evaluation, not routing)
-- `evaluation/`: Results on test_sys (synthetic weather) and test_real (real weather)
-- RESEARCH_TRUTH.md: Only WXSOD tested
-
-**Prior-work evidence:**
-- NIFM (2025): Adverse-weather SOD on WXSOD, uses explicit weather-type encoding (not MoE)
-- WFANet (2025): Two-branch baseline for adverse-weather SOD (not MoE)
-- WM-MoE (2023): MoE for weather restoration (not SOD)
-- BMFJNet (2024): Adverse-weather SOD for remote sensing (not MoE)
-- Dehaze-SOD (2024): Joint dehazing + SOD (not MoE)
-
-**Closest counterexample:** WM-MoE combines MoE with adverse weather but targets image restoration, not SOD. NIFM targets adverse-weather SOD but uses explicit weather encoding, not MoE.
-
-**Exact technical difference:** We are the first to apply MoE specifically to SOD under adverse weather conditions. WM-MoE targets pixel regression (restoration); we target pixel classification with topology constraints (SOD). NIFM uses explicit weather-type labels; we are label-free.
-
-**Required experiment:** Compare against NIFM and WFANet on WXSOD to demonstrate the value of MoE routing for adverse-weather SOD.
-
-**Confidence:** HIGH
-
-**Recommended wording:** "We apply mixture-of-experts specifically to salient object detection under adverse weather conditions. Prior MoE work targets image restoration [WM-MoE, MoFME], while prior adverse-weather SOD work uses explicit weather encoding [NIFM] or two-branch architectures [WFANet] without MoE routing."
+| Evidence Type | Status | Details |
+|---------------|--------|---------|
+| Implementation | EXISTS | `EntropyFusionBlock` fuses entropy channel into decoder (`src/decoder.py:14-27`). Learnable scale parameter initialized to 0.1. |
+| Literature | NO PRECEDENT | Router-entropy-as-decoder-input is claimed as novel; no prior work found |
+| Experiment | **NOT TESTED** | No ablation with/without entropy fusion. The `scale` parameter was not analyzed post-training. |
+| Counterevidence | NONE | — |
+| **Status** | **NOT TESTED** | |
+| **Recommended wording** | "We incorporate routing entropy as an auxiliary channel in the decoder... [describe mechanism]." — Present as novel design, explicitly note that ablation to validate its contribution was not performed. |
 
 ---
 
-## Summary: Claim Confidence and Recommended Wording
+## Claim E: MoE is useful for adverse-weather SOD
 
-| Claim | Classification | Confidence | Key Qualification |
-|-------|---------------|------------|-------------------|
-| A. Token-level MoE for SOD | DEFENSIBLE | HIGH | Must cite WM-MoE (restoration) and SegMoTE (medical) as prior token-level MoE work in adjacent tasks |
-| B. Label-free routing | DEFENSIBLE WITH QUALIFICATION | MEDIUM-HIGH | Must explicitly distinguish from WM-MoE's weather branch. Do NOT claim "first label-free" — claim "no weather-specific component" |
-| C. Independent per-scale routing | DEFENSIBLE | HIGH | Must distinguish from WM-MoE (single router) and HoME (hierarchical) |
-| D. Routing entropy as decoder input | DEFENSIBLE | HIGH | Must distinguish from Pavlitska et al. (OOD detection) and UGRAN (prediction uncertainty) |
-| E. MoE for adverse-weather SOD | DEFENSIBLE | HIGH | Must distinguish from WM-MoE (restoration) and NIFM (explicit weather encoding) |
+| Evidence Type | Status | Details |
+|---------------|--------|---------|
+| Implementation | EXISTS | Full MoE system: 8 experts per scale, sparse dispatch, load-balance + importance losses |
+| Literature | EXISTS | WM-MoE, MoWE, Complexity Experts all show MoE benefits for weather tasks |
+| Experiment | **NOT TESTED** | No non-MoE baseline (shared MLP) exists. No dense MoE baseline. No matched-FLOPs comparison. |
+| Counterevidence | The forced-expert ablation shows only marginal degradation (ΔMAE=+0.0002), which could be interpreted as: (a) the router is not critical, or (b) the single forced expert is already competent |
+| **Status** | **NOT TESTED** | |
+| **Recommended wording** | "We apply mixture-of-experts to SOD... [describe architecture]." — Present as novel application, explicitly state no ablation against non-MoE baseline was performed. |
 
 ---
 
-*Last updated: 2026-09-01. Based on adversarial analysis of implementation + literature + Elicit evidence.*
+## Claim F: Experts specialize by weather/artifact type
+
+| Evidence Type | Status | Details |
+|---------------|--------|---------|
+| Implementation | EXISTS | `WeatherAnalyzer` in `src/diagnostics.py:80-177` computes P(weather\|expert) — but **disabled in training** (`train_ddp.py:560`) |
+| Literature | EXISTS | Complexity Experts (CVPR 2025) shows implicit specialization; M³ViT shows task-based clustering |
+| Experiment | **NOT TESTED** | No per-expert assignment statistics. No weather\|expert distributions. No t-SNE/UMAP. |
+| Counterevidence | The forced-expert ablation shows minimal degradation, which **contradicts** the intuition that specialists are needed — if one expert handles all tokens with only 1.2% MAE increase, specialization may not be occurring |
+| **Status** | **NOT TESTED** (and counterevidence exists) | |
+| **Recommended wording** | DO NOT CLAIM. The forced-expert result actually suggests experts may NOT be specializing by weather. This claim requires explicit per-expert assignment analysis before it can be made. |
+
+---
+
+## Claim G: The model is robust across weather conditions
+
+| Evidence Type | Status | Details |
+|---------------|--------|---------|
+| Implementation | — | — |
+| Literature | — | — |
+| Experiment | **PARTIALLY SUPPORTED** | MAE range on test_real: 0.0094 (snow) to 0.0243 (light) — a 2.6× spread. On test_sys: 0.0142 (clean) to 0.0237 (rainafog) — a 1.7× spread. |
+| Counterevidence | "Light" (low-light) conditions show substantially worse performance (MAE=0.0243, S=0.8897). This is the worst-performing category and may indicate a systematic weakness. |
+| **Status** | **PARTIALLY SUPPORTED** | |
+| **Recommended wording** | "The model achieves MAE between 0.0094 and 0.0243 across real-world weather categories... [report range]. Performance is strongest on snow and weakest on low-light conditions." — Report the range honestly. Do not claim uniform robustness. |
+
+---
+
+## Claim H: The model generalizes from synthetic to real weather
+
+| Evidence Type | Status | Details |
+|---------------|--------|---------|
+| Implementation | — | — |
+| Literature | — | — |
+| Experiment | **PARTIALLY SUPPORTED** | Real-world MAE (0.0168) ≤ synthetic MAE (0.0192) on matching weather categories. But this is observational, not a controlled experiment. |
+| Counterevidence | Not a controlled domain generalization test. The real-world test set may be inherently easier. No clean-source baseline exists. |
+| **Status** | **PARTIALLY SUPPORTED** (observational only) | |
+| **Recommended wording** | "When trained on synthetic data, the model achieves comparable or better performance on real-world weather (MAE 0.0168 vs 0.0192), suggesting effective transfer of weather-robust features." — Note this is an observation, not a controlled generalization experiment. |
+
+---
+
+## Claim I: The model is computationally efficient
+
+| Evidence Type | Status | Details |
+|---------------|--------|---------|
+| Implementation | — | — |
+| Literature | — | — |
+| Experiment | **NOT TESTED** | 66.27M params, 278.2G MACs, 3.83 FPS reported — but no comparison to non-MoE baseline, no standardized hardware, no memory analysis |
+| Counterevidence | Without a baseline comparison, "efficient" is meaningless. 3.83 FPS may or may not be good depending on the baseline. |
+| **Status** | **NOT TESTED** | |
+| **Recommended wording** | "The model contains 66.27M parameters and 278.2G MACs." — Report the numbers without claiming efficiency. |
+
+---
+
+## Summary Matrix
+
+| Claim | Implementation | Literature | Experiment | Status |
+|-------|---------------|------------|------------|--------|
+| A. Token routing useful | ✓ Exists | ✓ Precedent | ✗ Not tested | NOT TESTED |
+| B. No weather labels needed | ✓ Exists | ✓ Precedent | ✗ Not tested | NOT TESTED |
+| C. Independent per-scale routing useful | ✓ Exists | ✓ Novel position | ✗ Not tested | NOT TESTED |
+| D. Entropy fusion useful | ✓ Exists | ✗ Novel claim | ✗ Not tested | NOT TESTED |
+| E. MoE useful for SOD | ✓ Exists | ✓ Precedent | ✗ Not tested | NOT TESTED |
+| F. Experts specialize by weather | ✓ Diagnostics exist (disabled) | ✓ Precedent | ✗ Not tested (+ counterevidence) | NOT TESTED |
+| G. Robust across weather | — | — | ~ Partial | PARTIALLY SUPPORTED |
+| H. Synthetic→real transfer | — | — | ~ Observational | PARTIALLY SUPPORTED |
+| I. Computationally efficient | — | — | ✗ Not tested | NOT TESTED |
+
+---
+
+## What This Means for the Paper
+
+**The completed experiments support exactly TWO categories of claims:**
+
+1. **Performance reporting:** "Our model achieves X on test set Y under condition Z." — Fully supported.
+
+2. **Architectural description:** "Our model uses token-level routing with K experts at each of 3 scales..." — Fully supported by implementation.
+
+**The completed experiments do NOT support any causal or comparative claims:**
+- Cannot claim any design choice causes improvement
+- Cannot claim MoE is better than non-MoE
+- Cannot claim routing is better than no routing
+- Cannot claim entropy fusion helps
+- Cannot claim experts specialize
+- Cannot claim efficiency
+- Cannot claim SOTA performance
+
+**The paper must be written as an architectural contribution with empirical performance characterization, NOT as an empirically validated design.**

@@ -1,0 +1,45 @@
+\begin{thebibliography}{1}
+
+\bibitem{nifm2025}
+Q.~Chen, X.~Yang, T.~Wang, R.~Lu, X.~Sheng, Y.~Sun, {\em et~al.}, ``Salient
+  object detection in complex weather conditions via noise indicators,'' {\em
+  arXiv preprint arXiv:2512.10592}, 2025.
+
+\bibitem{wmmoe2023}
+Y.~Luo, R.~Zhao, X.~Wei, J.~Chen, Y.~Lu, S.~Xie, T.~Wang, R.~Xiong, M.~Lu, and
+  S.~Zhang, ``{WM-MoE}: Weather-aware multi-scale mixture-of-experts for blind
+  adverse weather removal,'' {\em arXiv preprint arXiv:2303.13739}, 2023.
+
+\bibitem{wxsod2025}
+Q.~Chen, X.~Yang, R.~Lu, Q.~Zhang, Y.~Liu, X.~Zhou, and B.~Zheng, ``{WXSOD}: A
+  benchmark for robust salient object detection in adverse weather
+  conditions,'' {\em Pattern Recognition}, vol.~170, p.~114003, 2026.
+
+\bibitem{v-moe2021}
+C.~Riquelme, J.~Puigcerver, B.~Mustafa, M.~Neumann, R.~Jenatton,
+  A.~Susano~Pinto, D.~Keysers, and N.~Houlsby, ``Scaling vision with sparse
+  mixture of experts,'' in {\em Advances in Neural Information Processing
+  Systems (NeurIPS)}, vol.~34, 2021.
+
+\bibitem{pvtv2}
+W.~Wang, E.~Xie, X.~Li, D.-P. Fan, K.~Song, D.~Liang, T.~Lu, P.~Luo, and
+  L.~Shao, ``Pvt v2: Improved baselines with pyramid vision transformer,'' {\em
+  Computational Visual Media}, vol.~8, no.~3, pp.~415--424, 2022.
+
+\bibitem{struct-measure}
+D.-P. Cheng, D.-P. Fan, G.~Shi, H.~Peng, J.~Yang, L.~Shao, and L.~Van~Gool,
+  ``Structure-measure: A new way to evaluate foreground maps,'' in {\em
+  Proceedings of the IEEE International Conference on Computer Vision (ICCV)},
+  pp.~4548--4557, 2017.
+
+\bibitem{enhanced-measure}
+D.-P. Fan, M.-M. Cheng, Y.~Liu, T.~Li, and A.~Borji, ``Enhanced-alignment
+  measure for binary foreground map evaluation,'' in {\em Proceedings of the
+  International Joint Conference on Artificial Intelligence (IJCAI)},
+  pp.~694--700, 2016.
+
+\bibitem{f-measure}
+R.~Margolin, L.~Zelnik-Manor, and A.~Tal, ``A new approach to evaluate saliency
+  methods,'' {\em arXiv preprint arXiv:1407.0494}, 2014.
+
+\end{thebibliography}

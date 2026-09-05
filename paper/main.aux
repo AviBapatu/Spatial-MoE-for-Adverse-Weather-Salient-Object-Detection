@@ -1,0 +1,63 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{nifm2025}
+\citation{wmmoe2023}
+\citation{nifm2025}
+\citation{wxsod2025}
+\citation{wmmoe2023}
+\citation{v-moe2021}
+\citation{pvtv2}
+\@writefile{toc}{\contentsline {section}{\numberline {I}Introduction}{1}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {II}Related Work}{1}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A}Adverse-Weather SOD}{1}{subsection.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B}MoE for Weather Restoration}{1}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {C}MoE for SOD}{1}{subsection.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {III}Method}{1}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A}Multi-Scale Features}{1}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B}Router}{1}{subsection.3.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces \textbf  {SpatialMoE-SOD architecture.} Input $\mathbf  {X}\in \mathbb  {R}^{3 \times 384 \times 384}$ is processed by a PVTv2-B4 backbone to produce multi-scale features at $1/4$, $1/8$, $1/16$ resolution. Each scale is independently processed by a SpatialMoE layer: a depthwise convolutional router selects top-$K{=}2$ experts from 8 via noisy gating, and a per-token entropy map $\hat  {\mathcal  {H}}$ is computed. The decoder merges scales via global and windowed cross-attention, with entropy features injected via learned additive fusion at each scale. Two $1{\times }1$ conv heads produce saliency and boundary logits at full resolution.}}{2}{figure.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:arch}{{1}{2}{\textbf {SpatialMoE-SOD architecture.} Input $\bX \in \reals ^{3 \times 384 \times 384}$ is processed by a PVTv2-B4 backbone to produce multi-scale features at $1/4$, $1/8$, $1/16$ resolution. Each scale is independently processed by a SpatialMoE layer: a depthwise convolutional router selects top-$K{=}2$ experts from 8 via noisy gating, and a per-token entropy map $\Hs $ is computed. The decoder merges scales via global and windowed cross-attention, with entropy features injected via learned additive fusion at each scale. Two $1{\times }1$ conv heads produce saliency and boundary logits at full resolution}{figure.caption.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces \textbf  {Routing mechanism for token $\mathbf  {x}_i$ at one pyramid scale.} A depthwise $3{\times }3$ convolution extracts local spatial context; the concatenation $\mathbf  {r}_i = [\mathbf  {x}_i | \text  {ctx}_i] \in \mathbb  {R}^{2C}$ is passed through a two-layer MLP to produce 8 routing logits. Noisy top-$K{=}2$ selection (Gaussian noise during training) picks two experts, branching into gate weights (top) and expert outputs (bottom); gate weights are softmax over selected logits only. The selected experts process the token independently; their outputs are summed with gate weights. Routing entropy $\hat  {\mathcal  {H}}_i \in [0,1]$ measures assignment uncertainty and is injected as a feature channel into the decoder via a learned $1{\times }1$ projection.}}{2}{figure.caption.2}\protected@file@percent }
+\newlabel{fig:router}{{2}{2}{\textbf {Routing mechanism for token $\bx _i$ at one pyramid scale.} A depthwise $3{\times }3$ convolution extracts local spatial context; the concatenation $\br _i = [\bx _i | \text {ctx}_i] \in \reals ^{2C}$ is passed through a two-layer MLP to produce 8 routing logits. Noisy top-$K{=}2$ selection (Gaussian noise during training) picks two experts, branching into gate weights (top) and expert outputs (bottom); gate weights are softmax over selected logits only. The selected experts process the token independently; their outputs are summed with gate weights. Routing entropy $\Hs _i \in [0,1]$ measures assignment uncertainty and is injected as a feature channel into the decoder via a learned $1{\times }1$ projection}{figure.caption.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {C}Noisy Top-$K$ Routing}{2}{subsection.3.3}\protected@file@percent }
+\citation{wxsod2025}
+\citation{struct-measure}
+\citation{enhanced-measure}
+\citation{f-measure}
+\@writefile{toc}{\contentsline {subsection}{\numberline {D}Sparse Expert Aggregation}{3}{subsection.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {E}Routing Entropy}{3}{subsection.3.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {F}Decoder}{3}{subsection.3.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Global performance on WXSOD test splits.}}{3}{table.caption.3}\protected@file@percent }
+\newlabel{tab:main}{{1}{3}{Global performance on WXSOD test splits}{table.caption.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {G}Training Objective}{3}{subsection.3.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {IV}Experiments}{3}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A}Setup}{3}{subsection.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B}Main Results}{3}{subsection.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {C}Weather-Wise Analysis}{3}{subsection.4.3}\protected@file@percent }
+\citation{nifm2025}
+\bibstyle{ieeetr}
+\bibdata{references}
+\bibcite{nifm2025}{1}
+\bibcite{wmmoe2023}{2}
+\bibcite{wxsod2025}{3}
+\bibcite{v-moe2021}{4}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces \textbf  {Weather-wise MAE on real-world test.} Snow yields the lowest error, while low-light yields the highest.}}{4}{figure.caption.4}\protected@file@percent }
+\newlabel{fig:weather}{{3}{4}{\textbf {Weather-wise MAE on real-world test.} Snow yields the lowest error, while low-light yields the highest}{figure.caption.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Weather-wise results on real-world test (554 images).}}{4}{table.caption.5}\protected@file@percent }
+\newlabel{tab:weather}{{2}{4}{Weather-wise results on real-world test (554 images)}{table.caption.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {D}Routing Entropy}{4}{subsection.4.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Mean routing entropy (normalized by $\log 2$).}}{4}{table.caption.6}\protected@file@percent }
+\newlabel{tab:entropy}{{3}{4}{Mean routing entropy (normalized by $\log 2$)}{table.caption.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {E}Forced-Expert Analysis}{4}{subsection.4.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {F}Discussion}{4}{subsection.4.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {V}Conclusion}{4}{section.5}\protected@file@percent }
+\bibcite{pvtv2}{5}
+\bibcite{struct-measure}{6}
+\bibcite{enhanced-measure}{7}
+\bibcite{f-measure}{8}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces \textbf  {Qualitative results on real-world WXSOD test.} Three examples spanning snow, fog, and dark conditions. The error map (rightmost column, red) highlights spatial regions where the prediction deviates from ground truth; larger errors concentrate at object boundaries and in regions with degraded visibility.}}{5}{figure.caption.7}\protected@file@percent }
+\newlabel{fig:qualitative}{{4}{5}{\textbf {Qualitative results on real-world WXSOD test.} Three examples spanning snow, fog, and dark conditions. The error map (rightmost column, red) highlights spatial regions where the prediction deviates from ground truth; larger errors concentrate at object boundaries and in regions with degraded visibility}{figure.caption.7}{}}
+\gdef \@abspage@last{5}

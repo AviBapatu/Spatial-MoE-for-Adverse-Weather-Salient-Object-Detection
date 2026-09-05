@@ -139,6 +139,25 @@ Source: `evaluation/best_new_1/test_real/none/summary.txt`
 | Compound weather degrades most on synthetic: rainafog (MAE=0.0237) | test_sys summary |
 | Real-world MAE slightly better than synthetic | 0.0168 vs 0.0192 |
 
+### 2.5 Forced-Expert Ablation
+
+Source: `evaluation_results/force_expert_ablation.json`
+
+| Metric | Normal | Forced Expert 0 (scale 4) | Delta |
+|--------|--------|---------------------------|-------|
+| MAE | 0.0168 | 0.0170 | +0.0002 (+1.2%) |
+| S_measure | 0.9151 | 0.9139 | -0.0012 (-0.1%) |
+
+### 2.6 Computational Cost
+
+Source: `evaluation_results/compute_cost.json`
+
+| Metric | Value |
+|--------|-------|
+| Parameters | 66.27M |
+| MACs | 278.2G |
+| FPS | 3.83 (hardware unspecified) |
+
 ---
 
 ## 3. Literature-Verified Claims
@@ -181,12 +200,13 @@ These are claims that need verification before inclusion in the paper.
 
 | Claim | Status | What's Needed |
 |-------|--------|---------------|
-| Exact parameter count | Not verified | Run model parameter counting |
+| Exact parameter count | VERIFIED: 66.27M | `evaluation_results/compute_cost.json` |
 | Training epochs completed | Unknown | No training logs in repo |
-| Comparison to SOTA methods | Not done | Need to run baselines |
-| Ablation study results | Not run | Ablation code exists but no registry.csv |
-| Router interpretability analysis | Not run | Diagnostics code exists but disabled in training |
-| Boundary F1 comparison to SOTA | Not done | Need literature survey of boundary metrics |
+| Comparison to SOTA methods | NOT DONE | Need to run baselines |
+| Ablation study results | NOT RUN | Ablation code exists but no registry.csv |
+| Router interpretability analysis | NOT RUN | Diagnostics code exists but disabled in training |
+| Boundary F1 comparison to SOTA | NOT DONE | Need literature survey of boundary metrics |
+| Whether `router_variant` or `moe_type` config fields are consumed | VERIFIED: NOT consumed | Forward path ignores both fields |
 
 ---
 
@@ -198,10 +218,15 @@ Do not make these claims without explicit evidence:
 - "Expert X specializes in weather Y" — no interpretability analysis completed
 - "Routing entropy correlates with difficulty" — no analysis done
 - "Method works on [untested dataset]" — only WXSOD tested
-- Any claim about computational efficiency (FLOPs, latency) — not measured
+- Any claim about computational efficiency — not measured against baselines
 - Any claim about generalization to domains beyond WXSOD
+- "Token-level routing causes improvement" — no non-routing baseline exists
+- "MoE causes improvement" — no non-MoE baseline exists
+- "Entropy fusion causes improvement" — no ON/OFF ablation exists
+- "The model generalizes from synthetic to real" — no controlled domain-shift experiment
+- "Experts specialize by weather" — no per-expert assignment analysis
 
 ---
 
-*Last updated: Based on repository state at time of creation.*
+*Last updated: 2026-09-02. Post-experiment audit.*
 *This file must be updated when new experimental results are obtained or new implementation details are verified.*
