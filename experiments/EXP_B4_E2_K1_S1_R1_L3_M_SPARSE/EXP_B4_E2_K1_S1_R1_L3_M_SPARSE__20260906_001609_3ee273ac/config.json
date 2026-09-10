@@ -1,35 +1,35 @@
 {
     "data": {
-        "dataset_root": "/kaggle/input/wxsod-dataset",
+        "dataset_root": "data/WXSDO_data",
         "split_manifest_path": "",
         "split_manifest_hash": "",
         "train_sample_count": 0,
         "validation_sample_count": 0,
         "test_sample_counts": {},
-        "max_samples": null
+        "max_samples": 8
     },
     "model": {
         "backbone": "pvt_v2_b4",
-        "working_dim": 256,
-        "decoder_dim": 256,
-        "num_experts": 8,
-        "top_k": 2,
+        "working_dim": 64,
+        "decoder_dim": 64,
+        "num_experts": 2,
+        "top_k": 1,
         "router_variant": "token_only",
         "expert_variant": "standard",
         "attention_config": "default",
         "window_size": 7,
-        "deep_supervision": false,
+        "deep_supervision": true,
         "moe_type": "sparse"
     },
     "loss": {
         "bce_weight": 1.0,
         "iou_weight": 1.0,
-        "ssim_weight": 0.0,
-        "boundary_weight": 0.0,
+        "ssim_weight": 1.0,
+        "boundary_weight": 1.0,
         "load_balance_weight": 0.01,
         "importance_weight": 0.01,
         "z_loss_weight": 0.0,
-        "aux_boundary_weight": 0.0,
+        "aux_boundary_weight": 0.5,
         "deep_supervision_weight": 0.4
     },
     "opt": {
@@ -41,16 +41,16 @@
         "scheduler": "WarmupCosine",
         "gradient_clipping": 1.0,
         "amp": true,
-        "batch_per_gpu": 4,
-        "grad_accum_steps": 4,
-        "effective_global_batch": 32
+        "batch_per_gpu": 1,
+        "grad_accum_steps": 1,
+        "effective_global_batch": 1
     },
     "train": {
-        "epochs": 50,
+        "epochs": 1,
         "freeze_backbone_epochs": 1,
         "seed": 42,
-        "num_workers": 6,
-        "checkpoint_every_n_steps": 200
+        "num_workers": 0,
+        "checkpoint_every_n_steps": 100
     },
     "eval": {
         "validation_metric_selection": "MAE",
@@ -61,7 +61,7 @@
         "routing_diagnostic_epochs": 1,
         "expert_ablation_enabled": false
     },
-    "experiment_id": "",
-    "run_id": "",
+    "experiment_id": "EXP_B4_E2_K1_S1_R1_L3_M_SPARSE",
+    "run_id": "EXP_B4_E2_K1_S1_R1_L3_M_SPARSE__20260906_001609_3ee273ac",
     "batch_equivalence": "MATCHED"
 }

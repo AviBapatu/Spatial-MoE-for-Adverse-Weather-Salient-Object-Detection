@@ -143,6 +143,8 @@ def main():
     model_cfg = checkpoint.get('config', {}).get('model', {})
     use_deep_supervision = model_cfg.get('deep_supervision', False)
     num_experts = model_cfg.get('num_experts', 6) # Default to 6 if missing
+    print(f"num_experts from checkpoint config: {num_experts}")
+    assert "num_experts" in model_cfg, "checkpoint config missing num_experts — verify before trusting results"
     window_size = model_cfg.get('window_size', 8) # Default to 8 if missing
     
     model = SpatialMoESODNet(

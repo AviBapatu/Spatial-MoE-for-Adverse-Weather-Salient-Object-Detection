@@ -2,11 +2,10 @@ import os
 import glob
 from pathlib import Path
 import cv2
+cv2.setNumThreads(0)  # Prevent OpenCV thread pool from competing with DataLoader workers
 import numpy as np
 import random
 import hashlib
-import cv2
-import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 import albumentations as A
@@ -129,6 +128,9 @@ class WXSODDataset(Dataset):
         image_padded = cv2.copyMakeBorder(image_resized, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_REFLECT_101)
         mask_padded = cv2.copyMakeBorder(mask_resized, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=[0])
         
+        valid_mask_ones = np.ones((resized_h, resized_w), dtype=np.float32)
+        valid_mask = cv2.copyMakeBorder(valid_mask_ones, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=[0])
+        
         meta = {
             'orig_h': orig_h,
             'orig_w': orig_w,
@@ -140,7 +142,7 @@ class WXSODDataset(Dataset):
             'pad_right': pad_right
         }
         
-        return image_padded, mask_padded, meta
+        return image_padded, mask_padded, valid_mask, meta
 
     def __getitem__(self, index):
         img_path, gt_path, name = self.samples[index]
@@ -161,7 +163,7 @@ class WXSODDataset(Dataset):
         mask = (mask > 0.5).astype(np.float32)
         
         # 1. Geometric transforms (aspect-preserving resize & pad)
-        image_padded, mask_padded, meta = self._aspect_preserving_resize_pad(image, mask)
+        image_padded, mask_padded, valid_mask, meta = self._aspect_preserving_resize_pad(image, mask)
         meta['gt_path'] = gt_path
         
         # 2. Compute edge AFTER geometry transforms on the binary mask
@@ -178,9 +180,9 @@ class WXSODDataset(Dataset):
             np.random.seed(sample_seed)
             torch.manual_seed(sample_seed)
             
-            augmented = self.transform(image=image_padded, mask=mask_padded)
+            augmented = self.transform(image=image_padded, masks=[mask_padded, valid_mask])
             img_tensor = augmented['image']
-            mask_tensor = augmented['mask']
+            mask_tensor, valid_mask = augmented['masks']
         else:
             img_tensor = image_padded
             mask_tensor = mask_padded
@@ -190,15 +192,21 @@ class WXSODDataset(Dataset):
             img_tensor = torch.from_numpy(img_tensor.transpose(2, 0, 1)).float()
             mask_tensor = torch.from_numpy(mask_tensor).float()
             
+        valid_mask_tensor = torch.from_numpy(valid_mask).float()
+            
         edge_tensor = torch.from_numpy(edge_map).float().unsqueeze(0)
         
         if mask_tensor.ndim == 2:
             mask_tensor = mask_tensor.unsqueeze(0)
             
+        if valid_mask_tensor.ndim == 2:
+            valid_mask_tensor = valid_mask_tensor.unsqueeze(0)
+            
         return {
             'image': img_tensor,
             'mask': mask_tensor,
             'edge_map': edge_tensor,
+            'pad_mask': valid_mask_tensor,
             'name': name,
             'meta': meta
         }
@@ -285,9 +293,11 @@ def get_dataloaders(root_dir="data/WXSOD", image_size=384, batch_size=4, num_wor
     train_sampler = DistributedSampler(train_ds, num_replicas=world_size, rank=rank, shuffle=True) if distributed else None
     train_shuffle = (train_sampler is None)
     
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=train_shuffle, sampler=train_sampler, num_workers=num_workers, drop_last=True)
-    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers)
-    test_synth_loader = DataLoader(test_synth_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers)
-    test_real_loader = DataLoader(test_real_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    _pin = True
+    _persist = num_workers > 0
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=train_shuffle, sampler=train_sampler, num_workers=num_workers, drop_last=True, pin_memory=_pin, persistent_workers=_persist)
+    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=_pin, persistent_workers=_persist)
+    test_synth_loader = DataLoader(test_synth_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=_pin, persistent_workers=_persist)
+    test_real_loader = DataLoader(test_real_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=_pin, persistent_workers=_persist)
     
     return train_loader, val_loader, test_synth_loader, test_real_loader
