@@ -313,3 +313,97 @@ class MoEDiagnosticsEngine:
                     ])
                     
         return stats
+
+class ExpertSimilarityAnalyzer:
+    """
+    Computes weight-space and activation-space similarity for experts in a MoE layer.
+    """
+    def __init__(self, moe_layer, num_experts=8):
+        self.moe_layer = moe_layer
+        self.num_experts = num_experts
+
+    def compute_weight_similarity(self):
+        """
+        Computes pairwise cosine similarity between each expert's fc1 and fc2 weights.
+        Returns a (num_experts, num_experts) matrix.
+        """
+        sim_matrix = np.zeros((self.num_experts, self.num_experts))
+        for i in range(self.num_experts):
+            for j in range(self.num_experts):
+                if i == j:
+                    sim_matrix[i, j] = 1.0
+                    continue
+                w_i = torch.cat([self.moe_layer.experts[i].fc1.weight.flatten(), self.moe_layer.experts[i].fc2.weight.flatten()])
+                w_j = torch.cat([self.moe_layer.experts[j].fc1.weight.flatten(), self.moe_layer.experts[j].fc2.weight.flatten()])
+                sim = F.cosine_similarity(w_i, w_j, dim=0).item()
+                sim_matrix[i, j] = sim
+        return sim_matrix
+
+    def compute_activation_similarity(self, x):
+        """
+        x: input tensor [B, C, H, W]
+        Run all experts on the same tokens and compute pairwise cosine similarity of outputs.
+
+        CAVEAT — residual inflation of similarity scores:
+        TokenWiseMLPExpert.forward returns (x + z), not z alone. If z (the expert's
+        actual contribution) is small relative to x (the skip-connection passthrough),
+        any two experts' outputs will look similar simply because both are dominated by
+        the same x — even if their z contributions differ substantially.
+
+        A REDUNDANT_PAIR warning here therefore means one of two things:
+          (a) Experts genuinely converged to the same function  — true collapse.
+          (b) Experts are all weak (small z) but not collapsed   — under-training / LR issue.
+        Both are real problems, but with different fixes. Do NOT conclude expert collapse
+        from this metric alone. Cross-check against WeatherAnalyzer KL-divergence for the
+        same layer: low KL (experts see similar weather distributions) + high activation
+        similarity = stronger evidence for (a); high KL + high activation similarity = (b).
+        """
+        B, C, H, W = x.shape
+        N_tokens = H * W
+        x_tokens = x.flatten(2).transpose(1, 2) # [B, H*W, C]
+        flat_x = x_tokens.reshape(B * N_tokens, C)
+        
+        expert_outputs = []
+        with torch.no_grad():
+            for i in range(self.num_experts):
+                expert_outputs.append(self.moe_layer.experts[i](flat_x)) # [B*N_tokens, C]
+                
+        sim_matrix = np.zeros((self.num_experts, self.num_experts))
+        for i in range(self.num_experts):
+            for j in range(self.num_experts):
+                if i == j:
+                    sim_matrix[i, j] = 1.0
+                    continue
+                # Cosine similarity along C dimension, then average over tokens
+                sim = F.cosine_similarity(expert_outputs[i], expert_outputs[j], dim=-1).mean().item()
+                sim_matrix[i, j] = sim
+                
+        return sim_matrix
+
+    def analyze(self, x, output_path):
+        """
+        x: input batch to use for activation similarity.
+        output_path: path to save the JSON file.
+        """
+        weight_sim = self.compute_weight_similarity()
+        act_sim = self.compute_activation_similarity(x)
+        
+        warnings = []
+        for i in range(self.num_experts):
+            for j in range(i + 1, self.num_experts):
+                if act_sim[i, j] > 0.85:
+                    warnings.append(f"REDUNDANT_PAIR: Expert {i} and Expert {j} (sim: {act_sim[i, j]:.3f})")
+                    print(f"WARNING: REDUNDANT_PAIR found - Expert {i} and Expert {j} with activation similarity {act_sim[i, j]:.3f}")
+                    
+        results = {
+            "warnings": warnings,
+            "weight_similarity": weight_sim.tolist(),
+            "activation_similarity": act_sim.tolist()
+        }
+        
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, "w") as f:
+            json.dump(results, f, indent=4)
+            
+        return results
+
