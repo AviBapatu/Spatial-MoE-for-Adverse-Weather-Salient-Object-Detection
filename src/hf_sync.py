@@ -68,7 +68,13 @@ try:
 except ImportError:
     pass
 
-DEFAULT_CODE_INCLUDE = ("src", "tests", "experiments", "requirements.txt", "pyproject.toml", "train.py")
+DEFAULT_CODE_INCLUDE = (
+    "src",           # all model / training / eval source
+    "experiments",   # experiment config JSONs (baseline_v1.json etc.)
+    "requirements.txt",
+    "pyproject.toml",
+    "train.py",
+)
 CODE_REMOTE_DIR = "code"
 CHECKPOINT_REMOTE_DIR = "checkpoints"
 CODE_ZIP_NAME = "spatial_moe_sod_code.zip"

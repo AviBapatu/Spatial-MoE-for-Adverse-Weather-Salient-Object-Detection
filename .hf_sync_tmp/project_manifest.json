@@ -1,13 +1,12 @@
 {
   "source_version": "unversioned",
-  "git_commit": "7982ca1d1f4ac159d34bfba020c5c7db0e465df3",
-  "creation_time": 1788595377.5246751,
+  "git_commit": "c1f1ed2be162443fbad2cd4028564fbc24085b96",
+  "creation_time": 1789039086.4010096,
   "archive_name": "spatial_moe_sod_code.zip",
-  "archive_sha256": "6ab6d6267de6974e1f14f89438a024a5f9c12fc3116f4606ded46235a58367ab",
-  "source_content_sha256": "0da3bcdf17b704911e27249dc95baa2d0849b979106c07a93d71da562528daaf",
+  "archive_sha256": "ee3fc9017be217f1579cb7dbb2349cf0f9fdd8e86ca87077c46b7d78a90ffc2a",
+  "source_content_sha256": "3abab210b01d3bc76977eabd3d56933f37ef6a0c4acf8b6d5717a866286fdcfe",
   "included_paths": [
     "src",
-    "tests",
     "experiments",
     "requirements.txt",
     "pyproject.toml",

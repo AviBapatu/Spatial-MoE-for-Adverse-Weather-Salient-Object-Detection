@@ -1,7 +1,15 @@
 {
-    "source_version": "1.0.0",
-    "git_commit": "7982ca1d1f4ac159d34bfba020c5c7db0e465df3",
-    "creation_time": 1788622907.9762769,
-    "archive_sha256": "fd397e2548d5f0313a36e08c0ee323419b8e7c444347dbee8698d563722e5e68",
-    "archive_name": "spatial_moe_sod_code.zip"
+  "source_version": "unversioned",
+  "git_commit": "c1f1ed2be162443fbad2cd4028564fbc24085b96",
+  "creation_time": 1789039086.4010096,
+  "archive_name": "spatial_moe_sod_code.zip",
+  "archive_sha256": "ee3fc9017be217f1579cb7dbb2349cf0f9fdd8e86ca87077c46b7d78a90ffc2a",
+  "source_content_sha256": "3abab210b01d3bc76977eabd3d56933f37ef6a0c4acf8b6d5717a866286fdcfe",
+  "included_paths": [
+    "src",
+    "experiments",
+    "requirements.txt",
+    "pyproject.toml",
+    "train.py"
+  ]
 }
