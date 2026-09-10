@@ -33,10 +33,12 @@ def _ssim(img1, img2, window, window_size, channel, size_average=True):
 
     ssim_map = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) / ((mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2))
 
+    ssim_map = torch.clamp(ssim_map, min=-1.0, max=1.0)
+
     if size_average:
         return ssim_map.mean()
     else:
-        return ssim_map.mean(1).mean(1).mean(1)
+        return ssim_map
 
 class SSIM(nn.Module):
     def __init__(self, window_size=11, size_average=True):
@@ -79,12 +81,15 @@ class SpatialMoELoss(nn.Module):
         self.lambda_aux_boundary = lambda_aux_boundary
         self.lambda_deep_supervision = lambda_deep_supervision
         
-        self.bce_loss = nn.BCEWithLogitsLoss()
-        self.ssim_loss = SSIM(window_size=11, size_average=True)
-        self.smooth_l1 = nn.SmoothL1Loss()
+        self.bce_loss = nn.BCEWithLogitsLoss(reduction='none')
+        self.ssim_loss = SSIM(window_size=11, size_average=False)
+        self.smooth_l1 = nn.SmoothL1Loss(reduction='none')
         
-    def _soft_iou_loss(self, P, target, eps=1e-6):
+    def _soft_iou_loss(self, P, target, mask=None, eps=1e-6):
         """Computes soft IoU independently per image and averages across batch."""
+        if mask is not None:
+            P = P * mask
+            target = target * mask
         # P and target are [B, 1, H, W]
         intersection = torch.sum(P * target, dim=(2, 3))
         union = torch.sum(P, dim=(2, 3)) + torch.sum(target, dim=(2, 3)) - intersection
@@ -92,7 +97,7 @@ class SpatialMoELoss(nn.Module):
         iou = (intersection + eps) / (union + eps) # [B, 1]
         return torch.mean(1.0 - iou)
 
-    def _boundary_loss(self, P, gt_boundary, eps=1e-6):
+    def _boundary_loss(self, P, gt_boundary, mask=None, eps=1e-6):
         """Computes gradient magnitude on predictions and compares with GT boundary."""
         # P is [B, 1, H, W]
         gx = torch.zeros_like(P)
@@ -104,7 +109,11 @@ class SpatialMoELoss(nn.Module):
         grad_mag = torch.sqrt(gx**2 + gy**2 + eps)
         
         # SmoothL1 loss between predicted gradient magnitude and binary GT boundary
-        return self.smooth_l1(grad_mag, gt_boundary)
+        l1_map = self.smooth_l1(grad_mag, gt_boundary)
+        if mask is not None:
+            return (l1_map * mask).sum() / mask.sum().clamp(min=1.0)
+        else:
+            return l1_map.mean()
 
     def _moe_losses(self, moe_outputs):
         """Computes load balancing, importance, and Z-loss across MoE scales."""
@@ -145,13 +154,13 @@ class SpatialMoELoss(nn.Module):
             
             # 3. Z-Loss (Optional)
             if self.lambda_z > 0:
-                l_z = torch.mean(torch.logsumexp(out.clean_logits, dim=1)**2)
+                l_z = torch.mean(torch.logsumexp(out.clean_logits, dim=1).square())
                 total_z = total_z + l_z
                 
         num_scales = len(moe_outputs)
         return total_lb / num_scales, total_imp / num_scales, total_z / num_scales
 
-    def forward(self, saliency_logits, edge_logits, moe_outputs, target, gt_boundary=None, aux_logits_16=None, aux_logits_8=None, aux_logits_4=None):
+    def forward(self, saliency_logits, edge_logits, moe_outputs, target, gt_boundary=None, aux_logits_16=None, aux_logits_8=None, aux_logits_4=None, pad_mask=None):
         """
         Computes the complete loss.
         """
@@ -162,14 +171,24 @@ class SpatialMoELoss(nn.Module):
         P = torch.sigmoid(saliency_logits)
         
         # 1. Primary Saliency Losses
-        l_bce = self.bce_loss(saliency_logits, target)
-        l_iou = self._soft_iou_loss(P, target)
-        l_ssim = 1.0 - self.ssim_loss(P, target)
+        bce_map = self.bce_loss(saliency_logits, target)
+        if pad_mask is not None:
+            l_bce = (bce_map * pad_mask).sum() / pad_mask.sum().clamp(min=1.0)
+        else:
+            l_bce = bce_map.mean()
+            
+        l_iou = self._soft_iou_loss(P, target, mask=pad_mask)
+        
+        if pad_mask is not None:
+            ssim_map = self.ssim_loss(P, target)
+            l_ssim = 1.0 - (ssim_map * pad_mask).sum() / pad_mask.sum().clamp(min=1.0)
+        else:
+            l_ssim = 1.0 - self.ssim_loss(P, target).mean()
         
         # 2. Direct Boundary Loss
         l_boundary = torch.tensor(0.0, device=saliency_logits.device)
         if gt_boundary is not None and self.lambda_boundary > 0:
-            l_boundary = self._boundary_loss(P, gt_boundary)
+            l_boundary = self._boundary_loss(P, gt_boundary, mask=pad_mask)
             
         # 3. Router Losses
         l_lb, l_imp, l_z = self._moe_losses(moe_outputs)
@@ -177,7 +196,11 @@ class SpatialMoELoss(nn.Module):
         # 4. Auxiliary Boundary Loss
         l_aux_boundary = torch.tensor(0.0, device=saliency_logits.device)
         if gt_boundary is not None and self.lambda_aux_boundary > 0:
-            l_aux_boundary = self.bce_loss(edge_logits, gt_boundary)
+            aux_bce_map = self.bce_loss(edge_logits, gt_boundary)
+            if pad_mask is not None:
+                l_aux_boundary = (aux_bce_map * pad_mask).sum() / pad_mask.sum().clamp(min=1.0)
+            else:
+                l_aux_boundary = aux_bce_map.mean()
             
         # 5. Deep Supervision Loss
         l_deep_supervision = torch.tensor(0.0, device=saliency_logits.device)
@@ -187,9 +210,22 @@ class SpatialMoELoss(nn.Module):
             target_8 = F.interpolate(target, size=aux_logits_8.shape[2:], mode='nearest')
             target_4 = F.interpolate(target, size=aux_logits_4.shape[2:], mode='nearest')
             
-            l_ds_16 = self.bce_loss(aux_logits_16, target_16)
-            l_ds_8 = self.bce_loss(aux_logits_8, target_8)
-            l_ds_4 = self.bce_loss(aux_logits_4, target_4)
+            if pad_mask is not None:
+                mask_16 = F.interpolate(pad_mask, size=aux_logits_16.shape[2:], mode='nearest')
+                mask_8 = F.interpolate(pad_mask, size=aux_logits_8.shape[2:], mode='nearest')
+                mask_4 = F.interpolate(pad_mask, size=aux_logits_4.shape[2:], mode='nearest')
+                
+                ds_map_16 = self.bce_loss(aux_logits_16, target_16)
+                ds_map_8 = self.bce_loss(aux_logits_8, target_8)
+                ds_map_4 = self.bce_loss(aux_logits_4, target_4)
+                
+                l_ds_16 = (ds_map_16 * mask_16).sum() / mask_16.sum().clamp(min=1.0)
+                l_ds_8 = (ds_map_8 * mask_8).sum() / mask_8.sum().clamp(min=1.0)
+                l_ds_4 = (ds_map_4 * mask_4).sum() / mask_4.sum().clamp(min=1.0)
+            else:
+                l_ds_16 = self.bce_loss(aux_logits_16, target_16).mean()
+                l_ds_8 = self.bce_loss(aux_logits_8, target_8).mean()
+                l_ds_4 = self.bce_loss(aux_logits_4, target_4).mean()
             
             # Average across the 3 scales
             l_deep_supervision = (l_ds_16 + l_ds_8 + l_ds_4) / 3.0

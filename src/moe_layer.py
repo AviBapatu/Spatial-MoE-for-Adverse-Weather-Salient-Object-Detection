@@ -10,6 +10,7 @@ class MoEOutput(NamedTuple):
     topk_gates: torch.Tensor
     entropy: torch.Tensor
     clean_logits: torch.Tensor
+    noise_std: torch.Tensor = None
 
 class TokenWiseMLPExpert(nn.Module):
     """
@@ -90,7 +91,8 @@ class SpatialMoELayer(nn.Module):
                 topk_indices=topk_indices,
                 topk_gates=topk_gates,
                 entropy=entropy_map,
-                clean_logits=clean_logits_spatial
+                clean_logits=clean_logits_spatial,
+                noise_std=None
             )
         
         # --- Routing Input ---
@@ -111,6 +113,8 @@ class SpatialMoELayer(nn.Module):
             noisy_logits = clean_logits + noise
         else:
             noisy_logits = clean_logits
+            noise_std = None
+            
             
         topk_values, topk_indices = torch.topk(noisy_logits, k=self.k, dim=-1) # [B, H*W, K]
         topk_gates = F.softmax(topk_values, dim=-1) # [B, H*W, K]
@@ -127,9 +131,6 @@ class SpatialMoELayer(nn.Module):
             active_mask = (flat_topk_indices == i) # [B*N_tokens, K]
             token_active = active_mask.any(dim=-1) # [B*N_tokens] boolean
             
-            if not token_active.any():
-                continue
-                
             selected_tokens = flat_x[token_active] # [N_active, C]
             
             # Execute expert
@@ -165,7 +166,8 @@ class SpatialMoELayer(nn.Module):
             topk_indices=topk_indices,
             topk_gates=topk_gates,
             entropy=entropy_map,
-            clean_logits=clean_logits_spatial
+            clean_logits=clean_logits_spatial,
+            noise_std=noise_std
         )
 
 if __name__ == '__main__':
