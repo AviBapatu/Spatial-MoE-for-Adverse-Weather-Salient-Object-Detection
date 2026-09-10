@@ -50,3 +50,9 @@ evaluation/**
 # but keep the important qualitative_grid.png and JSON/TXT metrics
 evaluation_results/best/**/*.png
 evaluation_results/force_expert_out/**/*.png
+
+# Additional local output dirs
+evaluation_results/
+checkpoints/
+preflight/
+scratch_*.py
