@@ -163,7 +163,7 @@ def main():
         if not os.path.exists(DATA_DIR):
             raise FileNotFoundError(f"DATA_ROOT could not be resolved: {DATA_DIR}")
             
-        if world_size < 2 and not args.dry_run:
+        if world_size < 2 and not (args.dry_run or args.preflight):
             raise RuntimeError(f"Requested production configuration requires >=2 GPUs. Found {world_size}.")
             
         # Set up Experiment Run (Directory, Git ID, Hash, Registry)
@@ -399,7 +399,7 @@ def main():
             start_batch = 0 # reset
             
             if rank == 0:
-                print(f"--- Starting Epoch {epoch+1}/{config.train.epochs} [Train] ---", flush=True)
+                if rank == 0: print(f"--- Starting Epoch {epoch+1}/{config.train.epochs} [Train] ---", flush=True)
             engine.optimizer.zero_grad()
             
             while True:
@@ -412,8 +412,10 @@ def main():
                     images = batch['image'].to(device, non_blocking=True)
                     masks = batch['mask'].to(device, non_blocking=True)
                     edges = batch['edge_map'].to(device, non_blocking=True)
+                    pad_masks = batch['pad_mask'].to(device, non_blocking=True)
                     
                     is_final_microstep = (batch_idx + 1) % config.opt.grad_accum_steps == 0 or (batch_idx + 1) == len(train_loader)
+                    overflow = False
                     
                     # Context manager for no_sync
                     from contextlib import nullcontext
@@ -430,7 +432,8 @@ def main():
                                 gt_boundary=edges,
                                 aux_logits_16=out.aux_logits_16,
                                 aux_logits_8=out.aux_logits_8,
-                                aux_logits_4=out.aux_logits_4
+                                aux_logits_4=out.aux_logits_4,
+                                pad_mask=pad_masks
                             )
                             loss = loss_dict['L_total'] / config.opt.grad_accum_steps
 
@@ -441,7 +444,7 @@ def main():
                         engine.optimizer.zero_grad()
                         
                         if rank == 0 and overflow:
-                            print(f"[Epoch {epoch+1} Batch {batch_idx+1}] AMP Overflow Detected! Skipping optimizer step.")
+                            if rank == 0: print(f"[Epoch {epoch+1} Batch {batch_idx+1}] AMP Overflow Detected! Skipping optimizer step.")
                         
                         if engine.global_step > 0 and engine.global_step % config.train.checkpoint_every_n_steps == 0:
                             dist.barrier()
@@ -473,7 +476,7 @@ def main():
                                         shutil.copy2(final_path, backup_path)
                                         
                                     os.replace(tmp_path, final_path)
-                                    print(f"[Epoch {epoch+1} Batch {batch_idx+1}] Checkpoint correctly promoted.", flush=True)
+                                    if rank == 0: print(f"[Epoch {epoch+1} Batch {batch_idx+1}] Checkpoint correctly promoted.", flush=True)
                                     
                                     # Write checkpoint manifest
                                     manifest = {
@@ -510,8 +513,16 @@ def main():
                         break
 
                     if rank == 0:
-                        if (batch_idx + 1) % 50 == 0 or (batch_idx + 1) == len(train_loader):
-                            print(f"[Train] Epoch {epoch+1} | Batch {batch_idx+1}/{len(train_loader)} | Loss: {loss.item()*config.opt.grad_accum_steps:.4f} | Step: {engine.global_step}", flush=True)
+                        if args.preflight:
+                            if is_final_microstep:
+                                if rank == 0: 
+                                    print(f"[Preflight] Step {engine.global_step} | L_total: {loss_dict['L_total'].item():.4f} | L_bce: {loss_dict['L_bce'].item():.4f} | L_iou: {loss_dict['L_iou'].item():.4f} | L_ssim: {loss_dict['L_ssim'].item():.4f} | L_boundary: {loss_dict['L_boundary'].item():.4f} | L_aux_boundary: {loss_dict['L_aux_boundary'].item():.4f} | L_deep_supervision: {loss_dict['L_deep_supervision'].item():.4f} | L_lb: {loss_dict['L_lb'].item():.4f} | L_importance: {loss_dict['L_importance'].item():.4f} | overflow: {overflow} | pad_valid_frac: {pad_masks.mean().item():.4f}", flush=True)
+                                    if moe_outputs and moe_outputs[0].noise_std is not None:
+                                        noise = moe_outputs[0].noise_std
+                                        print(f"            [Noise_std] scale=4 | mean: {noise.mean().item():.6f} | min: {noise.min().item():.6f} | max: {noise.max().item():.6f}")
+                        else:
+                            if (batch_idx + 1) % 50 == 0 or (batch_idx + 1) == len(train_loader):
+                                if rank == 0: print(f"[Train] Epoch {epoch+1} | Batch {batch_idx+1}/{len(train_loader)} | Loss: {loss.item()*config.opt.grad_accum_steps:.4f} | Step: {engine.global_step}", flush=True)
                         
                     batch_idx += 1
                 
@@ -533,10 +544,10 @@ def main():
                 
                 sod_metrics = SODMetrics()
                 with torch.no_grad():
-                    print(f"--- Starting Epoch {epoch+1}/{config.train.epochs} [Val] ---", flush=True)
+                    if rank == 0: print(f"--- Starting Epoch {epoch+1}/{config.train.epochs} [Val] ---", flush=True)
                     for v_idx, v_batch in enumerate(val_loader):
                         if (v_idx + 1) % 50 == 0 or (v_idx + 1) == len(val_loader):
-                            print(f"[Val] Epoch {epoch+1} | Batch {v_idx+1}/{len(val_loader)}", flush=True)
+                            if rank == 0: print(f"[Val] Epoch {epoch+1} | Batch {v_idx+1}/{len(val_loader)}", flush=True)
                         v_images = v_batch['image'].to(device)
                         with autocast(device_type='cuda', dtype=torch.float16):
                             out, _ = model(v_images)
@@ -556,10 +567,9 @@ def main():
                             sod_metrics.step(p_orig, orig_mask)
                             
                     # Diagnostics
-                    # SKIPPING DIAGNOSTICS AS REQUESTED
-                    if False and config.diag.routing_diagnostic_epochs > 0 and (epoch + 1) % config.diag.routing_diagnostic_epochs == 0:
+                    if (epoch + 1) % 3 == 1:
                         from src.diagnostics import MoEDiagnosticsEngine
-                        print(f"Running MoE Diagnostics for Epoch {epoch+1}...")
+                        if rank == 0: print(f"Running MoE Diagnostics for Epoch {epoch+1}...")
                         diag_engine = MoEDiagnosticsEngine(
                             os.path.join(checkpoint_dir, "diagnostics"), 
                             num_experts=config.model.num_experts, 
@@ -569,10 +579,10 @@ def main():
                         # Save RNG state before diagnostic random sampling
                         rng_pre_diag = get_rng_states(device)
                         
-                        print(f"--- Starting Diagnostics Epoch {epoch+1} ---", flush=True)
+                        if rank == 0: print(f"--- Starting Diagnostics Epoch {epoch+1} ---", flush=True)
                         for d_idx, v_batch in enumerate(val_loader):
                             if (d_idx + 1) % 50 == 0 or (d_idx + 1) == len(val_loader):
-                                print(f"[Diagnostics] Batch {d_idx+1}/{len(val_loader)}", flush=True)
+                                if rank == 0: print(f"[Diagnostics] Batch {d_idx+1}/{len(val_loader)}", flush=True)
                             v_images = v_batch['image'].to(device)
                             with autocast(device_type='cuda', dtype=torch.float16):
                                 out, moe_outputs = model(v_images)
@@ -580,11 +590,22 @@ def main():
                             
                         stats = diag_engine.finalize(epoch+1)
                         set_rng_states(rng_pre_diag, device)
-                        print("Diagnostics completed safely. Check 'diagnostics' folder.")
+                        if rank == 0: 
+                            print("Diagnostics completed safely. Check 'diagnostics' folder.")
+                            if hf_pusher is not None:
+                                diag_base = os.path.join(checkpoint_dir, f"diagnostics_ep{epoch+1}")
+                                diag_zip = diag_base + ".zip"
+                                shutil.make_archive(diag_base, 'zip', os.path.join(checkpoint_dir, "diagnostics"))
+                                print(f"Uploading {diag_zip} to Hugging Face...")
+                                hf_pusher.enqueue_checkpoint(
+                                    diag_zip, 
+                                    name=f"diagnostics_ep{epoch+1}.zip", 
+                                    extra_meta={"epoch": epoch + 1, "type": "diagnostics"}
+                                )
                         
                 results = sod_metrics.get_results()
                 val_mae = results.get('MAE', float('inf'))
-                print(f"\nEpoch {epoch+1} | Val MAE: {val_mae:.4f} | F-beta: {results.get('F_max', 0):.4f}", flush=True)
+                if rank == 0: print(f"\nEpoch {epoch+1} | Val MAE: {val_mae:.4f} | F-beta: {results.get('F_max', 0):.4f}", flush=True)
 
                 if val_mae < best_mae:
                     best_mae = val_mae
@@ -610,7 +631,7 @@ def main():
                         torch.save(state, tmp_path)
                         _ = torch.load(tmp_path, map_location='cpu', weights_only=False)
                         os.replace(tmp_path, final_path)
-                        print(f"  -> New best model saved to {final_path}!", flush=True)
+                        if rank == 0: print(f"  -> New best model saved to {final_path}!", flush=True)
 
                         if hf_pusher is not None:
                             hf_pusher.enqueue_checkpoint(
