@@ -5,6 +5,8 @@ from contextlib import nullcontext
 from src.model import SpatialMoESODNet
 from src.optimization import get_parameter_groups, freeze_backbone, unfreeze_backbone, WarmupCosineScheduler, OptimizationEngine
 
+pytestmark = pytest.mark.gpu
+
 def test_b4_construction_and_pretrained():
     model = SpatialMoESODNet(dim=256)
     
