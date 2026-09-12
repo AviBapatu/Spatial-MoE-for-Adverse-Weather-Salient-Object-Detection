@@ -56,3 +56,7 @@ evaluation_results/
 checkpoints/
 preflight/
 scratch_*.py
+
+# Temp directories
+.hf_sync_tmp/
+test_outputs/
