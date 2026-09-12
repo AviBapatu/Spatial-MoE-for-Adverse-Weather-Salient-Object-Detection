@@ -1,113 +1,192 @@
 import os
+
 import cv2
 import numpy as np
-import torch
-import matplotlib.pyplot as plt
-from src.dataset import get_dataloaders, get_scene_id
+import pytest
+import albumentations as A
+from torch.utils.data.distributed import DistributedSampler
 
-def test_dataset_pipeline():
-    print("Running Dataset Preflight Validations...")
-    # Using small batch size for quick checks
-    try:
-        train_loader, val_loader, test_synth_loader, test_real_loader = get_dataloaders(
-            root_dir="data/WXSOD",
-            image_size=384,
-            batch_size=4,
-            num_workers=0,
-            max_samples=20 # limit samples for faster test
-        )
-    except Exception as e:
-        print(f"Failed to load dataloaders: {e}")
-        return
+from src.dataset import (
+    WXSODDataset,
+    build_transforms,
+    get_dataloaders,
+    get_scene_id,
+    get_weather_type,
+    scene_group_split,
+)
 
-    train_ds = train_loader.dataset
-    val_ds = val_loader.dataset
-    
-    # 1. Train/Val Scene Disjoint Check (Hard failure)
-    train_scenes = set([get_scene_id(s[2]) for s in train_ds.samples])
-    val_scenes = set([get_scene_id(s[2]) for s in val_ds.samples])
-    
-    assert train_scenes.isdisjoint(val_scenes), "Train and Val scenes are NOT disjoint!"
-    print("✅ Train/Val scenes are purely disjoint.")
-    
-    # 2. Check geometry and values for a few samples
-    samples_to_visualize = []
-    
-    for i in range(min(8, len(val_ds))):
-        data = val_ds[i]
-        img = data['image']
-        mask = data['mask']
-        edge = data['edge_map']
-        meta = data['meta']
-        gt_path = meta['gt_path']
-        
-        # Check shapes
-        assert img.shape == (3, 384, 384)
-        assert mask.shape == (1, 384, 384)
-        assert edge.shape == (1, 384, 384)
-        
-        # Check values
-        assert 0.0 <= mask.min() and mask.max() <= 1.0, f"Mask not in [0,1]: {mask.min()} to {mask.max()}"
-        unique_edge_vals = torch.unique(edge)
-        assert len(unique_edge_vals) <= 2, f"Edge is not binary! Unique vals: {unique_edge_vals}"
-        
-        # Round trip test: crop and resize back to original
-        p = mask[0].numpy()
-        p_cropped = p[meta['pad_top']:meta['pad_top']+meta['resized_h'], 
-                      meta['pad_left']:meta['pad_left']+meta['resized_w']]
-        p_orig = cv2.resize(p_cropped, (meta['orig_w'], meta['orig_h']), interpolation=cv2.INTER_NEAREST)
-        
-        # Original GT mask shape should match
-        orig_mask = cv2.imread(gt_path, cv2.IMREAD_GRAYSCALE)
-        assert p_orig.shape == orig_mask.shape, f"Restored mask shape {p_orig.shape} != original mask shape {orig_mask.shape}"
-        
-        # Ensure padding is 0 for mask and edge
-        pad_t, pad_b, pad_l, pad_r = meta['pad_top'], meta['pad_bottom'], meta['pad_left'], meta['pad_right']
-        if pad_t > 0:
-            assert p[:pad_t, :].sum() == 0, "Top padding of mask is not 0"
-        if pad_b > 0:
-            assert p[384-pad_b:, :].sum() == 0, "Bottom padding of mask is not 0"
-        
-        # Store for visualization
-        img_np = img.permute(1, 2, 0).numpy()
-        # Denormalize
-        mean = np.array([0.485, 0.456, 0.406])
-        std = np.array([0.229, 0.224, 0.225])
-        img_np = std * img_np + mean
-        img_np = np.clip(img_np, 0, 1)
-        
-        samples_to_visualize.append({
-            'img': img_np,
-            'mask': mask[0].numpy(),
-            'edge': edge[0].numpy(),
-            'name': data['name']
-        })
-        
-    print("✅ Geometry preservation and un-pad round trip successful.")
-    print("✅ Mask and boundary values validated.")
-    
-    # Dump visualizations
-    os.makedirs("test_outputs", exist_ok=True)
-    fig, axes = plt.subplots(len(samples_to_visualize), 3, figsize=(10, 4*len(samples_to_visualize)))
-    if len(samples_to_visualize) == 1:
-        axes = [axes]
-        
-    for i, s in enumerate(samples_to_visualize):
-        axes[i][0].imshow(s['img'])
-        axes[i][0].set_title(f"Image: {s['name']}")
-        axes[i][0].axis('off')
-        
-        axes[i][1].imshow(s['mask'], cmap='gray')
-        axes[i][1].set_title("Mask")
-        axes[i][1].axis('off')
-        
-        axes[i][2].imshow(s['edge'], cmap='gray')
-        axes[i][2].set_title("Boundary")
-        axes[i][2].axis('off')
-        
-    plt.tight_layout()
-    plt.savefig("test_outputs/dataset_validation.png")
-    print("✅ Saved visualization to test_outputs/dataset_validation.png")
-    
-if __name__ == "__main__":
-    test_dataset_pipeline()
+
+def _write_pair(img_dir, gt_dir, stem, h=32, w=24):
+    img_dir.mkdir(parents=True, exist_ok=True)
+    gt_dir.mkdir(parents=True, exist_ok=True)
+    rng = np.random.default_rng(abs(hash(stem)) % (2**32))
+    img = (rng.random((h, w, 3)) * 255).astype(np.uint8)
+    gt = np.zeros((h, w), dtype=np.uint8)
+    gt[h // 4 : 3 * h // 4, w // 4 : 3 * w // 4] = 255
+
+    cv2.imwrite(str(img_dir / f"{stem}.jpg"), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+    cv2.imwrite(str(gt_dir / f"{stem}.jpg"), gt)
+
+
+@pytest.fixture
+def synth_wxsod(tmp_path):
+    root = tmp_path / "wxsod_synth"
+    weathers = ["fog", "rain", "snow"]
+
+    # train_sys: 6 scenes x 3 weathers (every scene has every weather).
+    for i in range(6):
+        for w in weathers:
+            _write_pair(
+                root / "train_sys" / "input",
+                root / "train_sys" / "gt",
+                f"{i:04d}_{w}",
+                h=24 + i,
+                w=32,
+            )
+
+    # test_sys / test_real: a couple of pairs with varied aspect ratios.
+    for split in ["test_sys", "test_real"]:
+        _write_pair(root / split / "input", root / split / "gt", f"0099_{weathers[0]}", h=40, w=16)
+        _write_pair(root / split / "input", root / split / "gt", f"0099_{weathers[1]}", h=16, w=40)
+
+    return root
+
+
+def test_build_transforms_composition():
+    train_t = build_transforms("train", 384)
+    assert any(isinstance(t, A.HorizontalFlip) for t in train_t.transforms)
+    assert any(isinstance(t, A.ColorJitter) for t in train_t.transforms)
+
+    val_t = build_transforms("val", 384)
+    assert len(val_t.transforms) == 1
+    assert isinstance(val_t.transforms[0], A.Normalize)
+
+
+def test_build_transforms_normalizes():
+    pipe = build_transforms("val", 384)
+    img = np.full((16, 16, 3), 128, dtype=np.uint8)
+    gt = (np.random.default_rng(0).random((16, 16)) > 0.5).astype(np.uint8)
+    res = pipe(image=img, masks=[gt, np.ones_like(gt)])
+
+    out = res["image"]
+    assert out.dtype != np.uint8
+    assert out.shape == (16, 16, 3)
+    # Normalized: the constant 128/255 input must differ from the raw range.
+    assert np.abs(out - 0.5).max() > 0.1
+    assert res["masks"][0].shape == (16, 16)
+
+
+def test_scene_id_and_weather_extraction():
+    assert get_scene_id("0001_fog") == "0001"
+    assert get_scene_id("0002_rainafog") == "0002"
+    assert get_weather_type("0001_rainafog") == "rainafog"
+    with pytest.raises(ValueError):
+        get_scene_id("plain")
+
+
+def test_scene_group_split_disjoint_and_coverage():
+    samples = [
+        (f"{i:04d}_{w}.jpg", f"{i:04d}_{w}.png", f"{i:04d}_{w}")
+        for i in range(6)
+        for w in ("fog", "rain", "snow")
+    ]
+
+    train, val = scene_group_split(samples)
+
+    assert len(train) + len(val) == len(samples)
+    assert 0 < len(val) < len(train)  # a minority of the 6 scenes, all grouped
+
+    train_scenes = {get_scene_id(s[2]) for s in train}
+    val_scenes = {get_scene_id(s[2]) for s in val}
+    assert train_scenes.isdisjoint(val_scenes)
+
+    train_weather = {get_weather_type(s[2]) for s in train}
+    val_weather = {get_weather_type(s[2]) for s in val}
+    assert train_weather == {"fog", "rain", "snow"}
+    assert val_weather == {"fog", "rain", "snow"}
+
+
+def test_scene_group_split_rejects_unparsable_stems():
+    bad = [("a.jpg", "a.png", "no_underscore")]
+    with pytest.raises(ValueError):
+        scene_group_split(bad)
+
+
+def test_wxsod_dataset_item(tmp_path):
+    root = tmp_path / "one"
+    _write_pair(root / "test_sys" / "input", root / "test_sys" / "gt", "0007_light", h=24, w=32)
+
+    ds = WXSODDataset(root_dir=str(root), split="test_sys", image_size=16)
+    assert len(ds) == 1
+    assert ds[0]["name"] == "0007_light"
+
+    item = ds[0]
+    img, mask, edge, pad = item["image"], item["mask"], item["edge_map"], item["pad_mask"]
+    assert img.shape == (3, 16, 16)
+    assert mask.shape == (1, 16, 16)
+    assert edge.shape == (1, 16, 16)
+    assert pad.shape == (1, 16, 16)
+
+    assert 0.0 <= mask.min() and mask.max() <= 1.0
+    assert len(torch_unique(edge)) <= 2  # binary boundary map
+    # Padding regions are zero in mask and pad_mask; the 12x16 content is 1.
+    assert mask[0, :2, :].sum() == 0
+    assert pad[0, :2, :].sum() == 0
+    assert pad[0, 2:14, :].sum() == 12 * 16
+
+
+def torch_unique(t):
+    return t.unique()
+
+
+def test_wxsod_dataset_rejects_unpaired_gt(tmp_path):
+    root = tmp_path / "broken"
+    in_dir = root / "train_sys" / "input"
+    gt_dir = root / "train_sys" / "gt"
+    in_dir.mkdir(parents=True)
+    gt_dir.mkdir(parents=True)
+    _write_pair(in_dir, gt_dir, "0001_fog")
+    # An extra input image with no GT -> the 1:1 mapping check must fail.
+    _write_pair(in_dir, gt_dir, "0001_rain")
+    os.remove(gt_dir / "0001_rain.jpg")
+
+    with pytest.raises(RuntimeError):
+        WXSODDataset(root_dir=str(root), split="train", image_size=16)
+
+
+def test_get_dataloaders_synthetic_samplers_and_splits(synth_wxsod):
+    train_loader, val_loader, synth_loader, real_loader = get_dataloaders(
+        root_dir=str(synth_wxsod),
+        image_size=32,
+        batch_size=4,
+        num_workers=0,
+        distributed=True,
+        rank=0,
+        world_size=2,
+    )
+
+    for loader in [train_loader, val_loader, synth_loader, real_loader]:
+        assert isinstance(loader.sampler, DistributedSampler)
+
+    train_ds, val_ds = train_loader.dataset, val_loader.dataset
+    train_scenes = {get_scene_id(s[2]) for s in train_ds.samples}
+    val_scenes = {get_scene_id(s[2]) for s in val_ds.samples}
+    assert train_scenes.isdisjoint(val_scenes)
+
+    # A full batch from each loader can be produced.
+    for loader in [train_loader, val_loader, synth_loader, real_loader]:
+        batch = next(iter(loader))
+        assert batch["image"].shape[1:] == (3, 32, 32)
+        assert batch["mask"].shape[1:] == (1, 32, 32)
+
+
+def test_get_dataloaders_non_distributed_has_no_samplers(synth_wxsod):
+    train_loader, val_loader, synth_loader, real_loader = get_dataloaders(
+        root_dir=str(synth_wxsod),
+        image_size=32,
+        batch_size=4,
+        num_workers=0,
+        distributed=False,
+    )
+    for loader in [train_loader, val_loader, synth_loader, real_loader]:
+        assert not isinstance(loader.sampler, DistributedSampler)
