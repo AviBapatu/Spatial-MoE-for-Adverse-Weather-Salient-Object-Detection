@@ -1,16 +1,20 @@
 import os
-import torch
-import torch.nn as nn
-import torch.distributed as dist
+import random
 import copy
+
+import numpy as np
+import pytest
+import torch
+import torch.distributed as dist
+import torch.nn as nn
+from torch.amp import autocast
 from src.model import SpatialMoESODNet
 from src.loss import SpatialMoELoss
 from src.optimization import OptimizationEngine, get_parameter_groups, WarmupCosineScheduler
-from torch.amp import autocast
 from torch.utils.data import DataLoader, TensorDataset
 from torch.utils.data.distributed import DistributedSampler
-import random
-import numpy as np
+
+pytestmark = pytest.mark.gpu
 
 def run_ddp_tests(args):
     """
