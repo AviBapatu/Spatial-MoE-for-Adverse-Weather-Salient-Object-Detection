@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+      - run: uv run ruff check src/
+
+  # Runs on CPU-only hosted runners. Tests marked `gpu` (see tests/conftest.py)
+  # are skipped when CUDA is unavailable, so this job stays green on GitHub and
+  # the full GPU suite runs locally via ./scripts/smoke_test.sh.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+      - run: uv run pytest tests/ -v
+
+  # Runs lint + tests + the training preflight. On CPU runners the preflight is
+  # skipped automatically; run it on a GPU machine to exercise the full path.
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+      - run: chmod +x scripts/smoke_test.sh && ./scripts/smoke_test.sh
