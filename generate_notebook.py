@@ -22,8 +22,8 @@ def create_notebook():
             "source": [line + "\n" for line in text.split("\n")]
         })
 
-    # CELL 00: HF Sync (Manual Trigger)
-    add_markdown("## 00_hf_sync")
+    # CELL 00: 00_hf_sync
+    add_markdown("""## 00_hf_sync""")
     add_code("""# uncomment and run this if you want to manually push your latest checkpoints to Hugging Face
 # import os
 # import sys
@@ -58,8 +58,8 @@ def create_notebook():
 # print("Done!")
 """)
 
-    # CELL 01: Config
-    add_markdown("## 01_config")
+    # CELL 02: 01_config
+    add_markdown("""## 01_config""")
     add_code("""import os
 import json
 import shutil
@@ -69,6 +69,7 @@ import hashlib
 # RUN_MODE strictly governs the allowed execution path.
 # Allowed: "VALIDATE", "TRAIN", "RESUME", "EVALUATE"
 RUN_MODE = "TRAIN"
+ACTIVE_CONFIG_PATH = "experiments/v4_noise_floor.json"
 
 DATA_SOURCE = "GOOGLE_DRIVE"
 DATA_FILE_ID = "1SSELvRYI-cwd9mzA8dWLbv4o1IffjkoW"
@@ -191,14 +192,14 @@ if CHECKPOINT_AVAILABLE:
     if RUN_MODE == "TRAIN":
         print("⚠️  WARNING: Checkpoint(s) found on HF but RUN_MODE is TRAIN — NOT switching to RESUME.")
         print("   Old checkpoints have been downloaded locally but will NOT be loaded.")
-        print("   Training will start from scratch with v3_router_fix.json.")
+        print(f"   Training will start from scratch with {ACTIVE_CONFIG_PATH}.")
         print("   If you want to resume instead, manually set RUN_MODE = 'RESUME' at the top of this cell.")
 else:
     print("No checkpoint found on HF — training from scratch.")
 """)
 
-    # CELL 02: Environment
-    add_markdown("## 02_environment")
+    # CELL 04: 02_environment
+    add_markdown("""## 02_environment""")
     add_code("""import torch
 import os
 import shutil
@@ -227,8 +228,8 @@ else:
     mark_gate("ENV_CHECK", "PASS")
 """)
 
-    # CELL 03: Dataset Acquire
-    add_markdown("## 03_dataset_acquire")
+    # CELL 06: 03_dataset_acquire
+    add_markdown("""## 03_dataset_acquire""")
     add_code("""import subprocess
 
 def is_dataset_valid(path):
@@ -263,8 +264,8 @@ else:
     print("Dataset successfully extracted and validated at:", valid_root)
 """)
 
-    # CELL 04: Dataset Validate
-    add_markdown("## 04_dataset_validate")
+    # CELL 08: 04_dataset_validate
+    add_markdown("""## 04_dataset_validate""")
     add_code("""import glob
 
 def check_stems(split_path):
@@ -310,8 +311,8 @@ else:
     raise RuntimeError("Dataset integrity check failed.")
 """)
 
-    # CELL 05: Project Deploy
-    add_markdown("## 05_project_deploy")
+    # CELL 10: 05_project_deploy
+    add_markdown("""## 05_project_deploy""")
     add_code("""import sys
 import json
 import hashlib
@@ -359,8 +360,8 @@ sys.path.insert(0, PROJECT_ROOT)
 mark_gate("PROJECT_CHECK", "PASS")
 """)
 
-    # CELL 06: Dependencies
-    add_markdown("## 06_dependencies")
+    # CELL 12: 06_dependencies
+    add_markdown("""## 06_dependencies""")
     add_code("""import importlib
 import subprocess
 deps = {
@@ -396,8 +397,8 @@ else:
     raise RuntimeError("Failed to resolve dependencies.")
 """)
 
-    # CELL 07: Pretrained B4
-    add_markdown("## 07_pretrained_b4")
+    # CELL 14: 07_pretrained_b4
+    add_markdown("""## 07_pretrained_b4""")
     add_code("""if RUN_MODE in ["VALIDATE", "TRAIN"]:
     from src.backbone import MultiScaleBackbone
     try:
@@ -421,8 +422,8 @@ else:
         raise RuntimeError(f"PVT Instantiation failed: {e}")
 """)
 
-    # CELL 08: Static Checks
-    add_markdown("## 08_static_checks")
+    # CELL 16: 08_static_checks
+    add_markdown("""## 08_static_checks""")
     add_code("""if RUN_MODE in ["VALIDATE", "TRAIN"]:
     try:
         import src.model
@@ -434,8 +435,8 @@ else:
         raise e
 """)
 
-    # CELL 09: Data Transform
-    add_markdown("## 09_data_transform")
+    # CELL 18: 09_data_transform
+    add_markdown("""## 09_data_transform""")
     add_code("""if RUN_MODE in ["VALIDATE", "TRAIN"]:
     from src.dataset import WXSODDataset
     try:
@@ -474,8 +475,8 @@ else:
         raise e
 """)
 
-    # CELL 10: Model Shapes
-    add_markdown("## 10_model_shapes")
+    # CELL 20: 10_model_shapes
+    add_markdown("""## 10_model_shapes""")
     add_code("""if RUN_MODE in ["VALIDATE", "TRAIN"]:
     from src.model import SpatialMoESODNet
     try:
@@ -501,23 +502,35 @@ else:
         raise e
 """)
 
-    # CELL 11: MoE Loss (stub — evaluated via smoke tests)
-    add_markdown("## 11_moe_loss")
-    add_code("""# Evaluated internally via smoke tests. Setting pseudo-gate to be fulfilled later.
-print("Deferring MoE loss assertions to smoke test validation (CELL 14).")
-""")
-
-    # CELL 12: Optimization (stub — evaluated via smoke tests)
-    add_markdown("## 12_optimization")
-    add_code("""# Evaluated internally via smoke tests.
-print("Deferring optimization assertions to smoke test validation (CELL 14).")
-""")
-
-    # CELL 14: Smoke 2-GPU
-    add_markdown("## 14_smoke_2gpu")
+    # CELL 22: 13_empty_batch_check
+    add_markdown("""## 13_empty_batch_check""")
     add_code("""if RUN_MODE in ["VALIDATE", "TRAIN"]:
-    with open(os.path.join(PROJECT_ROOT, "experiments/v3_router_fix.json"), "r") as f:
+    print("Running Empty Batch Check...")
+    with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
         canonical_cfg = json.load(f)
+    from src.config import ExperimentConfig
+    canonical_cfg = ExperimentConfig.from_dict(canonical_cfg).to_dict()
+    from src.train_ddp import get_config_hash
+    CURRENT_CONFIG_HASH = get_config_hash(canonical_cfg, "model_config_hash")
+    CURRENT_RUN_ID = canonical_cfg.get("run_id") or "test_run_id"
+
+    res = subprocess.run(["torchrun", "--nproc_per_node=2", "-m", "src.smoke_test", "--mode", "empty_batch", "--data_root", valid_root, "--result_file", "test_empty_batch.json", "--run_id", CURRENT_RUN_ID, "--config_hash", CURRENT_CONFIG_HASH], cwd=PROJECT_ROOT)
+    with open(os.path.join(PROJECT_ROOT, "test_empty_batch.json"), "r") as f:
+        data = json.load(f)
+        if data.get("status") == "PASS":
+            mark_gate("EMPTY_BATCH_CHECK", "PASS")
+        else:
+            mark_gate("EMPTY_BATCH_CHECK", "FAIL")
+            raise RuntimeError(f"Empty Batch Check Failed: {data}")
+""")
+
+    # CELL 24: 14_smoke_2gpu
+    add_markdown("""## 14_smoke_2gpu""")
+    add_code("""if RUN_MODE in ["VALIDATE", "TRAIN"]:
+    with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
+        canonical_cfg = json.load(f)
+    from src.config import ExperimentConfig
+    canonical_cfg = ExperimentConfig.from_dict(canonical_cfg).to_dict()
     from src.train_ddp import get_config_hash
     CURRENT_CONFIG_HASH = get_config_hash(canonical_cfg, "model_config_hash")
     CURRENT_RUN_ID = canonical_cfg.get("run_id") or "test_run_id"
@@ -536,8 +549,8 @@ print("Deferring optimization assertions to smoke test validation (CELL 14).")
             raise RuntimeError(f"DDP Smoke Failed: {data}")
 """)
 
-    # CELL 15: Production Calibration
-    add_markdown("## 15_production_calibration")
+    # CELL 26: 15_production_calibration
+    add_markdown("""## 15_production_calibration""")
     add_code("""if RUN_MODE in ["VALIDATE", "TRAIN"]:
     print("Running 2-GPU Production Memory Calibration...")
     res = subprocess.run(["torchrun", "--nproc_per_node=2", "-m", "src.smoke_test", "--mode", "memory", "--data_root", valid_root, "--result_file", "test_mem.json", "--run_id", CURRENT_RUN_ID, "--config_hash", CURRENT_CONFIG_HASH], cwd=PROJECT_ROOT)
@@ -550,8 +563,8 @@ print("Deferring optimization assertions to smoke test validation (CELL 14).")
             raise RuntimeError(data.get("reason"))
 """)
 
-    # CELL 16: Checkpoint Test
-    add_markdown("## 16_checkpoint_test")
+    # CELL 28: 16_checkpoint_test
+    add_markdown("""## 16_checkpoint_test""")
     add_code("""if RUN_MODE in ["VALIDATE", "TRAIN"]:
     print("Running Checkpoint Write Test...")
     res = subprocess.run(["torchrun", "--nproc_per_node=2", "-m", "src.smoke_test", "--mode", "resume_a", "--data_root", valid_root, "--result_file", "test_ckpt.json", "--run_id", CURRENT_RUN_ID, "--config_hash", CURRENT_CONFIG_HASH], cwd=PROJECT_ROOT)
@@ -562,8 +575,8 @@ print("Deferring optimization assertions to smoke test validation (CELL 14).")
             mark_gate("CHECKPOINT_CHECK", "FAIL")
 """)
 
-    # CELL 17: Resume Test
-    add_markdown("## 17_resume_test")
+    # CELL 30: 17_resume_test
+    add_markdown("""## 17_resume_test""")
     add_code("""if RUN_MODE in ["VALIDATE", "TRAIN"]:
     print("Running Checkpoint Resume Test...")
     res = subprocess.run(["torchrun", "--nproc_per_node=2", "-m", "src.smoke_test", "--mode", "resume_b", "--data_root", valid_root, "--result_file", "test_res.json", "--run_id", CURRENT_RUN_ID, "--config_hash", CURRENT_CONFIG_HASH], cwd=PROJECT_ROOT)
@@ -574,11 +587,11 @@ print("Deferring optimization assertions to smoke test validation (CELL 14).")
             mark_gate("RESUME_CHECK", "FAIL")
 """)
 
-    # CELL 18: Final Gate
-    add_markdown("## 18_final_gate")
+    # CELL 32: 18_final_gate
+    add_markdown("""## 18_final_gate""")
     add_code("""if RUN_MODE == "TRAIN":
     print("Running Preflight Dry Run (2-5 steps)...")
-    with open(os.path.join(PROJECT_ROOT, "experiments/v3_router_fix.json"), "r") as f:
+    with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
         runtime_cfg = json.load(f)
         
     runtime_cfg["data"]["dataset_root"] = valid_root
@@ -601,8 +614,10 @@ print("Deferring optimization assertions to smoke test validation (CELL 14).")
     
     with open(os.path.join(PREFLIGHT_ROOT, "preflight_results.json"), "r") as f:
         pf_data = json.load(f)
-    with open(os.path.join(PROJECT_ROOT, "experiments/v3_router_fix.json"), "r") as f:
+    with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
         canonical_cfg = json.load(f)
+    from src.config import ExperimentConfig
+    canonical_cfg = ExperimentConfig.from_dict(canonical_cfg).to_dict()
     from src.train_ddp import get_config_hash
     canonical_hash = get_config_hash(canonical_cfg, "model_config_hash")
     
@@ -615,8 +630,10 @@ print("Deferring optimization assertions to smoke test validation (CELL 14).")
 FINAL_STATUS = "PASS"
 # Some gates are only for train/validate
 if RUN_MODE in ["VALIDATE", "TRAIN"]:
-    with open(os.path.join(PROJECT_ROOT, "experiments/v3_router_fix.json"), "r") as f:
+    with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
         canonical_cfg = json.load(f)
+    from src.config import ExperimentConfig
+    canonical_cfg = ExperimentConfig.from_dict(canonical_cfg).to_dict()
     from src.train_ddp import get_config_hash
     CURRENT_CONFIG_HASH = get_config_hash(canonical_cfg, "model_config_hash")
     CURRENT_RUN_ID = canonical_cfg.get("run_id") or "test_run_id"
@@ -624,7 +641,7 @@ if RUN_MODE in ["VALIDATE", "TRAIN"]:
     # 9. Current-run evidence validation
     import time
     required_files = [
-        "test_2gpu.json", "test_mem.json", "test_ckpt.json", "test_res.json"
+        "test_empty_batch.json", "test_2gpu.json", "test_mem.json", "test_ckpt.json", "test_res.json"
     ]
     for filename in required_files:
         fpath = os.path.join(PROJECT_ROOT, filename)
@@ -669,13 +686,13 @@ if RUN_MODE in ["VALIDATE", "TRAIN"]:
             "ENV_CHECK", "GPU_CHECK", "DATA_CHECK", "PROJECT_CHECK", "DEPENDENCY_CHECK",
             "PVT_CHECK", "STATIC_CHECK", "TRANSFORM_CHECK", "MODEL_CHECK", "MOE_CHECK",
             "LOSS_CHECK", "OPT_CHECK", "DDP_CHECK", "MEMORY_CHECK",
-            "CHECKPOINT_CHECK", "RESUME_CHECK"
+            "CHECKPOINT_CHECK", "RESUME_CHECK", "EMPTY_BATCH_CHECK"
         ],
         "TRAIN": [
             "ENV_CHECK", "GPU_CHECK", "DATA_CHECK", "PROJECT_CHECK", "DEPENDENCY_CHECK",
             "PVT_CHECK", "STATIC_CHECK", "TRANSFORM_CHECK", "MODEL_CHECK", "MOE_CHECK",
             "LOSS_CHECK", "OPT_CHECK", "DDP_CHECK", "MEMORY_CHECK",
-            "CHECKPOINT_CHECK", "RESUME_CHECK", "PREFLIGHT_DRY_RUN_CHECK"
+            "CHECKPOINT_CHECK", "RESUME_CHECK", "PREFLIGHT_DRY_RUN_CHECK", "EMPTY_BATCH_CHECK"
         ],
         "RESUME": [
             "ENV_CHECK", "GPU_CHECK", "DATA_CHECK", "PROJECT_CHECK", "DEPENDENCY_CHECK",
@@ -700,14 +717,52 @@ if RUN_MODE in ["VALIDATE", "TRAIN"]:
 print(f"FINAL AUDIT STATUS: {FINAL_STATUS}")
 """)
 
-    # CELL 19: Train
-    add_markdown("## 19_train")
+    # CELL 34: 18b_smoke_100_images (optional, commented out)
+    add_markdown("""## 18b_smoke_100_images (optional, commented out)
+
+Quick sanity check before committing to the full 50-epoch run: trains a few real epochs (train -> val -> checkpoint -> diagnostics) on a 100-image slice of the data, so you can watch each epoch complete cleanly while it's still fast.
+
+Uses `--preflight`, so it writes to `WXSOD_Preflight` only — it never touches your production `WXSOD_Checkpoints` and never pushes anything to Hugging Face. Safe to re-run as many times as you like.
+
+To run it: select all lines in the cell below and toggle comments off (Edit > Toggle Comment, or Ctrl+/), then run the cell.""")
+    add_code("""# with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
+#     smoke_cfg = json.load(f)
+#
+# smoke_cfg["data"]["dataset_root"] = valid_root
+# smoke_cfg["data"]["max_samples"] = 100
+# smoke_cfg["train"]["epochs"] = 3
+# smoke_cfg["train"]["num_workers"] = 2
+#
+# SMOKE_CONFIG = os.path.join(PROJECT_ROOT, "experiments", "smoke_100_config.json")
+# with open(SMOKE_CONFIG, "w") as f:
+#     json.dump(smoke_cfg, f, indent=4)
+#
+# print(f"Running 100-image smoke check across {smoke_cfg['train']['epochs']} epochs...")
+# subprocess.run([
+#     "torchrun", "--nproc_per_node=2", "-m", "src.train_ddp",
+#     "--config", SMOKE_CONFIG,
+#     "--preflight",
+#     "--max_epochs", str(smoke_cfg["train"]["epochs"]),
+#     "--max_optimizer_steps", "100000",
+# ], cwd=PROJECT_ROOT, check=True)
+#
+# with open(os.path.join(PREFLIGHT_ROOT, "preflight_results.json"), "r") as f:
+#     smoke_result = json.load(f)
+# print(json.dumps(smoke_result, indent=2))
+# if smoke_result.get("status") != "PASS":
+#     raise RuntimeError(f"Smoke check failed: {smoke_result}")
+# print(f"Smoke check PASSED - {smoke_cfg['train']['epochs']} epochs completed cleanly on 100 images.")""")
+
+    # CELL 36: 19_train
+    add_markdown("""## 19_train""")
     add_code("""if RUN_MODE == "TRAIN":
     if FINAL_STATUS != "PASS" or GATES.get("PREFLIGHT_DRY_RUN_CHECK") != "PASS":
         raise RuntimeError("Refusing to train: Not all gates passed.")
         
-    with open(os.path.join(PROJECT_ROOT, "experiments/v3_router_fix.json"), "r") as f:
+    with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
         canonical_cfg = json.load(f)
+    from src.config import ExperimentConfig
+    canonical_cfg = ExperimentConfig.from_dict(canonical_cfg).to_dict()
     from src.train_ddp import get_config_hash
     canonical_hash = get_config_hash(canonical_cfg, "model_config_hash")
     
@@ -730,8 +785,8 @@ print(f"FINAL AUDIT STATUS: {FINAL_STATUS}")
     ], cwd=PROJECT_ROOT, check=True)
 """)
 
-    # CELL 20: Status
-    add_markdown("## 20_status")
+    # CELL 38: 20_status
+    add_markdown("""## 20_status""")
     add_code("""if RUN_MODE == "TRAIN":
     if os.path.exists(os.path.join(CHECKPOINT_ROOT, "training_complete.json")):
         print("Training successfully reached completion state.")
@@ -739,8 +794,8 @@ print(f"FINAL AUDIT STATUS: {FINAL_STATUS}")
         print("Training did not produce completion marker.")
 """)
 
-    # CELL 21: Resume
-    add_markdown("## 21_resume")
+    # CELL 40: 21_resume
+    add_markdown("""## 21_resume""")
     add_code("""if RUN_MODE == "RESUME":
     print("Initiating Resume Recovery Sequence...")
     local_latest = os.path.join(CHECKPOINT_ROOT, "latest.pth")
@@ -750,7 +805,7 @@ print(f"FINAL AUDIT STATUS: {FINAL_STATUS}")
     if not os.path.exists(local_latest):
         raise RuntimeError("latest.pth not found in /kaggle/working/WXSOD_Checkpoints and could not be fetched from Hugging Face.")
             
-    with open(os.path.join(PROJECT_ROOT, "experiments/v3_router_fix.json"), "r") as f:
+    with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
         runtime_cfg = json.load(f)
         
     runtime_cfg["data"]["dataset_root"] = valid_root
@@ -781,8 +836,8 @@ print(f"FINAL AUDIT STATUS: {FINAL_STATUS}")
     ], cwd=PROJECT_ROOT, check=True)
 """)
 
-    # CELL 22: Evaluate (streaming Popen so output is visible in Kaggle in real time)
-    add_markdown("## 22_evaluate")
+    # CELL 42: 22_evaluate
+    add_markdown("""## 22_evaluate""")
     add_code("""import sys
 
 if RUN_MODE in ["TRAIN", "EVALUATE"]:
@@ -790,7 +845,7 @@ if RUN_MODE in ["TRAIN", "EVALUATE"]:
     best_ckpt = os.path.join(CHECKPOINT_ROOT, "best.pth")
     if not os.path.exists(best_ckpt):
         best_ckpt = os.path.join(CHECKPOINT_ROOT, "latest.pth")
-    data_dir = "/kaggle/working/WXSDO_data/WXSDO_data"
+    data_dir = valid_root  # use the dynamically-validated dataset root, not a guessed path
     eval_out_dir = "/kaggle/working/WXSOD_EvalResults"
     os.makedirs(eval_out_dir, exist_ok=True)
     print("Started the Process")
@@ -821,14 +876,13 @@ if RUN_MODE in ["TRAIN", "EVALUATE"]:
     if retcode != 0:
         raise subprocess.CalledProcessError(retcode, process.args)
 
-    print("\n--- Files in eval_out_dir ---")
+    print("\\n--- Files in eval_out_dir ---")
     for f in os.listdir(eval_out_dir):
         print(f)
 """)
 
-
-    # CELL 23b: Proxy Ablations (inference-time ablations on frozen best checkpoint)
-    add_markdown("## 23_proxy_ablations")
+    # CELL 44: 23_proxy_ablations
+    add_markdown("""## 23_proxy_ablations""")
     add_code("""# ── 23_proxy_ablations ─────────────────────────────────────────────────
 # Self-contained: runs 4 inference-time ablations on the frozen best
 # checkpoint against test_real, assembles one JSON, uploads to HF.
@@ -850,7 +904,7 @@ if not os.path.exists(best_ckpt):
     best_ckpt = os.path.join(CHECKPOINT_ROOT, "latest.pth")
 assert os.path.exists(best_ckpt), f"No checkpoint found at {best_ckpt}"
 
-DATA_DIR    = "/kaggle/working/WXSDO_data/WXSDO_data"
+DATA_DIR    = valid_root  # use the dynamically-validated dataset root, not a guessed path
 ABLATION_OUT = "/kaggle/working/proxy_ablations"
 JSON_OUT     = "/kaggle/working/proxy_ablation_results.json"
 
@@ -929,9 +983,9 @@ print("="*60)
 print(json.dumps(output, indent=2))
 """)
 
-    # CELL 23a: Compute cost script
-    add_markdown("## 23_compute_cost (3a)")
-    add_code('''!pip install thop huggingface_hub --quiet
+    # CELL 46: 23_compute_cost (3a)
+    add_markdown("""## 23_compute_cost (3a)""")
+    add_code("""!pip install thop huggingface_hub --quiet
 
 import os, json, torch
 from src.model import SpatialMoESODNet
@@ -944,8 +998,22 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-model = SpatialMoESODNet(dim=256, num_experts=8, k=2, window_size=7, use_deep_supervision=False).to(device)
 checkpoint = torch.load("/kaggle/working/WXSOD_Checkpoints/best.pth", map_location=device, weights_only=False)
+
+# Reconstruct the model from the checkpoint's own saved config (not hardcoded
+# values) so the architecture always matches what was actually trained —
+# mirrors the pattern used in 23_proxy_ablations and src/evaluate.py.
+model_cfg = checkpoint.get("config", {}).get("model", {})
+print(f"num_experts from checkpoint config: {model_cfg.get('num_experts', 'MISSING - defaulting to 6!')}")
+assert "num_experts" in model_cfg, "checkpoint config missing num_experts — verify before trusting results"
+
+model = SpatialMoESODNet(
+    dim=256,
+    num_experts=model_cfg.get("num_experts", 6),
+    k=model_cfg.get("top_k", 2),
+    window_size=model_cfg.get("window_size", 8),
+    use_deep_supervision=model_cfg.get("deep_supervision", False),
+).to(device)
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 
@@ -978,11 +1046,11 @@ fps = N / elapsed
 compute_cost = {"params_M": round(params/1e6, 2), "macs_G": round(macs/1e9, 2), "fps": round(fps, 2)}
 print(compute_cost)
 save_json("compute_cost.json", compute_cost)
-''')
+""")
 
-    # CELL 24: 3b. Routing entropy comparison script
-    add_markdown("## 24_routing_entropy (3b)")
-    add_code('''from collections import defaultdict
+    # CELL 48: 24_routing_entropy (3b)
+    add_markdown("""## 24_routing_entropy (3b)""")
+    add_code("""from collections import defaultdict
 
 def collect_entropy_stats(model, dataloader, device, max_batches=None):
     model.eval()
@@ -1003,11 +1071,11 @@ real_entropy = collect_entropy_stats(model, test_real_loader, device)
 entropy_comparison = {"synthetic": sys_entropy, "real": real_entropy}
 print(entropy_comparison)
 save_json("entropy_comparison.json", entropy_comparison)
-''')
+""")
 
-    # CELL 25: 3c. Qualitative figure script
-    add_markdown("## 25_qualitative_figure (3c)")
-    add_code('''# Peek at a few real-test samples and their weather labels to pick from
+    # CELL 50: 25_qualitative_figure (3c)
+    add_markdown("""## 25_qualitative_figure (3c)""")
+    add_code("""# Peek at a few real-test samples and their weather labels to pick from
 test_real_ds = test_real_loader.dataset
 
 snow_idx, rain_or_fog_idx, light_idx = -1, -1, -1
@@ -1063,11 +1131,11 @@ def make_qualitative_grid(model, dataset, indices, device, save_path):
     print(f"Saved to {save_path_full}")
 
 make_qualitative_grid(model, test_real_ds, [snow_idx, rain_or_fog_idx, light_idx], device, "qualitative_grid.png")
-''')
+""")
 
-    # CELL 26: 3d. Sanity ablation
-    add_markdown("## 26_sanity_ablation (3d)")
-    add_code('''from src.evaluate import evaluate as eval_fn
+    # CELL 52: 26_sanity_ablation (3d)
+    add_markdown("""## 26_sanity_ablation (3d)""")
+    add_code("""from src.evaluate import evaluate as eval_fn
 
 # Run evaluate with forced expert id
 forced_results = eval_fn(
@@ -1080,11 +1148,11 @@ forced_results = eval_fn(
 print("Forced Expert Results:")
 print(forced_results)
 save_json("force_expert_ablation.json", forced_results)
-''')
+""")
 
-    # CELL 27: 3e. Upload results to Hugging Face
-    add_markdown("## 27_upload_results (3e)")
-    add_code('''import os
+    # CELL 54: 27_upload_results (3e)
+    add_markdown("""## 27_upload_results (3e)""")
+    add_code("""import os
 import shutil
 import glob
 from huggingface_hub import login, HfApi, create_repo
@@ -1118,10 +1186,11 @@ try:
     print(f"Uploaded to https://huggingface.co/datasets/{REPO_ID}/tree/main/evaluation_results")
 except Exception as e:
     print(f"Failed to upload to Hugging Face: {e}")
-''')
+""")
 
-    # CELL 28: 24_diagnostics_and_upload
-    add_markdown("## 24_diagnostics_and_upload\nRun MoE Diagnostics, Padding Audit, and HF Upload")
+    # CELL 56: 24_diagnostics_and_upload
+    add_markdown("""## 24_diagnostics_and_upload
+Run MoE Diagnostics, Padding Audit, and HF Upload""")
     add_code("""import subprocess
 import os
 import sys
@@ -1132,7 +1201,7 @@ print("=== Starting MoE Diagnostics, Padding Audit, and HF Upload ===\\n")
 print("[1/3] Running Padding Audit...")
 subprocess.run([
     "python", "-m", "src.diagnose_padding", 
-    "--data_dir", "/kaggle/working/WXSDO_data/WXSDO_data"
+    "--data_dir", valid_root
 ], cwd=PROJECT_ROOT, check=True)
 
 # 2. Run MoE Diagnostics
@@ -1143,7 +1212,7 @@ if not os.path.exists(best_ckpt):
 subprocess.run([
     "python", "-m", "src.run_moe_diagnostics", 
     "--checkpoint", best_ckpt,
-    "--data_dir", "/kaggle/working/WXSDO_data/WXSDO_data"
+    "--data_dir", valid_root
 ], cwd=PROJECT_ROOT, check=True)
 
 # 3. Upload to HF
