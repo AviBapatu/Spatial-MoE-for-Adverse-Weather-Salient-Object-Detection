@@ -1,5 +1,12 @@
 # AGENTS.md — Spatial-MoE for Adverse-Weather Salient Object Detection
 
+## 0. Default Mode vs. Engineering Mode
+
+This repository is used two ways, and they have different rules:
+
+- **Default mode (research/paper-writing).** Most sessions here are about understanding, documenting, and writing about a codebase that already exists. Default mode is **read-only for source code** (see Rule 8 below). This is what the rest of this file assumes unless a session says otherwise.
+- **Engineering mode (explicit code-change sessions).** Some sessions are explicitly scoped to rewrite or fix code — e.g. a DDP bug fix, a refactor, a module split. These sessions override Rule 8's "don't modify code" default *for the files they're explicitly scoped to touch, and no others*. Engineering-mode rules live in **Section 8**. If a prompt doesn't explicitly say "modify these files," treat the session as default mode.
+
 ## 1. What This Project Is
 
 A research codebase for **Spatially Dynamic Mixture-of-Experts for Adverse-Weather Salient Object Detection (SOD)**. The system routes individual spatial tokens to specialized expert networks without any weather label at train or test time, enabling robust SOD under fog, rain, snow, and low-light conditions.
@@ -104,7 +111,7 @@ uv run pytest tests/ -v
 
 No paper manuscript file exists yet in the repository. The `docs/research/` directory serves as the persistent knowledge base from which the paper will be written. `PAPER_PLAN.md` contains the suggested paper structure.
 
-## Rules for This Project
+## Rules for This Project (Default Mode)
 
 1. **Never invent implementation details.** If unsure about how something is implemented, read the source file. Every architecture claim should reference a file and line number.
 
@@ -120,7 +127,41 @@ No paper manuscript file exists yet in the repository. The `docs/research/` dire
 
 7. **Verify mathematical notation against implementation.** Before writing equations in the paper, check the actual code in `src/loss.py`, `src/moe_layer.py`, and `src/decoder.py`. The blueprint formulas are aspirational; the code is definitive.
 
-8. **Do not modify source code unless explicitly asked.** This is a research codebase. Code changes should only happen with explicit user instruction. Analysis and documentation are the default mode.
+8. **Do not modify source code unless explicitly asked.** This is a research codebase. Code changes should only happen with explicit user instruction. Analysis and documentation are the default mode. "Explicitly asked" means the session prompt names specific files/modules to change — see Section 8 for what governs those sessions once that bar is met.
+
+9. **If a code-change session touches something a research doc describes, flag it.** You don't have to update `docs/research/` yourself unless asked, but if Section 8 work changes a tensor shape, a loss term, a config field, or anything else `ARCHITECTURE.md`/`TRAINING.md`/`EXPERIMENTS.md` claims, say so explicitly in your summary — those docs become stale silently otherwise, and Rule 5/Evidence Hierarchy depend on them not drifting from the code.
+
+## 8. Engineering Mode — Rules That Apply Only to Explicit Code-Change Sessions
+
+These rules govern any session explicitly scoped to modify `src/`, `tests/`, or `train.py` — i.e. sessions that override Rule 8's default. They do not apply to research/paper-writing sessions.
+
+### 8.1 Non-negotiable invariants
+
+- `ExperimentConfig` (`src/config.py`) is the single source of truth for all hyperparameters. Never hardcode a hyperparameter that already has a config field.
+- Every `DataLoader` reachable from the training or evaluation entrypoint must be rank-aware (`DistributedSampler`) when running distributed — not just the train loader. This codebase has previously shipped with `val_loader` silently missing a `DistributedSampler` while `train_loader` had one; treat this class of bug as something to actively check for, not assume is fixed.
+- Any code path gated by `if rank == 0:` must not contain collective/expensive work (validation forward passes, diagnostics forward passes) that leaves other ranks idle for more than a few seconds. If a block only rank 0 should do (logging, checkpoint writing, HF/artifact upload), it must be provably short, or must be followed by a `dist.monitored_barrier(timeout=...)` so a stall is caught immediately with a clear error instead of a downstream NCCL timeout.
+- `dist.init_process_group` must always be called with an explicit `timeout=timedelta(...)`. Never rely on the 600s NCCL default as the actual safety margin.
+- Checkpoint I/O (`torch.save`/`torch.load`) must never block the training hot path synchronously for verification; integrity checks belong off the critical path (background thread, separate step).
+- Every expert module in `SpatialMoELayer` must be touched by the forward pass on every rank every step (even with zero routed tokens routed to it), or DDP's gradient sync will desync across ranks with different expert-usage patterns. The existing sparse-dispatch pattern in `moe_layer.py` already does this correctly — preserve it exactly; do not "optimize" it into conditional expert calls.
+- No dead code: if a file is renamed or replaced, delete the old file and its `__pycache__` entry. Do not leave orphaned modules that duplicate functionality.
+
+### 8.2 Style
+
+- Type hints on all new/edited function signatures.
+- Docstrings on every public function/class (purpose, args, returns — a few lines, not essays).
+- No function longer than ~60 lines; extract helpers instead of nesting.
+- No file longer than ~400 lines; split into a package if it grows past that.
+- Prefer explicit imports over wildcard imports.
+- Every module needs at least a smoke-level test in `tests/`.
+
+### 8.3 Scope discipline
+
+- Only edit the files a code-change session explicitly names. If you notice something else that looks wrong outside that scope, note it in your summary instead of fixing it — a different session owns that file.
+- Before changing a shared interface (config field names, `get_dataloaders()`'s signature, the model's `forward()` signature, the checkpoint dict format, `evaluate()`'s signature), check whether other modules depend on it exactly as-is, and update every call site you find — list every file you touched in your summary.
+
+### 8.4 Skill
+
+If `skills/pytorch-ddp-safety/SKILL.md` exists in this repo, read it before finishing any edit that touches `train_ddp.py`, dataloader construction, or checkpoint save/load code — it's a checklist for exactly the rank-imbalance/NCCL-timeout class of bug this codebase has hit before.
 
 ## Evidence Hierarchy
 
