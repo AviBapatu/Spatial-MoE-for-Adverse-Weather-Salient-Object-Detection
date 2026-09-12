@@ -1,7 +1,9 @@
+import math
+
 import torch
 import torch.nn as nn
 from torch.optim.lr_scheduler import LRScheduler
-import math
+
 
 def get_parameter_groups(model, backbone_lr=2e-5, new_module_lr=1e-4, weight_decay=1e-4):
     """
@@ -10,19 +12,19 @@ def get_parameter_groups(model, backbone_lr=2e-5, new_module_lr=1e-4, weight_dec
     groups = {
         'backbone_decay': {'params': [], 'lr': backbone_lr, 'weight_decay': weight_decay},
         'backbone_no_decay': {'params': [], 'lr': backbone_lr, 'weight_decay': 0.0},
-        
+
         'moe_decay': {'params': [], 'lr': new_module_lr, 'weight_decay': weight_decay},
         'moe_no_decay': {'params': [], 'lr': new_module_lr, 'weight_decay': 0.0},
-        
+
         'decoder_decay': {'params': [], 'lr': new_module_lr, 'weight_decay': weight_decay},
         'decoder_no_decay': {'params': [], 'lr': new_module_lr, 'weight_decay': 0.0},
-        
+
         'heads_decay': {'params': [], 'lr': new_module_lr, 'weight_decay': weight_decay},
         'heads_no_decay': {'params': [], 'lr': new_module_lr, 'weight_decay': 0.0},
     }
-    
+
     seen_params = set()
-    
+
     # Pre-calculate which modules are normalization modules
     no_decay_modules = set()
     for m_name, module in model.named_modules():
@@ -30,13 +32,13 @@ def get_parameter_groups(model, backbone_lr=2e-5, new_module_lr=1e-4, weight_dec
             no_decay_modules.add(m_name)
         elif module.__class__.__name__ in ['LayerNorm', 'LayerNorm2d', 'BatchNorm2d']:
             no_decay_modules.add(m_name)
-            
+
     for name, param in model.named_parameters():
         if not param.requires_grad:
             continue
-            
+
         seen_params.add(param)
-        
+
         # Determine group
         if name.startswith('backbone'):
             group_prefix = 'backbone'
@@ -46,7 +48,7 @@ def get_parameter_groups(model, backbone_lr=2e-5, new_module_lr=1e-4, weight_dec
             group_prefix = 'heads'
         else:
             group_prefix = 'decoder'
-            
+
         # Determine no-decay
         is_no_decay = False
         if name.endswith('.bias'):
@@ -58,28 +60,27 @@ def get_parameter_groups(model, backbone_lr=2e-5, new_module_lr=1e-4, weight_dec
                 is_no_decay = True
             elif 'relative_position_bias_table' in name:
                 is_no_decay = True # usually no decay for position embeddings/biases
-                
+
         if is_no_decay:
             groups[f'{group_prefix}_no_decay']['params'].append(param)
         else:
             groups[f'{group_prefix}_decay']['params'].append(param)
-            
+
     all_trainable_params = set(p for p in model.parameters() if p.requires_grad)
     missing = all_trainable_params - seen_params
     if missing:
         raise ValueError(f"Found {len(missing)} trainable parameters that were not assigned to any group!")
-        
+
     return [g for g in groups.values() if len(g['params']) > 0]
 
 def freeze_backbone(model):
-    for name, param in model.named_parameters():
-        if name.startswith('backbone'):
-            param.requires_grad = False
+    # DDP does not allow requires_grad to change after initialization.
+    # We will handle freezing by explicitly setting gradients to None in the training loop.
+    pass
 
 def unfreeze_backbone(model):
-    for name, param in model.named_parameters():
-        if name.startswith('backbone'):
-            param.requires_grad = True
+    # Handled by no longer setting gradients to None in the training loop.
+    pass
 
 class WarmupCosineScheduler(LRScheduler):
     def __init__(self, optimizer, warmup_steps, total_steps, min_lr_ratio=0.01, last_epoch=-1):
@@ -87,7 +88,27 @@ class WarmupCosineScheduler(LRScheduler):
         self.total_steps = total_steps
         self.min_lr_ratio = min_lr_ratio
         super().__init__(optimizer, last_epoch)
-        
+
+    def state_dict(self):
+        state = super().state_dict()
+        # Remove our custom attributes so they aren't saved (and thus not loaded to overwrite __init__)
+        for key in ['warmup_steps', 'total_steps', 'min_lr_ratio']:
+            state.pop(key, None)
+        return state
+
+    def load_state_dict(self, state_dict):
+        # Keep the ones from __init__
+        warmup_steps = self.warmup_steps
+        total_steps = self.total_steps
+        min_lr_ratio = self.min_lr_ratio
+
+        super().load_state_dict(state_dict)
+
+        # Restore the ones from __init__ (overriding any potentially loaded ones)
+        self.warmup_steps = warmup_steps
+        self.total_steps = total_steps
+        self.min_lr_ratio = min_lr_ratio
+
     def get_lr(self):
         step = self.last_epoch
         if step < self.warmup_steps:
@@ -109,10 +130,10 @@ class OptimizationEngine:
         self.max_grad_norm = max_grad_norm
         self.amp_enabled = amp_enabled
         self.amp_dtype = amp_dtype
-        
+
         self.scaler = torch.amp.GradScaler('cuda', enabled=amp_enabled)
         self.global_step = 0
-        
+
     def step(self):
         """
         Performs:
@@ -125,24 +146,24 @@ class OptimizationEngine:
         """
         # Unscale gradients
         self.scaler.unscale_(self.optimizer)
-        
+
         # Clip and measure norm
         pre_clip_grad_norm = nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
-        
+
         # Step optimizer
         scale_before = self.scaler.get_scale()
         self.scaler.step(self.optimizer)
         self.scaler.update()
         scale_after = self.scaler.get_scale()
-        
+
         # Detect overflow
         overflow = scale_after < scale_before
-        
+
         if not overflow:
             self.global_step += 1
             if self.scheduler is not None:
                 self.scheduler.step()
-            
+
         return overflow, pre_clip_grad_norm
 
     def state_dict(self):
@@ -152,7 +173,7 @@ class OptimizationEngine:
             'scaler': self.scaler.state_dict(),
             'global_step': self.global_step
         }
-        
+
     def load_state_dict(self, state):
         self.optimizer.load_state_dict(state['optimizer'])
         if self.scheduler is not None and state.get('scheduler') is not None:
