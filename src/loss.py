@@ -177,55 +177,109 @@ def image_gradient_magnitude_loss(
 
 
 def moe_routing_losses(
-    moe_outputs: List[MoEOutput], z_enabled: bool = False
-) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Load-balance, importance, and (optionally) Z-loss averaged over MoE scales.
+    moe_outputs: List[MoEOutput],
+    z_enabled: bool = False,
+    pad_mask: Optional[torch.Tensor] = None,
+) -> Tuple[List[torch.Tensor], torch.Tensor, torch.Tensor]:
+    """Load-balance, importance, and (optionally) Z-loss for each MoE scale.
 
-    ``moe_outputs`` is the list of per-scale :class:`MoEOutput` s from the model.
-    Returns ``(l_lb, l_imp, l_z)`` each scaled by ``1 / num_scales``.
+    ``moe_outputs`` is the list of per-scale :class:`MoEOutput` s from the
+    model (ordered stride/4, stride/8, stride/16).
+
+    Args:
+        moe_outputs: Per-scale MoEOutput list (stride 4, 8, 16).
+        z_enabled: Whether to compute Z-loss on router logits.
+        pad_mask: Optional full-resolution valid-pixel mask
+            ``[B, 1, H_full, W_full]`` (float, 1 = content, 0 = padding).
+            When provided, each stage's mask is downsampled via area-average
+            interpolation (consistent with the diagnostics path) and only
+            content tokens contribute to ``f_j``, ``P_j``, importance loss,
+            and ``total_assignments``.  ``None`` retains the original behaviour
+            (all tokens included — fully backward-compatible).
+
+    Returns:
+        ``(lb_per_stage, l_imp, l_z)`` where ``lb_per_stage`` is a list of
+        per-scale load-balance tensors (one per entry in ``moe_outputs``), and
+        ``l_imp`` / ``l_z`` are scalars averaged over scales as before.
+        Callers that previously consumed the first return value as a scalar
+        should replace it with ``sum(lb_per_stage) / len(lb_per_stage)``.
     """
     if not moe_outputs:
-        return torch.tensor(0.0).to("cpu"), torch.tensor(0.0).to("cpu"), torch.tensor(0.0).to("cpu")
+        zero = torch.tensor(0.0, device="cpu")
+        return [], zero, zero
 
     device = moe_outputs[0].features.device
 
-    total_lb = torch.tensor(0.0, device=device)
+    # Strides matching the three MoE stages (res_4 → stride 4, etc.).
+    # These must stay in sync with the model architecture.
+    _STRIDES = (4, 8, 16)
+
+    lb_per_stage: List[torch.Tensor] = []
     total_imp = torch.tensor(0.0, device=device)
     total_z = torch.tensor(0.0, device=device)
 
-    for out in moe_outputs:
+    for stage_idx, out in enumerate(moe_outputs):
         B, N_tokens, K = out.topk_indices.shape
         # clean_logits is [B, E, H, W] in spatial dispatch mode.
         E = out.clean_logits.shape[1]
-        total_assignments = B * N_tokens * K
+
+        flat_indices = out.topk_indices.view(-1)        # [B*N_tokens*K]
+        flat_gates = out.topk_gates.view(-1)            # [B*N_tokens*K]
+        # indices / gates share the token dimension — K slots per token
+        token_flat_indices = out.topk_indices.view(-1, K)  # [B*N_tokens, K]
+        token_flat_gates = out.topk_gates.view(-1, K)      # [B*N_tokens, K]
+
+        # --- Build a per-token valid mask for this stage ---
+        if pad_mask is not None and stage_idx < len(_STRIDES):
+            stride = _STRIDES[stage_idx]
+            H_s = pad_mask.shape[2] // stride
+            W_s = pad_mask.shape[3] // stride
+            # Area-average downsample then threshold at 0.5 (same as diagnostics).
+            pm_s = F.interpolate(
+                pad_mask.float(), size=(H_s, W_s), mode="area"
+            )  # [B, 1, H_s, W_s]
+            # Flat bool mask over tokens: True = content token.
+            valid_tokens = (pm_s.view(-1) > 0.5)  # [B*N_tokens]
+            # Filter token-indexed tensors.
+            valid_indices = token_flat_indices[valid_tokens]  # [N_valid, K]
+            valid_gates = token_flat_gates[valid_tokens]       # [N_valid, K]
+            N_valid = valid_tokens.sum().item()
+        else:
+            valid_indices = token_flat_indices                 # [B*N_tokens, K]
+            valid_gates = token_flat_gates                     # [B*N_tokens, K]
+            N_valid = B * N_tokens
+
+        total_assignments = int(N_valid) * K
 
         # 1. Load Balancing Loss (f_j = fraction of top-k assignments to expert j)
-        flat_indices = out.topk_indices.view(-1)
-        f_j_counts = torch.bincount(flat_indices, minlength=E)
-        f_j = (f_j_counts.float() / total_assignments).detach()
+        flat_valid_indices = valid_indices.view(-1)    # [N_valid*K]
+        flat_valid_gates = valid_gates.view(-1)        # [N_valid*K]
+
+        f_j_counts = torch.bincount(flat_valid_indices, minlength=E)
+        f_j = (f_j_counts.float() / max(total_assignments, 1)).detach()
 
         # P_j = soft routing mass (mean gate weight assigned to each expert)
-        flat_gates = out.topk_gates.view(-1)
-        P_j_sum = torch.zeros(E, dtype=flat_gates.dtype, device=device)
-        P_j_sum.scatter_add_(0, flat_indices, flat_gates)
-        P_j = P_j_sum / (B * N_tokens)
+        P_j_sum = torch.zeros(E, dtype=flat_valid_gates.dtype, device=device)
+        P_j_sum.scatter_add_(0, flat_valid_indices, flat_valid_gates)
+        # Normalise by valid token count (not total assignments, K already in sum)
+        P_j = P_j_sum / max(N_valid, 1)
 
-        l_lb = E * torch.sum(f_j * P_j)
-        total_lb = total_lb + l_lb
+        lb_per_stage.append(E * torch.sum(f_j * P_j))
 
         # 2. Importance Loss (spread of per-expert soft mass)
         mean_imp = P_j_sum.mean()
         std_imp = P_j_sum.std(unbiased=False)
-        l_imp = (std_imp / (mean_imp + ZLOSS_EPS)) ** 2
-        total_imp = total_imp + l_imp
+        total_imp = total_imp + (std_imp / (mean_imp + ZLOSS_EPS)) ** 2
 
-        # 3. Z-Loss (discourage large router logits)
+        # 3. Z-Loss (discourages large router logits).
+        # Operates on clean_logits [B, E, H, W] which has no per-token
+        # correspondence with the padding mask; kept unmasked intentionally.
         if z_enabled:
             l_z = torch.mean(torch.logsumexp(out.clean_logits, dim=1).square())
             total_z = total_z + l_z
 
     num_scales = len(moe_outputs)
-    return total_lb / num_scales, total_imp / num_scales, total_z / num_scales
+    return lb_per_stage, total_imp / num_scales, total_z / num_scales
 
 
 def aux_boundary_loss(
@@ -279,6 +333,9 @@ _LOSS_KEY_NAMES: Tuple[str, ...] = (
     "L_ssim",
     "L_boundary",
     "L_lb",
+    "L_lb_moe_4",
+    "L_lb_moe_8",
+    "L_lb_moe_16",
     "L_importance",
     "L_z",
     "L_aux_boundary",
@@ -303,6 +360,7 @@ class CombinedLoss(nn.Module):
     def __init__(self, loss_cfg: LossConfig) -> None:
         super().__init__()
         self.loss_cfg = loss_cfg
+        self._moe_16_dense = loss_cfg.moe_16_dense
 
     def forward(
         self,
@@ -348,7 +406,32 @@ class CombinedLoss(nn.Module):
             l_boundary = image_gradient_magnitude_loss(P, gt_boundary, mask=pad_mask)
 
         # 3. Router (MoE) losses
-        l_lb, l_imp, l_z = moe_routing_losses(moe_outputs, z_enabled=cfg.z_loss_weight > 0)
+        moe_for_routing = moe_outputs[:2] if self._moe_16_dense else moe_outputs
+        lb_per_stage, l_imp, l_z = moe_routing_losses(
+            moe_for_routing, z_enabled=cfg.z_loss_weight > 0, pad_mask=pad_mask
+        )
+
+        # Combine per-stage load-balance values.
+        # Per-stage weights path: each stage gets its own scalar weight so a
+        # collapsed stage (e.g. stride/8) can be penalised independently without
+        # over-penalising a healthy one (e.g. stride/4).
+        # Uniform-average path (default): identical to the pre-refactor behaviour.
+        _zero = torch.tensor(0.0, device=saliency_logits.device)
+        stage_names = ("L_lb_moe_4", "L_lb_moe_8", "L_lb_moe_16")
+        lb_stage_values = lb_per_stage if lb_per_stage else [_zero, _zero, _zero]
+        # Pad to 3 if fewer scales than expected (shouldn't happen, but be safe)
+        while len(lb_stage_values) < 3:
+            lb_stage_values.append(_zero)
+
+        if cfg.load_balance_weights is not None:
+            # Weighted sum — load_balance_weight is intentionally ignored here.
+            l_lb_combined = sum(
+                w * v for w, v in zip(cfg.load_balance_weights, lb_stage_values)
+            )
+        else:
+            # Uniform average — numerically identical to the old single-scalar path.
+            n = len(lb_per_stage) if lb_per_stage else 1
+            l_lb_combined = cfg.load_balance_weight * (sum(lb_stage_values[:n]) / n)
 
         # 4. Auxiliary boundary loss
         l_aux_boundary = torch.tensor(0.0, device=saliency_logits.device)
@@ -373,12 +456,16 @@ class CombinedLoss(nn.Module):
             + cfg.iou_weight * l_iou
             + cfg.ssim_weight * l_ssim
             + cfg.boundary_weight * l_boundary
-            + cfg.load_balance_weight * l_lb
+            + l_lb_combined
             + cfg.importance_weight * l_imp
             + cfg.z_loss_weight * l_z
             + cfg.aux_boundary_weight * l_aux_boundary
             + cfg.deep_supervision_weight * l_deep_supervision
         )
+
+        # l_lb for backward-compat logging (uniform average of per-stage values)
+        n_stages = len(lb_per_stage) if lb_per_stage else 1
+        l_lb_avg = sum(lb_stage_values[:n_stages]) / n_stages
 
         components = {
             "L_total": l_total,
@@ -386,7 +473,10 @@ class CombinedLoss(nn.Module):
             "L_iou": l_iou,
             "L_ssim": l_ssim,
             "L_boundary": l_boundary,
-            "L_lb": l_lb,
+            "L_lb": l_lb_avg,           # uniform avg — matches old key for dashboard compat
+            "L_lb_moe_4": lb_stage_values[0],
+            "L_lb_moe_8": lb_stage_values[1],
+            "L_lb_moe_16": lb_stage_values[2],
             "L_importance": l_imp,
             "L_z": l_z,
             "L_aux_boundary": l_aux_boundary,
