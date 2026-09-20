@@ -19,11 +19,11 @@ import torch.nn as nn
 from torch.optim import AdamW
 
 from src import hf_sync
-from src.config import ExperimentConfig
+from src.config import ExperimentConfig, LossConfig
 from src.dataset import get_dataloaders
 from src.experiment import setup_experiment_run, update_registry_status
 from src.log import get_logger
-from src.loss import SpatialMoELoss
+from src.loss import CombinedLoss
 from src.model import SpatialMoESODNet
 from src.optimization import (
     OptimizationEngine,
@@ -123,6 +123,7 @@ def build_model(config: ExperimentConfig, device: torch.device) -> Any:
         router_noise_enabled=config.model.router_noise_enabled,
         router_noise_scale=config.model.router_noise_scale,
         router_noise_min_std=config.model.router_noise_min_std,
+        moe_16_mode=config.model.moe_16_mode,
     ).to(device)
 
     local_hash = _parameter_fingerprint(model)
@@ -155,7 +156,7 @@ def build_optimizer_and_criterion(
     model: Any,
     train_loader: Any,
     device: torch.device,
-) -> Tuple[OptimizationEngine, SpatialMoELoss]:
+) -> Tuple[OptimizationEngine, CombinedLoss]:
     """Construct optimizer, LR scheduler, and the loss object."""
     groups = get_parameter_groups(model.module)
     optimizer = AdamW(groups)
@@ -172,14 +173,25 @@ def build_optimizer_and_criterion(
     engine = OptimizationEngine(model, optimizer, scheduler,
                                 amp_enabled=config.opt.amp, amp_dtype=torch.float16)
 
-    criterion = SpatialMoELoss(
-        lambda_iou=config.loss.iou_weight, lambda_ssim=config.loss.ssim_weight,
-        lambda_boundary=config.loss.boundary_weight,
-        lambda_lb=config.loss.load_balance_weight,
-        lambda_importance=config.loss.importance_weight,
-        lambda_z=config.loss.z_loss_weight,
-        lambda_aux_boundary=config.loss.aux_boundary_weight,
-        lambda_deep_supervision=config.loss.deep_supervision_weight,
+    lb_weights = config.loss.load_balance_weights
+    if lb_weights is None:
+        import warnings
+        warnings.warn("Using scalar load_balance_weight is deprecated. Set load_balance_weights in config.", DeprecationWarning, stacklevel=2)
+        lb_weights = [config.loss.load_balance_weight] * 3
+
+    criterion = CombinedLoss(
+        LossConfig(
+            bce_weight=config.loss.bce_weight,
+            iou_weight=config.loss.iou_weight,
+            ssim_weight=config.loss.ssim_weight,
+            boundary_weight=config.loss.boundary_weight,
+            load_balance_weight=config.loss.load_balance_weight,
+            importance_weight=config.loss.importance_weight,
+            z_loss_weight=config.loss.z_loss_weight,
+            aux_boundary_weight=config.loss.aux_boundary_weight,
+            deep_supervision_weight=config.loss.deep_supervision_weight,
+            load_balance_weights=lb_weights,
+        )
     )
     return engine, criterion
 
@@ -216,10 +228,10 @@ def resolve_workspace(
     cfg_hash = get_config_hash(config.to_dict(), "model_config_hash")
 
     if args.preflight:
-        base_dir = default_preflight_base(project_root)
+        base_dir = os.path.join(default_preflight_base(project_root), config.experiment_id)
         args.max_optimizer_steps = args.max_optimizer_steps or 5
     else:
-        base_dir = default_checkpoint_base(project_root)
+        base_dir = os.path.join(default_checkpoint_base(project_root), config.experiment_id)
         if os.path.exists(os.path.join(base_dir, "training_complete.json")) and not args.overwrite:
             raise RuntimeError("TRAINING ALREADY COMPLETE. Use --overwrite to bypass.")
         if os.path.exists(os.path.join(base_dir, "best.pth")) and not args.overwrite and not args.resume:
@@ -300,7 +312,7 @@ class TrainCtx(NamedTuple):
     config: ExperimentConfig
     model: Any
     engine: OptimizationEngine
-    criterion: SpatialMoELoss
+    criterion: CombinedLoss
     train_loader: Any
     val_loader: Any
     train_sampler: Any
@@ -331,6 +343,8 @@ def init_training(args: Any, project_root: str) -> TrainCtx:
         if is_rank_zero():
             log.info(f"[max_epochs] Capped training to {config.train.epochs} epochs")
 
+    config.validate()  # Raises ValueError loudly for top_k > num_experts, bad moe_type, etc.
+
     data_dir = config.data.dataset_root
     if not os.path.exists(data_dir):
         raise FileNotFoundError(f"DATA_ROOT could not be resolved: {data_dir}")
@@ -346,6 +360,10 @@ def init_training(args: Any, project_root: str) -> TrainCtx:
 
     train_loader, val_loader = build_dataloaders(config, rank, world_size)
     model = build_model(config, device)
+    if is_rank_zero():
+        total = sum(p.numel() for p in model.parameters())
+        with open(os.path.join(base_dir, "run_info.json"), "w") as f:
+            json.dump({"total_params": total}, f, indent=4)
     engine, criterion = build_optimizer_and_criterion(config, model, train_loader, device)
 
     start_epoch, start_batch, best_mae, best_epoch, best_step = apply_resume(
