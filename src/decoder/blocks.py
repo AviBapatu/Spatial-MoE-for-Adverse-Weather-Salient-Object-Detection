@@ -52,8 +52,9 @@ class EntropyFusionBlock(nn.Module):
         y_proj = self.proj_y(Y)
         if disable_entropy:
             return y_proj
-        # Normalize entropy approximately to [0, 1] assuming K=2 experts.
-        entropy_norm = entropy / math.log(2.0 + 1e-8)
+        # Normalize entropy approximately to [0, 1] assuming K=8 experts (the full distribution).
+        # Note: This previously normalized by ln(2) due to a measurement bug.
+        entropy_norm = entropy / math.log(8.0 + 1e-8)
         e_proj = self.proj_entropy(entropy_norm)
         return y_proj + self.scale * e_proj
 
