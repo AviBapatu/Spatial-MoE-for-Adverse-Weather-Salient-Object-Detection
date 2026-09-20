@@ -60,6 +60,7 @@ class ModelConfig:
     window_size: int = 7
     deep_supervision: bool = False
     moe_type: str = "sparse"  # "none", "dense", "sparse"
+    moe_16_mode: str = "sparse"  # "sparse" | "dense"
     router_noise_enabled: bool = True
     router_noise_scale: float = 1.0
     router_noise_min_std: float = 0.05
@@ -78,6 +79,15 @@ class LossConfig:
     z_loss_weight: float = 0.0
     aux_boundary_weight: float = 0.0
     deep_supervision_weight: float = 0.4
+    # Per-stage load-balance weights: [w_stride4, w_stride8, w_stride16].
+    # None = fall back to uniform average weighted by load_balance_weight
+    # (identical to behaviour before this field was added).
+    # When set, CombinedLoss uses a weighted sum of per-stage l_lb values
+    # instead of a pre-averaged scalar, allowing collapsed stages to be
+    # penalised independently.  load_balance_weight is ignored when this
+    # field is not None.
+    load_balance_weights: Optional[List[float]] = None
+    moe_16_dense: bool = False
 
 
 @dataclass
@@ -292,6 +302,16 @@ class ExperimentConfig:
                 f"model.moe_type must be one of {{'none','dense','sparse'}}, "
                 f"got '{self.model.moe_type}'"
             )
+        if self.model.moe_16_mode not in {"sparse", "dense"}:
+            errors.append(
+                f"model.moe_16_mode must be one of {{'sparse','dense'}}, "
+                f"got '{self.model.moe_16_mode}'"
+            )
+        if (self.model.moe_16_mode == "dense") != self.loss.moe_16_dense:
+            errors.append(
+                "model.moe_16_mode and loss.moe_16_dense must agree: "
+                "set both to dense or both to sparse."
+            )
         if self.model.num_experts < 1:
             errors.append(
                 f"model.num_experts must be >= 1, got {self.model.num_experts}"
@@ -349,6 +369,19 @@ class ExperimentConfig:
             val = getattr(self.loss, name)
             if val < 0:
                 errors.append(f"loss.{name} must be >= 0, got {val}")
+
+        if self.loss.load_balance_weights is not None:
+            lbw = self.loss.load_balance_weights
+            if len(lbw) != 3:
+                errors.append(
+                    f"loss.load_balance_weights must have exactly 3 elements "
+                    f"[w_stride4, w_stride8, w_stride16], got {len(lbw)}"
+                )
+            for idx, w in enumerate(lbw):
+                if w < 0:
+                    errors.append(
+                        f"loss.load_balance_weights[{idx}] must be >= 0, got {w}"
+                    )
 
         # --- Evaluation invariants ---
         if self.eval.validation_metric_selection not in {"MAE", "F-measure", "S-measure", "max Dice"}:
