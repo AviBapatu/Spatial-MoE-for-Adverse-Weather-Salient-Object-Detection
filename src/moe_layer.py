@@ -329,9 +329,11 @@ class SpatialMoELayer(nn.Module):
             routing_gates.transpose(1, 2).view(B, self.num_experts, H, W).contiguous()
         )
 
-        # Routing entropy over the selected top-K gates (range [0, ln K]);
-        # the decoder normalizes by ln(2) under the K=2 assumption.
-        entropy = -torch.sum(topk_gates * torch.log(topk_gates + 1e-9), dim=-1)
+        # Routing entropy over the FULL 8-expert gate distribution (range [0, ln 8]).
+        # Note: Previous version calculated this over top-K gates only, which was
+        # a measurement bug that artificially capped entropy at ln(K).
+        full_gates = F.softmax(noisy_logits, dim=-1)
+        entropy = -torch.sum(full_gates * torch.log(full_gates + 1e-9), dim=-1)
         entropy_map = entropy.view(B, 1, H, W).contiguous()
 
         # Clean (noise-free) logits reshaped to [B, E, H, W].
@@ -348,6 +350,51 @@ class SpatialMoELayer(nn.Module):
             clean_logits=clean_logits_spatial,
             noise_std=noise_std,
         )
+
+
+class DenseMoE16Adapter(nn.Module):
+    """Single dense expert replacing sparse moe_16 for the ablation.
+
+    Applies one TokenWiseMLPExpert to every token unconditionally and
+    returns a MoEOutput with sentinel routing fields (zero logits, uniform
+    gate, K=2 to match the sparse stage's NamedTuple shape) so the decoder
+    receives features of the correct shape without any routing computation.
+    The routing sentinel fields are intentionally excluded from routing losses
+    by slicing moe_outputs[:2] in CombinedLoss when moe_16_dense=True.
+    """
+
+    def __init__(self, dim: int = 256) -> None:
+        super().__init__()
+        self.expert = TokenWiseMLPExpert(dim=dim)
+        self.is_dense = True
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        force_expert_id: Optional[int] = None,   # absorbed, unused
+        random_routing: bool = False,             # absorbed, unused
+    ) -> MoEOutput:
+        B, C, H, W = x.shape
+        N = H * W
+        flat_x = x.flatten(2).transpose(1, 2).reshape(B * N, C)
+        out_tokens = self.expert(flat_x)                              # [B*N, C]
+        features = out_tokens.view(B, N, C).transpose(1, 2).view(B, C, H, W).contiguous()
+
+        # Sentinel routing tensors — K=2 to match real SpatialMoELayer output shape.
+        # Any code that consumes moe_outputs[2] routing fields (diagnostics, similarity
+        # analyzer, RoutingTracker) must skip this stage; see diagnostic skip logic.
+        sentinel_indices = torch.zeros(B, N, 2, device=x.device, dtype=torch.long)
+        sentinel_gates   = torch.full((B, N, 2), 0.5, device=x.device, dtype=x.dtype)
+
+        return MoEOutput(
+            features=features,
+            routing_probs=torch.zeros(B, 1, H, W, device=x.device, dtype=x.dtype),
+            topk_indices=sentinel_indices,
+            topk_gates=sentinel_gates,
+            entropy=torch.zeros(B, 1, H, W, device=x.device, dtype=x.dtype),
+            clean_logits=torch.zeros(B, 1, H, W, device=x.device, dtype=x.dtype),
+        )
+
 
 
 if __name__ == "__main__":
