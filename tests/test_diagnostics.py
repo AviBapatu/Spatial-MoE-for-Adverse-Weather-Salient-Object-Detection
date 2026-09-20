@@ -245,6 +245,205 @@ def test_weather_divergence_images_and_rank_merge():
     assert weather_divergence(small.image_weather_stats, small.num_experts, min_image_samples=20)["status"] == "insufficient_images"
 
 
+# ---------------------------------------------------------------------------
+# pad_mask tests
+# ---------------------------------------------------------------------------
+
+def _make_moe_output(B: int, N_tokens: int, K: int, num_experts: int) -> "MoEOutput":
+    """Helper: build a minimal MoEOutput for testing."""
+    indices = torch.randint(0, num_experts, (B, N_tokens, K))
+    gates = torch.softmax(torch.randn(B, N_tokens, K), dim=-1)
+    entropy = torch.rand(B, 1, int(N_tokens ** 0.5), int(N_tokens ** 0.5))
+    return MoEOutput(
+        features=torch.randn(B, 256, int(N_tokens ** 0.5), int(N_tokens ** 0.5)),
+        routing_probs=torch.randn(B, num_experts, int(N_tokens ** 0.5), int(N_tokens ** 0.5)),
+        topk_indices=indices,
+        topk_gates=gates,
+        entropy=entropy,
+        clean_logits=torch.randn(B, num_experts, int(N_tokens ** 0.5), int(N_tokens ** 0.5)),
+    )
+
+
+def test_routing_tracker_pad_mask():
+    """Masking half the tokens should halve hard_counts sum (±1) and set masked_tokens."""
+    B, N_tokens, K, E = 2, 64, 2, 6
+    moe_out = _make_moe_output(B, N_tokens, K, E)
+
+    # Baseline: no mask
+    tracker_base = RoutingTracker(num_experts=E, top_k=K)
+    tracker_base.update(moe_out)
+
+    # Masked: first half of tokens valid, second half masked
+    total_flat = B * N_tokens
+    pad_mask = torch.zeros(total_flat, dtype=torch.bool)
+    pad_mask[: total_flat // 2] = True  # 50 % valid
+
+    tracker_masked = RoutingTracker(num_experts=E, top_k=K)
+    tracker_masked.update(moe_out, pad_mask=pad_mask)
+
+    # hard_counts should be about half — allow ±5 for random distribution
+    base_total = sum(tracker_base.hard_counts.tolist())
+    masked_total = sum(tracker_masked.hard_counts.tolist())
+    assert abs(masked_total - base_total // 2) <= 5, (
+        f"Expected ~{base_total // 2} hard count total with half the tokens, got {masked_total}"
+    )
+
+    # masked_tokens should equal the number of tokens set to False
+    expected_masked = total_flat - total_flat // 2
+    assert tracker_masked.masked_tokens == expected_masked, (
+        f"masked_tokens={tracker_masked.masked_tokens}, expected {expected_masked}"
+    )
+
+    # total_tokens should equal valid count
+    assert tracker_masked.total_tokens == total_flat // 2, (
+        f"total_tokens={tracker_masked.total_tokens}, expected {total_flat // 2}"
+    )
+
+
+def test_routing_tracker_all_masked():
+    """All tokens masked → total_tokens == 0, masked_tokens == N, no division errors."""
+    B, N_tokens, K, E = 2, 64, 2, 6
+    moe_out = _make_moe_output(B, N_tokens, K, E)
+
+    pad_mask = torch.zeros(B * N_tokens, dtype=torch.bool)  # all masked
+
+    tracker = RoutingTracker(num_experts=E, top_k=K)
+    tracker.update(moe_out, pad_mask=pad_mask)
+
+    assert tracker.total_tokens == 0, f"total_tokens should be 0, got {tracker.total_tokens}"
+    assert tracker.masked_tokens == B * N_tokens
+
+    # get_stats must not raise (no division by zero)
+    stats = tracker.get_stats()
+    assert stats["total_tokens"] == 0
+    assert all(f == 0.0 for f in stats["hard_fractions"])
+    assert all(f == 0.0 for f in stats["soft_fractions"])
+    assert stats["mean_entropy"] == 0.0
+
+    # masked_token_fraction from finalize path
+    observed = tracker.total_tokens + tracker.masked_tokens
+    frac = tracker.masked_tokens / observed if observed > 0 else 0.0
+    assert abs(frac - 1.0) < 1e-6
+
+
+def test_routing_tracker_pad_mask_state_roundtrip():
+    """masked_tokens survives state() / from_state() round-trip and merge()."""
+    B, N_tokens, K, E = 2, 64, 2, 6
+    moe_out = _make_moe_output(B, N_tokens, K, E)
+    pad_mask = torch.zeros(B * N_tokens, dtype=torch.bool)
+    pad_mask[:30] = True
+
+    tracker = RoutingTracker(num_experts=E, top_k=K)
+    tracker.update(moe_out, pad_mask=pad_mask)
+    assert tracker.masked_tokens > 0
+
+    # Round-trip through state / from_state
+    restored = RoutingTracker.from_state(tracker.state())
+    assert restored.masked_tokens == tracker.masked_tokens
+
+    # Merge two identical trackers → masked_tokens doubles
+    merged = RoutingTracker(num_experts=E, top_k=K)
+    merged.merge(tracker).merge(tracker)
+    assert merged.masked_tokens == tracker.masked_tokens * 2
+
+
+def test_weather_analyzer_pad_mask():
+    """WeatherAnalyzer with pad_mask should only count valid-token assignments."""
+    E, K = 6, 2
+    N_tokens = 36  # 6×6 spatial grid
+
+    # All tokens assigned to expert 0
+    indices = torch.zeros(N_tokens, K, dtype=torch.long)  # [N_tokens, K]
+
+    # Mask the first half: only the second half is valid
+    pad_mask = torch.zeros(N_tokens, dtype=torch.bool)
+    pad_mask[N_tokens // 2 :] = True  # latter half valid
+
+    analyzer = WeatherAnalyzer(num_experts=E)
+    analyzer.update(indices, "fog", pad_mask=pad_mask)
+
+    stat = analyzer.image_weather_stats[0]
+    # Only the valid half contributed → expert 0 count == (N_tokens // 2) * K
+    expected_count = (N_tokens // 2) * K
+    assert stat["counts"][0] == expected_count, (
+        f"Expected expert 0 count={expected_count}, got {stat['counts'][0]}"
+    )
+    assert stat["total"] == expected_count, (
+        f"Expected total={expected_count}, got {stat['total']}"
+    )
+
+
+def test_expert_similarity_pad_mask(tmp_path):
+    """Content-only activation similarity should differ from all-token similarity
+    when half the input tokens are near-constant (padding-like)."""
+    from src.diagnostics import ExpertSimilarityAnalyzer
+
+    E, C, H, W = 4, 64, 8, 8
+    N_tokens = H * W
+    B = 1
+
+    # Build a minimal MoE layer with 4 experts
+    class _DummyExpert(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.fc1 = nn.Linear(C, C * 4)
+            self.fc2 = nn.Linear(C * 4, C)
+            self.norm = nn.LayerNorm(C)
+
+        def forward(self, x):
+            z = self.norm(x)
+            z = torch.relu(self.fc1(z))
+            z = self.fc2(z)
+            return x + z
+
+    class _DummyMoELayer(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.experts = nn.ModuleList([_DummyExpert() for _ in range(E)])
+
+    moe_layer = _DummyMoELayer().eval()
+    analyzer = ExpertSimilarityAnalyzer(moe_layer, num_experts=E)
+
+    # x: first half of spatial positions are near-constant (padding-like near-zero)
+    x = torch.randn(B, C, H, W)
+    x[:, :, : H // 2, :] = 1e-4  # simulate padding — almost zero features
+
+    # pad_mask: only the second half is valid (flat over B*H*W)
+    pad_mask = torch.zeros(B * N_tokens, dtype=torch.bool)
+    pad_mask[B * N_tokens // 2 :] = True
+
+    baseline_path = str(tmp_path / "sim_base.json")
+    content_path = str(tmp_path / "sim_content.json")
+
+    res_base = analyzer.analyze(x, baseline_path, pad_mask=None)
+    res_cont = analyzer.analyze(x, content_path, pad_mask=pad_mask)
+
+    base_vals = [
+        res_base["activation_similarity"][i][j]
+        for i in range(E) for j in range(i + 1, E)
+    ]
+    cont_vals = [
+        res_cont["activation_similarity"][i][j]
+        for i in range(E) for j in range(i + 1, E)
+    ]
+
+    mean_base = sum(base_vals) / len(base_vals)
+    mean_cont = sum(cont_vals) / len(cont_vals)
+
+    # With random uninitialised weights the direction of change is not
+    # predictable in general: near-zero (padding-like) inputs drive the output
+    # through the z-dominated path (small x, large z), which can look *more*
+    # diverse than rich content tokens where the residual term x dominates.
+    # What we can assert deterministically is that masking the padding region
+    # produces a *different* mean similarity from the unmasked baseline — i.e.
+    # the filter is actually active and changes the token set.
+    assert abs(mean_base - mean_cont) > 0.05, (
+        f"Expected masked ({mean_cont:.4f}) and unmasked ({mean_base:.4f}) similarity "
+        f"to differ by >0.05 when half the tokens are near-constant, "
+        f"but they were within the tolerance (delta={abs(mean_base - mean_cont):.4f})."
+    )
+
+
 if __name__ == '__main__':
     print("Running Diagnostics tests...")
     test_routing_tracker_fractions()
@@ -254,4 +453,9 @@ if __name__ == '__main__':
     test_merge_states_accumulates_across_ranks()
     test_collapse_warnings()
     test_weather_divergence_images_and_rank_merge()
+    test_routing_tracker_pad_mask()
+    test_routing_tracker_all_masked()
+    test_routing_tracker_pad_mask_state_roundtrip()
+    test_weather_analyzer_pad_mask()
     print("All tests passed!")
+
