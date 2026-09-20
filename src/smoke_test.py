@@ -11,7 +11,8 @@ from torch.amp import autocast
 from torch.optim import AdamW
 
 from src.dataset import get_dataloaders
-from src.loss import SpatialMoELoss
+from src.loss import CombinedLoss
+from src.config import LossConfig
 from src.model import SpatialMoESODNet
 from src.optimization import OptimizationEngine, WarmupCosineScheduler, freeze_backbone, get_parameter_groups
 from src.train_ddp import CHECKPOINT_FORMAT_VERSION, get_config_hash, get_rng_states, set_rng_states
@@ -61,7 +62,7 @@ def run_tests_on_engine(device, local_rank, rank, world_size, data_root, result_
         opt = AdamW(get_parameter_groups(core_model))
         sch = WarmupCosineScheduler(opt, warmup_steps=1, total_steps=4)
         eng = OptimizationEngine(model, opt, sch, amp_enabled=True, amp_dtype=torch.float16)
-        criterion = SpatialMoELoss(lambda_deep_supervision=0.4)
+        criterion = CombinedLoss(LossConfig(deep_supervision_weight=0.4, load_balance_weights=[0.08, 0.15, 0.1]))
         freeze_backbone(core_model)
 
         # Snapshot before step
@@ -116,7 +117,7 @@ def run_tests_on_engine(device, local_rank, rank, world_size, data_root, result_
         loss_check = "PASS"
         try:
             with autocast(device_type='cuda', dtype=torch.float16):
-                loss_dict = criterion(
+                loss, loss_dict = criterion(
                     saliency_logits=out.saliency_logits,
                     edge_logits=out.boundary_logits,
                     moe_outputs=moe_outputs,
@@ -126,7 +127,6 @@ def run_tests_on_engine(device, local_rank, rank, world_size, data_root, result_
                     aux_logits_8=out.aux_logits_8,
                     aux_logits_4=out.aux_logits_4
                 )
-            loss = loss_dict['L_total']
             for k, v in loss_dict.items():
                 t_v = torch.as_tensor(v)
                 assert_val(torch.isfinite(t_v) and not torch.isnan(t_v), f"{k} is not finite.")
@@ -155,7 +155,7 @@ def run_tests_on_engine(device, local_rank, rank, world_size, data_root, result_
             perfect_edge_logits = edges * 20.0 - 10.0
 
             with autocast(device_type='cuda', dtype=torch.float16):
-                perfect_loss_dict = criterion(
+                perfect_loss, perfect_loss_dict = criterion(
                     saliency_logits=perfect_logits,
                     edge_logits=perfect_edge_logits,
                     moe_outputs=moe_outputs,
@@ -165,7 +165,6 @@ def run_tests_on_engine(device, local_rank, rank, world_size, data_root, result_
                     aux_logits_8=perfect_logits,
                     aux_logits_4=perfect_logits
                 )
-            perfect_loss = perfect_loss_dict['L_total']
             assert_val(perfect_loss < loss, "Perfect prediction loss not strictly lower than bad prediction loss")
 
             eng.step()
@@ -224,7 +223,7 @@ def run_memory_calibration(device, result_file):
         model = nn.parallel.DistributedDataParallel(model, device_ids=[device.index], output_device=device.index, find_unused_parameters=True)
         opt = AdamW(get_parameter_groups(model.module))
         eng = OptimizationEngine(model, opt, None, amp_enabled=True, amp_dtype=torch.float16)
-        criterion = SpatialMoELoss(lambda_deep_supervision=0.4)
+        criterion = CombinedLoss(LossConfig(deep_supervision_weight=0.4))
 
         dummy_img = torch.randn(1, 3, 384, 384, device=device)
         dummy_mask = torch.randn(1, 1, 384, 384, device=device)
@@ -233,7 +232,7 @@ def run_memory_calibration(device, result_file):
         for micro in range(150):
             with autocast(device_type='cuda', dtype=torch.float16):
                 out, moe_outputs = model(dummy_img)
-                loss_dict = criterion(
+                loss, loss_dict = criterion(
                     saliency_logits=out.saliency_logits,
                     edge_logits=out.boundary_logits,
                     moe_outputs=moe_outputs,
@@ -243,7 +242,6 @@ def run_memory_calibration(device, result_file):
                     aux_logits_8=out.aux_logits_8,
                     aux_logits_4=out.aux_logits_4
                 )
-                loss = loss_dict['L_total']
             eng.scaler.scale(loss).backward() # type: ignore
             eng.step()
             eng.optimizer.zero_grad()
@@ -272,7 +270,7 @@ def run_resume_a(device, local_rank, rank, world_size, data_root, result_file):
         opt = AdamW(get_parameter_groups(model.module))
         sch = WarmupCosineScheduler(opt, warmup_steps=1, total_steps=4)
         eng = OptimizationEngine(model, opt, sch, amp_enabled=True, amp_dtype=torch.float16)
-        criterion = SpatialMoELoss(lambda_deep_supervision=0.4)
+        criterion = CombinedLoss(LossConfig(deep_supervision_weight=0.4))
         freeze_backbone(model.module)
 
         it = iter(train_loader)
@@ -283,7 +281,7 @@ def run_resume_a(device, local_rank, rank, world_size, data_root, result_file):
 
         with autocast(device_type='cuda', dtype=torch.float16):
             out, moe_outputs = model(images)
-            loss_dict = criterion(
+            loss, loss_dict = criterion(
                 saliency_logits=out.saliency_logits,
                 edge_logits=out.boundary_logits,
                 moe_outputs=moe_outputs,
@@ -293,7 +291,6 @@ def run_resume_a(device, local_rank, rank, world_size, data_root, result_file):
                 aux_logits_8=out.aux_logits_8,
                 aux_logits_4=out.aux_logits_4
             )
-            loss = loss_dict['L_total']
         eng.scaler.scale(loss).backward() # type: ignore
         eng.step()
         eng.optimizer.zero_grad()
@@ -375,7 +372,7 @@ def run_resume_b(device, local_rank, rank, world_size, data_root, result_file):
 
         assert_val(opt.param_groups[0]['lr'] == ckpt['lr_before_ckpt'], "LR not properly restored before step")
 
-        criterion = SpatialMoELoss(lambda_deep_supervision=0.4)
+        criterion = CombinedLoss(LossConfig(deep_supervision_weight=0.4))
         it = iter(train_loader)
         batch = next(it)
         images = batch['image'].to(device)
@@ -385,7 +382,7 @@ def run_resume_b(device, local_rank, rank, world_size, data_root, result_file):
         for _ in range(5):
             with autocast(device_type='cuda', dtype=torch.float16):
                 out, moe_outputs = model(images)
-                loss_dict = criterion(
+                loss, loss_dict = criterion(
                     saliency_logits=out.saliency_logits,
                     edge_logits=out.boundary_logits,
                     moe_outputs=moe_outputs,
@@ -395,7 +392,6 @@ def run_resume_b(device, local_rank, rank, world_size, data_root, result_file):
                     aux_logits_8=out.aux_logits_8,
                     aux_logits_4=out.aux_logits_4
                 )
-                loss = loss_dict['L_total']
             eng.scaler.scale(loss).backward() # type: ignore
             overflow, _ = eng.step()
             eng.optimizer.zero_grad()
