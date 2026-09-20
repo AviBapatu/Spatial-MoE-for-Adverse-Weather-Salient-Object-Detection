@@ -29,7 +29,7 @@ def routing_summary(tracker: RoutingTracker) -> Dict[str, Any]:
     hard_fractions = (tracker.hard_counts.float() / max(1, total_assignments)).numpy()
     soft_fractions = (tracker.soft_mass / max(1, tracker.total_tokens)).numpy()
     mean_entropy = tracker.entropy_sum / max(1, tracker.total_tokens)
-    mean_normalized_entropy = mean_entropy / max(1e-9, np.log(tracker.top_k))
+    mean_normalized_entropy = mean_entropy / max(1e-9, np.log(tracker.num_experts))
 
     return {
         "hard_counts": tracker.hard_counts.numpy().tolist(),

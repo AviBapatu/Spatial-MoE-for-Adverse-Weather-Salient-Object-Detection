@@ -22,6 +22,7 @@ from src.diagnostics.reporting import (
     ExpertSimilarityAnalyzer,
     MoEDiagnosticsEngine,
     Visualizer,
+    build_scale_pad_mask,
 )
 
 __all__ = [
@@ -30,6 +31,7 @@ __all__ = [
     "Visualizer",
     "MoEDiagnosticsEngine",
     "ExpertSimilarityAnalyzer",
+    "build_scale_pad_mask",
     "routing_summary",
     "merge_states",
     "collapse_warnings",
