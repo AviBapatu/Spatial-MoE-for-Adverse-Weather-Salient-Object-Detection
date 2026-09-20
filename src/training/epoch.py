@@ -85,14 +85,14 @@ def _forward_backward(
     with (model.no_sync() if not is_final else _null_mgr()):
         with autocast(device_type="cuda", dtype=torch.float16):
             out, moe_outputs = model(images)
-            loss_dict = criterion(
+            loss, loss_dict = criterion(
                 saliency_logits=out.saliency_logits,
                 edge_logits=out.boundary_logits, moe_outputs=moe_outputs,
                 target=masks, gt_boundary=edges,
                 aux_logits_16=out.aux_logits_16, aux_logits_8=out.aux_logits_8,
                 aux_logits_4=out.aux_logits_4, pad_mask=pad_masks,
             )
-            loss = loss_dict["L_total"] / config.opt.grad_accum_steps
+            loss = loss / config.opt.grad_accum_steps
         engine.scaler.scale(loss).backward()
     return loss
 
@@ -204,13 +204,13 @@ def run_train_batches(
             raise
 
 
-def _validate_and_diagnostics(ctx: TrainCtx, epoch: int, args: Any) -> TrainCtx:
+def _validate_and_diagnostics(ctx: TrainCtx, epoch: int, args: Any, wall_clock_s: float) -> TrainCtx:
     """Run distributed validation + periodic diagnostics; return updated ctx."""
     engine, model = ctx.engine, ctx.model
     val_loader, device = ctx.val_loader, ctx.device
     config = ctx.config
 
-    best_mae, best_epoch, best_step = distributed_validate(
+    val_mae, val_fbeta, best_mae, best_epoch, best_step = distributed_validate(
         model=model, val_loader=val_loader, device=device,
         epoch=epoch, total_epochs=config.train.epochs,
         checkpoint_dir=ctx.checkpoint_dir, config=config,
@@ -218,7 +218,25 @@ def _validate_and_diagnostics(ctx: TrainCtx, epoch: int, args: Any) -> TrainCtx:
         rank=ctx.rank, engine=engine,
         best_mae=ctx.best_mae, best_mae_epoch=ctx.best_mae_epoch,
         best_mae_step=ctx.best_mae_step, hf_pusher=ctx.hf_pusher,
-    )[2:5]
+    )
+
+    if is_rank_zero():
+        import json
+        import os
+        metrics_path = os.path.join(ctx.checkpoint_dir, "epoch_metrics.json")
+        try:
+            with open(metrics_path, "r") as f:
+                metrics = json.load(f)
+        except Exception:
+            metrics = []
+        metrics.append({
+            "epoch": epoch + 1,
+            "wall_clock_s": wall_clock_s,
+            "val": {"MAE": val_mae, "S_measure": val_fbeta}
+        })
+        with open(metrics_path, "w") as f:
+            json.dump(metrics, f, indent=4)
+
 
     if best_mae < ctx.best_mae:
         ctx = ctx._replace(best_mae=best_mae, best_mae_epoch=best_epoch,
@@ -246,6 +264,9 @@ def run_epoch(ctx: TrainCtx, epoch: int, args: Any) -> TrainCtx:
     model, engine, criterion = ctx.model, ctx.engine, ctx.criterion
     device, config = ctx.device, ctx.config
 
+    import time
+    epoch_start_time = time.perf_counter()
+
     _start_epoch(ctx, epoch, args)
     iterator = iter(ctx.train_loader)
     start_batch = _fast_forward(iterator, epoch, ctx)
@@ -263,4 +284,5 @@ def run_epoch(ctx: TrainCtx, epoch: int, args: Any) -> TrainCtx:
         return ctx
 
     dist.barrier()
-    return _validate_and_diagnostics(ctx, epoch, args)
+    wall_clock_s = time.perf_counter() - epoch_start_time
+    return _validate_and_diagnostics(ctx, epoch, args, wall_clock_s)
