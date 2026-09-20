@@ -163,7 +163,7 @@ def distributed_validate(
             enqueue_hf_push(
                 hf_pusher,
                 final_path,
-                name="best.pth",
+                name=f"{config.experiment_id}_best.pth",
                 extra_meta={
                     "epoch": epoch + 1,
                     "global_step": engine.global_step,
@@ -219,7 +219,12 @@ def distributed_diagnostics(
             v_images = v_batch["image"].to(device)
             with autocast(device_type="cuda", dtype=torch.float16):
                 out, moe_outputs = model(v_images)
-            diag_engine.update(v_images, moe_outputs, v_batch["meta"])
+            skip_stages = [
+                getattr(model.module.moe_4, 'is_dense', False),
+                getattr(model.module.moe_8, 'is_dense', False),
+                getattr(model.module.moe_16, 'is_dense', False),
+            ]
+            diag_engine.update(v_images, moe_outputs, v_batch["meta"], skip_stages=skip_stages)
 
     # Each rank finalize locally to get per-rank stats
     local_stats = diag_engine.finalize(epoch)
@@ -376,7 +381,7 @@ def maybe_save_periodic_checkpoint(
         enqueue_hf_push(
             hf_pusher,
             final_path,
-            name="latest.pth",
+            name=f"{config.experiment_id}_latest.pth",
             extra_meta={
                 "epoch": epoch,
                 "global_step": engine.global_step,
