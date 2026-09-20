@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 from src.boundary import BOUNDARY_KERNEL_SIZE, compute_boundary
 from src.dataset import get_dataloaders, get_weather_type
-from src.log import get_logger
+from src.log import NumpyEncoder, get_logger
 from src.metrics import BoundaryMetrics, SODMetrics
 from src.model import SpatialMoESODNet
 
@@ -313,11 +313,11 @@ def main() -> None:
 
         manifest_filename = f"evaluation_manifest_{ds_name}_{timestamp}.json"
         with open(os.path.join(ds_out_dir, manifest_filename), "w") as f:
-            json.dump(manifest, f, indent=4)
+            json.dump(manifest, f, indent=4, cls=NumpyEncoder)
 
         metrics_filename = f"metrics_{ds_name}_{timestamp}.json"
         with open(os.path.join(ds_out_dir, metrics_filename), "w") as f:
-            json.dump(results, f, indent=4)
+            json.dump(results, f, indent=4, cls=NumpyEncoder)
 
         # Summary TXT
         summary_filename = f"summary_{ds_name}_{timestamp}.txt"
