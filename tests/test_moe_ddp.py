@@ -157,7 +157,7 @@ def test_expert_activation(rank, local_rank, device):
     images, masks, edges = get_dummy_batch(1, device)
     
     out, moe_outputs = ddp_model(images)
-    loss_dict = criterion(
+    loss, loss_dict = criterion(
         saliency_logits=out.saliency_logits,
         edge_logits=out.boundary_logits,
         moe_outputs=moe_outputs,
@@ -167,7 +167,6 @@ def test_expert_activation(rank, local_rank, device):
         aux_logits_8=out.aux_logits_8,
         aux_logits_4=out.aux_logits_4
     )
-    loss = loss_dict['L_total']
     loss.backward()
     
     # Verify gradients exist for exactly the expected experts
@@ -229,7 +228,7 @@ def test_gradient_consistency(rank, local_rank, device):
     local_model.zero_grad()
     with autocast(device_type='cuda', dtype=torch.float16):
         out_loc, moe_outputs_loc = local_model(global_images)
-        loss_dict = criterion(
+        loss_loc, loss_dict = criterion(
             saliency_logits=out_loc.saliency_logits,
             edge_logits=out_loc.boundary_logits,
             moe_outputs=moe_outputs_loc,
@@ -239,7 +238,6 @@ def test_gradient_consistency(rank, local_rank, device):
             aux_logits_8=out_loc.aux_logits_8,
             aux_logits_4=out_loc.aux_logits_4
         )
-        loss_loc = loss_dict['L_total']
     
     loss_loc.backward()
     
@@ -249,7 +247,7 @@ def test_gradient_consistency(rank, local_rank, device):
     
     with autocast(device_type='cuda', dtype=torch.float16):
         out_ddp, moe_outputs_ddp = ddp_model(my_batch[0])
-        loss_dict = criterion(
+        loss_ddp, loss_dict = criterion(
             saliency_logits=out_ddp.saliency_logits,
             edge_logits=out_ddp.boundary_logits,
             moe_outputs=moe_outputs_ddp,
@@ -259,7 +257,6 @@ def test_gradient_consistency(rank, local_rank, device):
             aux_logits_8=out_ddp.aux_logits_8,
             aux_logits_4=out_ddp.aux_logits_4
         )
-        loss_ddp = loss_dict['L_total']
         
     loss_ddp.backward()
     
@@ -294,7 +291,7 @@ def test_no_sync_equivalence(rank, local_rank, device):
     for batch in [batch_A, batch_B]:
         with autocast(device_type='cuda', dtype=torch.float16):
             out, moe_outs = ddp_sync(batch[0])
-            loss_dict = criterion(
+            loss, loss_dict = criterion(
                 saliency_logits=out.saliency_logits,
                 edge_logits=out.boundary_logits,
                 moe_outputs=moe_outs,
@@ -304,7 +301,6 @@ def test_no_sync_equivalence(rank, local_rank, device):
                 aux_logits_8=out.aux_logits_8,
                 aux_logits_4=out.aux_logits_4
             )
-            loss = loss_dict['L_total']
             loss = loss / 2.0
         loss.backward()
         
@@ -315,7 +311,7 @@ def test_no_sync_equivalence(rank, local_rank, device):
     with ddp_no_sync.no_sync():
         with autocast(device_type='cuda', dtype=torch.float16):
             out, moe_outs = ddp_no_sync(batch_A[0])
-            loss_dict = criterion(
+            loss, loss_dict = criterion(
                 saliency_logits=out.saliency_logits,
                 edge_logits=out.boundary_logits,
                 moe_outputs=moe_outs,
@@ -325,14 +321,13 @@ def test_no_sync_equivalence(rank, local_rank, device):
                 aux_logits_8=out.aux_logits_8,
                 aux_logits_4=out.aux_logits_4
             )
-            loss = loss_dict['L_total']
             loss = loss / 2.0
         loss.backward()
         
     # Sync step
     with autocast(device_type='cuda', dtype=torch.float16):
         out, moe_outs = ddp_no_sync(batch_B[0])
-        loss_dict = criterion(
+        loss, loss_dict = criterion(
             saliency_logits=out.saliency_logits,
             edge_logits=out.boundary_logits,
             moe_outputs=moe_outs,
@@ -342,7 +337,6 @@ def test_no_sync_equivalence(rank, local_rank, device):
             aux_logits_8=out.aux_logits_8,
             aux_logits_4=out.aux_logits_4
         )
-        loss = loss_dict['L_total']
         loss = loss / 2.0
     loss.backward()
     
@@ -510,7 +504,7 @@ def test_resume_reproducibility(rank, local_rank, device):
             with sync_context:
                 with autocast(device_type='cuda', dtype=torch.float16):
                     out, moe_outputs = ddp_model(images)
-                    loss_dict = criterion(
+                    loss, loss_dict = criterion(
                         saliency_logits=out.saliency_logits,
                         edge_logits=out.boundary_logits,
                         moe_outputs=moe_outputs,
@@ -520,7 +514,6 @@ def test_resume_reproducibility(rank, local_rank, device):
                         aux_logits_8=out.aux_logits_8,
                         aux_logits_4=out.aux_logits_4
                     )
-                    loss = loss_dict['L_total']
                     loss = loss / CONFIG["GRAD_ACCUM_STEPS"]
                     
                 engine.scaler.scale(loss).backward()
