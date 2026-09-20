@@ -56,7 +56,7 @@ def test_end_to_end_criterion():
     
     try:
         out, moe_outputs = model(images)
-        loss_dict = criterion(
+        loss, loss_dict = criterion(
             saliency_logits=out.saliency_logits, 
             edge_logits=out.boundary_logits, 
             moe_outputs=moe_outputs, 
@@ -67,7 +67,7 @@ def test_end_to_end_criterion():
             aux_logits_4=out.aux_logits_4,
             pad_mask=pad_masks
         )
-        print("Criterion success! Total loss:", loss_dict['L_total'].item())
+        print("Criterion success! Total loss:", loss.item())
     except Exception as e:
         print("Criterion failed!")
         import traceback
