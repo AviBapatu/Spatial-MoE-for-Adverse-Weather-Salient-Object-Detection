@@ -12,7 +12,7 @@ summary math lives in ``aggregation.py``, never here.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import torch
 
@@ -37,15 +37,33 @@ class RoutingTracker:
         self.entropy_sum = 0.0
         self.entropy_max = 0.0
         self.total_tokens = 0
+        self.masked_tokens = 0  # padding tokens filtered out when pad_mask is given
 
-    def update(self, moe_output: Any) -> None:
+    def update(
+        self,
+        moe_output: Any,
+        pad_mask: Optional[torch.Tensor] = None,
+    ) -> None:
         """Accumulate one MoE output tensor group into the counters.
 
         Args:
             moe_output: ``MoEOutput`` object from a ``SpatialMoELayer`` layer.
+            pad_mask: Optional flat boolean tensor ``[B * N_tokens]`` where
+                ``True`` marks a valid (non-padding) token.  When provided,
+                only valid tokens contribute to all statistics.  When
+                ``None``, all tokens are used (original behaviour, fully
+                backward-compatible).
         """
         topk_indices = moe_output.topk_indices.view(-1, self.top_k).cpu()  # [N_tokens, K]
         topk_gates = moe_output.topk_gates.view(-1, self.top_k).cpu().double()  # [N_tokens, K]
+        entropy = moe_output.entropy.view(-1).cpu().double()  # [N_tokens]
+
+        if pad_mask is not None:
+            valid = pad_mask.view(-1).bool().cpu()  # [N_tokens]
+            self.masked_tokens += int((~valid).sum().item())
+            topk_indices = topk_indices[valid]
+            topk_gates = topk_gates[valid]
+            entropy = entropy[valid]
 
         N = topk_indices.size(0)
 
@@ -63,14 +81,11 @@ class RoutingTracker:
             self.soft_mass += mass
 
         # Entropy
-        entropy = moe_output.entropy.view(-1).cpu().double()
         self.entropy_sum += entropy.sum().item()
-
-        # Normalize by log(K) to get 0-1 range roughly, though raw entropy can exceed log(K) if noise is weird
-        # The prompt says: "Normalize by log(TOP_K) to obtain H_normalized in [0,1]"
-        max_e = entropy.max().item()
-        if max_e > self.entropy_max:
-            self.entropy_max = max_e
+        if N > 0:
+            max_e = entropy.max().item()
+            if max_e > self.entropy_max:
+                self.entropy_max = max_e
 
         self.total_tokens += N
 
@@ -90,6 +105,7 @@ class RoutingTracker:
             "entropy_sum": self.entropy_sum,
             "entropy_max": self.entropy_max,
             "total_tokens": self.total_tokens,
+            "masked_tokens": self.masked_tokens,
         }
 
     @classmethod
@@ -101,6 +117,8 @@ class RoutingTracker:
         tracker.entropy_sum = state["entropy_sum"]
         tracker.entropy_max = state["entropy_max"]
         tracker.total_tokens = state["total_tokens"]
+        # Default to 0 for backward compat with snapshots saved before this field existed.
+        tracker.masked_tokens = state.get("masked_tokens", 0)
         return tracker
 
     def merge(self, other: "RoutingTracker") -> "RoutingTracker":
@@ -115,6 +133,7 @@ class RoutingTracker:
         self.entropy_sum += other.entropy_sum
         self.entropy_max = max(self.entropy_max, other.entropy_max)
         self.total_tokens += other.total_tokens
+        self.masked_tokens += other.masked_tokens
         return self
 
 
@@ -131,20 +150,36 @@ class WeatherAnalyzer:
         # image_weather_stats: list of dicts. Each dict is {'weather': str, 'counts': np.ndarray, 'total': int}
         self.image_weather_stats: List[Dict[str, Any]] = []
 
-    def update(self, topk_indices: torch.Tensor, weather: str) -> None:
+    def update(
+        self,
+        topk_indices: torch.Tensor,
+        weather: str,
+        pad_mask: Optional[torch.Tensor] = None,
+    ) -> None:
         """Accumulate one image's token counts.
 
         Args:
-            topk_indices: ``(H, W, K)`` routed-expert indices for a single image.
+            topk_indices: ``(N_tokens, K)`` or ``(H, W, K)`` routed-expert
+                indices for a single image.
             weather: weather label string for the image.
+            pad_mask: Optional flat boolean tensor ``[N_tokens]`` where
+                ``True`` marks a valid (non-padding) token.  When provided,
+                only valid tokens contribute to the per-expert counts.  When
+                ``None``, all tokens are used (original behaviour).
         """
-        N = topk_indices.numel() // topk_indices.shape[-1]
-        flat_idx = topk_indices.view(-1)
-        counts = torch.bincount(flat_idx, minlength=self.num_experts).cpu().numpy()
+        K = topk_indices.shape[-1]
+        flat_indices = topk_indices.view(-1, K).cpu()  # [N_tokens, K]
+
+        if pad_mask is not None:
+            valid = pad_mask.view(-1).bool().cpu()  # [N_tokens]
+            flat_indices = flat_indices[valid]
+
+        N = flat_indices.size(0)
+        counts = torch.bincount(flat_indices.view(-1), minlength=self.num_experts).numpy()
         self.image_weather_stats.append({
             "weather": weather,
             "counts": counts,
-            "total": N * topk_indices.shape[-1],
+            "total": N * K,
         })
 
     def compute_divergence(
