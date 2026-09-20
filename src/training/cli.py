@@ -84,7 +84,7 @@ def _mark_run_complete(ctx: TrainCtx, epoch: int) -> None:
                     "global_step": ctx.engine.global_step,
                     "best_checkpoint": "best.pth",
                     "config_hash": ctx.cfg_hash}, f, indent=4)
-    enqueue_hf_push(ctx.hf_pusher, p, name="training_complete.json")
+    enqueue_hf_push(ctx.hf_pusher, p, name=f"{config.experiment_id}_training_complete.json")
 
 
 def _mark_preflight_pass(ctx: TrainCtx) -> None:

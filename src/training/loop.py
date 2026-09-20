@@ -244,7 +244,7 @@ def distributed_diagnostics(
                 enqueue_hf_push(
                     hf_pusher,
                     diag_json,
-                    name=f"routing_stats_ep{epoch}.json",
+                    name=f"{config.experiment_id}_routing_stats_ep{epoch}.json",
                     extra_meta={"epoch": epoch, "type": "diagnostics"},
                 )
             if os.path.exists(diag_csv):
@@ -252,7 +252,7 @@ def distributed_diagnostics(
                 enqueue_hf_push(
                     hf_pusher,
                     diag_csv,
-                    name=f"routing_stats_ep{epoch}.csv",
+                    name=f"{config.experiment_id}_routing_stats_ep{epoch}.csv",
                     extra_meta={"epoch": epoch, "type": "diagnostics"},
                 )
 
