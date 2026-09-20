@@ -18,18 +18,46 @@ Design:
 
 from __future__ import annotations
 
+import json
 import logging
 import sys
 from typing import Optional
 
+import numpy as np
+
+
+
+class NumpyEncoder(json.JSONEncoder):
+    """JSON encoder that handles numpy and torch scalar types.
+
+    Use as ``json.dump(data, f, cls=NumpyEncoder)`` wherever metric dicts
+    (which contain ``numpy.float32`` / ``torch.Tensor`` values) are serialised.
+    """
+
+    def default(self, obj: object) -> object:
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, (np.floating, np.float32, np.float64)):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        try:
+            import torch  # local import — avoids hard dep for non-GPU contexts
+            if isinstance(obj, torch.Tensor):
+                return obj.item() if obj.numel() == 1 else obj.tolist()
+        except ImportError:
+            pass
+        return super().default(obj)
+
 
 class _RankFilter(logging.Filter):
-    """Suppress INFO/DEBUG on non-rank-0 ranks."""
-
+    """Suppress INFO/DEBUG on non-rank-0 ranks, and inject rank into records."""
     def __init__(self, rank: int) -> None:
+        super().__init__()
         self.rank = rank
 
     def filter(self, record: logging.LogRecord) -> bool:
+        record.rank = self.rank
         if self.rank == 0:
             return True
         return record.levelno >= logging.WARNING
@@ -40,32 +68,28 @@ _initialized: bool = False
 
 
 def setup_logging(rank: int = 0, level: int = logging.INFO) -> None:
-    """Configure the root logger exactly once.
-
-    Parameters
-    ----------
-    rank:
-        Global rank of this process.  Non-zero ranks suppress INFO.
-    level:
-        Minimum severity to emit (default ``INFO``).
-    """
+    """Configure the root logger. Safe to call more than once — rank is
+    always updated, even if a handler is already installed."""
     global _rank, _initialized
-    if _initialized:
-        return
     _rank = rank
+    if _initialized:
+        root = logging.getLogger()
+        for h in root.handlers:
+            for f in h.filters:
+                if isinstance(f, _RankFilter):
+                    f.rank = rank
+        return
     _initialized = True
-
     fmt = logging.Formatter(
-        fmt=f"[rank {rank}] %(name)s: %(message)s",
+        fmt="[rank %(rank)s] %(name)s: %(message)s",
         datefmt=None,
     )
     handler = logging.StreamHandler(stream=sys.stderr)
     handler.setFormatter(fmt)
-
+    handler.addFilter(_RankFilter(rank))
     root = logging.getLogger()
     root.handlers.clear()
     root.addHandler(handler)
-    root.addFilter(_RankFilter(rank))
     root.setLevel(level)
 
 
