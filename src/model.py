@@ -11,7 +11,7 @@ import torch.nn as nn
 from src.backbone import MultiScaleBackbone
 from src.decoder import DecoderOutput, SpatialMoEDecoder
 from src.log import get_logger
-from src.moe_layer import MoEOutput, SpatialMoELayer
+from src.moe_layer import DenseMoE16Adapter, MoEOutput, SpatialMoELayer
 
 log = get_logger(__name__)
 
@@ -43,6 +43,7 @@ class SpatialMoESODNet(nn.Module):
         router_noise_scale: float = 1.0,
         router_noise_min_std: float = 0.05,
         pretrained_backbone: bool = True,
+        moe_16_mode: str = "sparse",
     ) -> None:
         """Initialize the full network.
 
@@ -83,14 +84,17 @@ class SpatialMoESODNet(nn.Module):
             router_noise_scale=router_noise_scale,
             router_noise_min_std=router_noise_min_std,
         )
-        self.moe_16 = SpatialMoELayer(
-            dim=dim,
-            num_experts=num_experts,
-            k=k,
-            router_noise_enabled=router_noise_enabled,
-            router_noise_scale=router_noise_scale,
-            router_noise_min_std=router_noise_min_std,
-        )
+        if moe_16_mode == "dense":
+            self.moe_16 = DenseMoE16Adapter(dim=dim)
+        else:
+            self.moe_16 = SpatialMoELayer(
+                dim=dim,
+                num_experts=num_experts,
+                k=k,
+                router_noise_enabled=router_noise_enabled,
+                router_noise_scale=router_noise_scale,
+                router_noise_min_std=router_noise_min_std,
+            )
 
         # 3. Spatial MoE decoder for feature fusion and prediction.
         self.decoder = SpatialMoEDecoder(
