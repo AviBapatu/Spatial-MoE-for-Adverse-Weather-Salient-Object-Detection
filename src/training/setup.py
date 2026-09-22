@@ -70,9 +70,19 @@ def default_preflight_base(project_root: str) -> str:
     return os.path.join(project_root, "preflight")
 
 
-def should_run_diagnostics(epoch_1indexed: int) -> bool:
-    """Run MoE diagnostics on the first epoch and every third epoch."""
-    return epoch_1indexed == 1 or (epoch_1indexed - 1) % 3 == 0
+def should_run_diagnostics(epoch_1indexed: int, every_n: int = 3) -> bool:
+    """Return True when diagnostics should run this epoch.
+
+    Parameters
+    ----------
+    epoch_1indexed:
+        Current epoch number, 1-indexed.
+    every_n:
+        Run diagnostics every *every_n* epochs (also always on epoch 1).
+        Pass ``config.diag.routing_diagnostic_epochs`` here.
+        ``1`` means every epoch.
+    """
+    return epoch_1indexed == 1 or (epoch_1indexed - 1) % every_n == 0
 
 
 def device_memory_diagnostics(device: torch.device) -> Tuple[float, float, float, float]:

@@ -137,7 +137,7 @@ def build_checkpoint_state(
     config_hash: str,
     world_size: int,
     device: torch.device,
-    rng_states: dict,
+    rng_states: Optional[Dict[str, Any]],
     extra: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Construct the canonical checkpoint dict."""

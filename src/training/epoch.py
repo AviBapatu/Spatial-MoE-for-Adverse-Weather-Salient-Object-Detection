@@ -242,7 +242,7 @@ def _validate_and_diagnostics(ctx: TrainCtx, epoch: int, args: Any, wall_clock_s
         ctx = ctx._replace(best_mae=best_mae, best_mae_epoch=best_epoch,
                            best_mae_step=best_step)
 
-    if should_run_diagnostics(epoch + 1):
+    if should_run_diagnostics(epoch + 1, every_n=config.diag.routing_diagnostic_epochs):
         distributed_diagnostics(
             model=model, val_loader=val_loader, device=device, epoch=epoch + 1,
             checkpoint_dir=ctx.checkpoint_dir, config=config,
