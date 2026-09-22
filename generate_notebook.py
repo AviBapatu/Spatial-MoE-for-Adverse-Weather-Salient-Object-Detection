@@ -612,7 +612,8 @@ else:
         "--preflight", "--max_optimizer_steps", "5"
     ], cwd=PROJECT_ROOT, check=True)
     
-    with open(os.path.join(PREFLIGHT_ROOT, "preflight_results.json"), "r") as f:
+    _pf_exp_id = runtime_cfg.get("experiment_id", "")
+    with open(os.path.join(PREFLIGHT_ROOT, _pf_exp_id, "preflight_results.json"), "r") as f:
         pf_data = json.load(f)
     with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
         canonical_cfg = json.load(f)
@@ -765,8 +766,9 @@ To run it: select all lines in the cell below and toggle comments off (Edit > To
     canonical_cfg = ExperimentConfig.from_dict(canonical_cfg).to_dict()
     from src.train_ddp import get_config_hash
     canonical_hash = get_config_hash(canonical_cfg, "model_config_hash")
+    _pf_exp_id = canonical_cfg.get("experiment_id", "")
     
-    with open(os.path.join(PREFLIGHT_ROOT, "preflight_results.json"), "r") as f:
+    with open(os.path.join(PREFLIGHT_ROOT, _pf_exp_id, "preflight_results.json"), "r") as f:
         pf_data = json.load(f)
     actual_hash = pf_data.get("config_hash")
     
@@ -820,7 +822,8 @@ To run it: select all lines in the cell below and toggle comments off (Edit > To
         "--config", RUNTIME_CONFIG,
         "--resume", "latest", "--preflight", "--max_optimizer_steps", "5"
     ], cwd=PROJECT_ROOT, check=True)
-    with open(os.path.join(PREFLIGHT_ROOT, "preflight_results.json"), "r") as f:
+    _pf_exp_id = runtime_cfg.get("experiment_id", "")
+    with open(os.path.join(PREFLIGHT_ROOT, _pf_exp_id, "preflight_results.json"), "r") as f:
         pf_data = json.load(f)
     if pf_data.get("status") == "PASS":
         mark_gate("RESUME_PREFLIGHT_CHECK", "PASS", run_id=pf_data.get("run_id"), config_hash=pf_data.get("config_hash"))
