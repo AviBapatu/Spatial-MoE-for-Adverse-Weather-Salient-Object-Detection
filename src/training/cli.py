@@ -14,6 +14,11 @@ import sys
 import time
 from typing import Any, Optional
 
+# Reduce CUDA allocator fragmentation before any allocation happens.  Training at
+# 384x384 with the PVTv2-B4 backbone runs close to a 15 GiB T4's limit, and
+# fragmentation is what tips it into OOM ("reserved but unallocated" memory).
+os.environ.setdefault("PYTORCH_ALLOC_CONF", "expandable_segments:True")
+
 import torch.distributed as dist
 
 _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
