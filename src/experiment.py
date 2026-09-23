@@ -96,7 +96,9 @@ def get_git_identity(workspace_root: str) -> Dict[str, Any]:
 def generate_experiment_id(config: ExperimentConfig) -> str:
     """Build a short human-readable experiment ID from *config*.
 
-    Example output: ``EXP_B4_E8_K2_S32_R1_L1_M_SPARSE``.
+    Example output: ``EXP_B4_E8_K2_S32_R1_L1_M_SPARSE``.  A non-empty
+    ``config.variant`` is appended as ``_<variant>`` so two runs of the same
+    architecture (e.g. a gate_mode ablation) get distinct artifact names.
     """
     bb = config.model.backbone.upper().replace("PVT_V2_", "")
     e = config.model.num_experts
@@ -123,7 +125,9 @@ def generate_experiment_id(config: ExperimentConfig) -> str:
     if config.loss.boundary_weight > 0:
         l_abbrev = "L3"
 
-    return f"EXP_{bb}_E{e}_K{k}_S{s}_{r_abbrev}_{l_abbrev}_{moe_abbrev}"
+    variant = (config.variant or "").strip()
+    suffix = f"_{variant}" if variant else ""
+    return f"EXP_{bb}_E{e}_K{k}_S{s}_{r_abbrev}_{l_abbrev}_{moe_abbrev}{suffix}"
 
 
 # ---------------------------------------------------------------------------

@@ -21,7 +21,7 @@ def get_config_hash(config: dict, model_hash: str) -> str:
         k: v for k, v in config.items()
         if k not in [
             "NUM_WORKERS", "CHECKPOINT_EVERY_N_STEPS",
-            "experiment_id", "run_id", "batch_equivalence",
+            "experiment_id", "run_id", "batch_equivalence", "variant",
         ]
     })
     if "data" in core_config and "dataset_root" in core_config["data"]:

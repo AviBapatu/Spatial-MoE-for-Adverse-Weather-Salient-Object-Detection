@@ -209,6 +209,10 @@ class ExperimentConfig:
     experiment_id: str = ""
     run_id: str = ""
     batch_equivalence: str = "MATCHED"
+    # Optional free-text label appended to the generated experiment_id, so two
+    # runs of the same architecture (e.g. a gate_mode ablation) get distinct
+    # checkpoint/diagnostic names instead of overwriting each other's artifacts.
+    variant: str = ""
 
     # -- Serialization -----------------------------------------------------
 
@@ -235,6 +239,7 @@ class ExperimentConfig:
             experiment_id=data.get("experiment_id", ""),
             run_id=data.get("run_id", ""),
             batch_equivalence=data.get("batch_equivalence", "MATCHED"),
+            variant=data.get("variant", ""),
         )
 
     def save(self, filepath: str) -> None:
@@ -265,7 +270,7 @@ class ExperimentConfig:
         - ``train.num_workers``, ``train.checkpoint_every_n_steps``
         """
         d = self.to_dict()
-        volatile_keys = ["experiment_id", "run_id", "batch_equivalence"]
+        volatile_keys = ["experiment_id", "run_id", "batch_equivalence", "variant"]
         for k in volatile_keys:
             d.pop(k, None)
 

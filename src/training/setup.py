@@ -230,13 +230,18 @@ def resolve_workspace(
     from src.train_ddp import get_config_hash
 
     run_dir = ""
+    experiment_id = config.experiment_id
+    run_id = config.run_id
     if is_rank_zero():
         run_dir = setup_experiment_run(config, dry_run=False)
+        experiment_id = config.experiment_id
+        run_id = config.run_id
         update_registry_status("experiments", config.run_id, "RUNNING")
         log.info(f"EXPERIMENT INITIALIZED: {config.experiment_id}  "
                  f"RUN: {config.run_id}  DIR: {run_dir}")
     dist.barrier()
-    dist.broadcast_object_list([run_dir], src=0)
+    dist.broadcast_object_list([run_dir, experiment_id, run_id], src=0)
+    config.experiment_id, config.run_id = experiment_id, run_id
 
     cfg_hash = get_config_hash(config.to_dict(), "model_config_hash")
 
