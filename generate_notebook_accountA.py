@@ -575,52 +575,43 @@ in the config cell to skip this cell.
     print(f"\u2713 config and model agree: {m.num_experts} experts, k={m.top_k}, "
           f"gate_mode={m.gate_mode}, moe_type={m.moe_type}, moe_16_mode={m.moe_16_mode}")
 
-    # --- 2. one real epoch on a small subset, then a real resume ----------------
+    # --- 2. one real epoch on a small subset, with a checkpoint ------------------
+    # This is the check that earns its keep: training steps, the epoch-end
+    # validation, the routing diagnostics and a checkpoint write.  Those
+    # epoch-boundary paths are where an unattended run dies four hours in.
+    #
+    # Deliberately no resume stage here.  --resume validates the config hash, and
+    # that hash covers train.epochs, so resuming with a different epoch budget is
+    # refused -- correctly, because it changes the LR schedule.  The round trip has
+    # its own tool, listed in the appendix cell:
+    #   torchrun --nproc_per_node=2 -m src.smoke_test --mode resume_a ...
+    #   torchrun --nproc_per_node=2 -m src.smoke_test --mode resume_b ...
     with open(CONFIG_SRC) as f:
         tiny = json.load(f)
     assert {"data", "train"} <= set(tiny), f"unexpected config layout: {list(tiny)}"
-    # epochs=2 so the resume below genuinely continues the schedule instead of
-    # resuming into a run that has already finished.
+    # epochs=1: one epoch is the whole check.  checkpoint_every_n_steps=1 because the
+    # mini epoch is about 3 optimizer steps, far short of the production cadence of
+    # 200, so otherwise no checkpoint would be written at all.
     tiny["data"] = dict(tiny["data"], max_samples=100)
-    # epochs=2 so the resume below continues the schedule rather than resuming
-    # into a finished run; checkpoint_every_n_steps=1 because the mini epoch is
-    # ~3 optimizer steps, far short of the production cadence of 200, so
-    # otherwise no checkpoint would exist to resume from.
-    tiny["train"] = dict(tiny["train"], epochs=2, checkpoint_every_n_steps=1)
+    tiny["train"] = dict(tiny["train"], epochs=1, checkpoint_every_n_steps=1)
     TINY_CONFIG = "/kaggle/working/preflight_config.json"
     with open(TINY_CONFIG, "w") as f:
         json.dump(tiny, f, indent=2)
 
-    # The same experiment ID the trainer derives, so the assertions below read
-    # exactly the files it writes.  Preflight artifacts never touch the real
-    # checkpoint directory.
-    preflight_dir = os.path.join(PREFLIGHT_ROOT, generate_experiment_id(experiment))
-    checkpoint = os.path.join(preflight_dir, "latest.pth")
-    common = ["torchrun", "--nproc_per_node=2", "-m", "src.train_ddp",
-              "--config", TINY_CONFIG, "--preflight",
-              # Without an explicit cap, --preflight defaults to 5 optimizer steps.
-              # That would end the epoch early and skip exactly the epoch-boundary
-              # paths (validation, diagnostics, checkpoint) this run exists to test.
-              "--max_optimizer_steps", "100000"]
-
+    checkpoint = os.path.join(PREFLIGHT_ROOT, generate_experiment_id(experiment), "latest.pth")
     print("\n" + "=" * 70)
-    print("PREFLIGHT 1/2  100 images: train -> validate -> diagnostics -> checkpoint")
+    print("PREFLIGHT: 100 images -> train -> validate -> diagnostics -> checkpoint")
     print("=" * 70)
-    subprocess.run(common + ["--max_epochs", "1"], cwd=PROJECT_ROOT, check=True)
+    subprocess.run([
+        "torchrun", "--nproc_per_node=2", "-m", "src.train_ddp",
+        "--config", TINY_CONFIG, "--preflight",
+        # Without an explicit cap, --preflight defaults to 5 optimizer steps, which
+        # would end the epoch early and skip the very paths this run exists to test.
+        "--max_optimizer_steps", "100000",
+    ], cwd=PROJECT_ROOT, check=True)
     assert os.path.exists(checkpoint), (
         f"epoch finished but wrote no checkpoint: {checkpoint} "
         f"(checkpoint_every_n_steps={tiny['train']['checkpoint_every_n_steps']})"
-    )
-    written_at = os.path.getmtime(checkpoint)
-
-    print("\n" + "=" * 70)
-    print("PREFLIGHT 2/2  resume from the checkpoint that run wrote")
-    print("=" * 70)
-    subprocess.run(common + ["--resume", "latest", "--max_epochs", "2"],
-                   cwd=PROJECT_ROOT, check=True)
-    # A resume that silently does nothing also exits 0, so require new work.
-    assert os.path.getmtime(checkpoint) > written_at, (
-        "resume exited cleanly but never rewrote the checkpoint -- it did no work"
     )
 
     print("\n\u2713 preflight passed -- the next cell starts the real run")
