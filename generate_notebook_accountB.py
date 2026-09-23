@@ -11,10 +11,12 @@ Usage:
 """
 import json
 
+DEFAULT_CONFIG_PATH = "experiments/v_e8_repro_gatedense.json"
 OUTPUT_NOTEBOOK = "moe-of-sod__accountB__v_e8_repro_gatedense.ipynb"
 
 
-def create_notebook() -> None:
+def create_notebook(output_notebook: str = OUTPUT_NOTEBOOK,
+                    config_path: str = DEFAULT_CONFIG_PATH) -> None:
     """Build the notebook cell list and write it to ``OUTPUT_NOTEBOOK``."""
     cells = []
 
@@ -52,6 +54,9 @@ RUN_MODE = "TRAIN"
 # Pre-run checks (architecture agreement + a 100-image end-to-end run).
 # Set False to skip the "## 11_preflight_checks" cell entirely.
 RUN_PREFLIGHT = True
+# Evaluation only: "none" or "hflip" (flip-average TTA). hflip results
+# land under their own subfolder, so both can coexist.
+EVAL_TTA = "none"
 ACTIVE_CONFIG_PATH = "experiments/v_e8_repro_gatedense.json"
 # Analysis results are uploaded under the experiment ID derived from
 # ACTIVE_CONFIG_PATH (see the upload cell), so there is no separate label here
@@ -706,6 +711,7 @@ if RUN_MODE == "EVALUATE":
             "--dataset", "both",
             "--data_dir", data_dir,
             "--out_dir", eval_out_dir,
+            "--tta", EVAL_TTA,
         ],
         cwd=PROJECT_ROOT,
         stdout=subprocess.PIPE,
@@ -1028,7 +1034,10 @@ if RUN_MODE == "EVALUATE":
     if os.path.exists(eval_dir):
         for ext in ["*.txt", "*.json"]:
             for filepath in glob.glob(f"{eval_dir}/**/{ext}", recursive=True):
-                dest = os.path.join(RESULTS_ROOT, 'eval_results', os.path.basename(filepath))
+                # Keep the dataset/tta subdirectory in the path so a hflip run
+                # never overwrites the plain one.
+                rel = os.path.relpath(filepath, eval_dir)
+                dest = os.path.join(RESULTS_ROOT, 'eval_results', rel)
                 os.makedirs(os.path.dirname(dest), exist_ok=True)
                 shutil.copy(filepath, dest)
 
@@ -1081,6 +1090,17 @@ python -m src.hf_sync push-checkpoint <file> --name <remote-name>
 ```
 """)
 
+    # The config path is the only thing that distinguishes the arms, so swap it into
+    # whichever cell holds it instead of duplicating this whole file per variant.
+    _swapped = 0
+    for _cell in cells:
+        _joined = "".join(_cell["source"])
+        if DEFAULT_CONFIG_PATH in _joined:
+            _cell["source"] = _joined.replace(
+                DEFAULT_CONFIG_PATH, config_path).splitlines(keepends=True)
+            _swapped += 1
+    assert _swapped == 1, f"config path appears in {_swapped} cells, expected 1"
+
     notebook = {
         "cells": cells,
         "metadata": {
@@ -1106,9 +1126,9 @@ python -m src.hf_sync push-checkpoint <file> --name <remote-name>
         "nbformat_minor": 4,
     }
 
-    with open(OUTPUT_NOTEBOOK, "w") as f:
+    with open(output_notebook, "w") as f:
         json.dump(notebook, f, indent=2)
-    print(f"{OUTPUT_NOTEBOOK} generated successfully ({len(cells)} cells).")
+    print(f"{output_notebook} generated successfully ({len(cells)} cells).")
 
 
 if __name__ == "__main__":

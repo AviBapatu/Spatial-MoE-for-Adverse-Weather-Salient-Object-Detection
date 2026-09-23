@@ -1,10 +1,11 @@
-"""Drift guard for the account notebooks and their generators.
+"""Drift guard for the Kaggle notebooks and their generators.
 
 ``generate_notebook_accountA.py`` / ``_accountB.py`` are the editable source of
-truth for the two Kaggle notebooks. Regenerating a notebook in a temp directory
-must reproduce the committed notebook's cell content exactly, so a cell edited
-in one place but not the other fails here instead of silently diverging — which
-is how these notebooks previously went stale.
+truth for the two account notebooks, and ``generate_notebook_variants.py`` builds
+the seed-repeat and E4 notebooks from the same cell source. Regenerating in a temp
+directory must reproduce every committed notebook cell-for-cell, so a cell edited
+in one place but not another fails here instead of silently diverging — which is
+how these notebooks previously went stale.
 """
 from __future__ import annotations
 
@@ -18,8 +19,13 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 GENERATORS = [
-    ("generate_notebook_accountA.py", "moe-of-sod__accountA__v_e8_repro_best.ipynb"),
-    ("generate_notebook_accountB.py", "moe-of-sod__accountB__v_e8_repro_gatedense.ipynb"),
+    ("generate_notebook_accountA.py", ["moe-of-sod__accountA__v_e8_repro_best.ipynb"]),
+    ("generate_notebook_accountB.py", ["moe-of-sod__accountB__v_e8_repro_gatedense.ipynb"]),
+    ("generate_notebook_variants.py", [
+        "moe-of-sod__v_e8_repro_best_seed43.ipynb",
+        "moe-of-sod__v_e8_repro_best_seed44.ipynb",
+        "moe-of-sod__v_e4_repro_renorm.ipynb",
+    ]),
 ]
 
 
@@ -29,9 +35,10 @@ def _cell_content(cell: dict) -> str:
     return source if isinstance(source, str) else "".join(source)
 
 
-@pytest.mark.parametrize(("script", "notebook"), GENERATORS)
-def test_generator_reproduces_committed_notebook(script: str, notebook: str, tmp_path: Path) -> None:
-    """The generator must rebuild the committed notebook cell-for-cell."""
+@pytest.mark.parametrize(("script", "notebooks"), GENERATORS)
+def test_generator_reproduces_committed_notebook(script: str, notebooks: list,
+                                                 tmp_path: Path) -> None:
+    """Every notebook a generator writes must match its committed copy cell-for-cell."""
     result = subprocess.run(
         [sys.executable, str(REPO_ROOT / script)],
         cwd=tmp_path,
@@ -40,9 +47,10 @@ def test_generator_reproduces_committed_notebook(script: str, notebook: str, tmp
     )
     assert result.returncode == 0, result.stderr
 
-    built = json.loads((tmp_path / notebook).read_text())
-    committed = json.loads((REPO_ROOT / notebook).read_text())
+    for notebook in notebooks:
+        built = json.loads((tmp_path / notebook).read_text())
+        committed = json.loads((REPO_ROOT / notebook).read_text())
 
-    assert [(c["cell_type"], _cell_content(c)) for c in built["cells"]] == [
-        (c["cell_type"], _cell_content(c)) for c in committed["cells"]
-    ], f"{notebook} has drifted from {script} — re-run {script} to rebuild it"
+        assert [(c["cell_type"], _cell_content(c)) for c in built["cells"]] == [
+            (c["cell_type"], _cell_content(c)) for c in committed["cells"]
+        ], f"{notebook} has drifted from {script} — re-run {script} to rebuild it"
