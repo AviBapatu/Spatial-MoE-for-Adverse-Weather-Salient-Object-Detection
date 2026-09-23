@@ -119,7 +119,7 @@ status, timestamp
 
 ### Checkpoint: `checkpoints/best_new_1.pth`
 
-**Evaluation output:** `evaluation/best_new_1/`
+**Evaluation output:** `results/legacy/legacy_8expert/evaluation/best_new_1/`
 
 #### Synthetic Test (test_sys) — 1,500 images
 

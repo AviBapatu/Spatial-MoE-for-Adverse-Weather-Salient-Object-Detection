@@ -156,14 +156,14 @@ Output y_i  +  Entropy H_i
 **Content:** 3 rows, columns:
 1. Input image (from `data/WXSDO_data/test_real/input/`)
 2. Ground truth (from `data/WXSDO_data/test_real/gt/`)
-3. Model prediction (from `evaluation/best_new_1/test_real/none/`)
+3. Model prediction (from `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/`)
 
 **Rows (selected from actual evaluation outputs):**
 - **Row 1:** Snow (best MAE=0.0094) — select a representative snow image
 - **Row 2:** Fog (mid MAE=0.0148) — select a representative fog image
 - **Row 3:** Low-light (worst MAE=0.0243) — select a representative low-light image
 
-**Source:** Use actual PNG files from `evaluation/best_new_1/test_real/none/*.png` matched to input images by filename.
+**Source:** Use actual PNG files from `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/*.png` matched to input images by filename.
 
 **Style:**
 - Compact, high-resolution crops
@@ -215,7 +215,7 @@ Output y_i  +  Entropy H_i
 
 **Caption:** Global performance on WXSOD test splits. Best values in **bold**.
 
-**Source:** `evaluation/best_new_1/test_sys/none/metrics.json`, `evaluation/best_new_1/test_real/none/metrics.json`
+**Source:** `results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/metrics.json`, `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json`
 
 ### TABLE 2 — Weather-Wise Results (Page 3, half width, beside Fig. 4)
 
@@ -229,7 +229,7 @@ Output y_i  +  Entropy H_i
 
 **Caption:** Weather-wise results on real-world test (554 images). Best values in **bold**.
 
-**Source:** `evaluation/best_new_1/test_real/none/metrics.json`
+**Source:** `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json`
 
 ### Tables REMOVED from current manuscript
 
@@ -532,10 +532,10 @@ Before finalizing the manuscript, verify:
 
 | # | Item | Source |
 |---|------|--------|
-| 1 | All MAE/S/F/E values match `evaluation/best_new_1/*/none/metrics.json` | PAPER_SOURCE_OF_TRUTH.md §5 |
+| 1 | All MAE/S/F/E values match `results/legacy/legacy_8expert/evaluation/best_new_1/*/none/metrics.json` | PAPER_SOURCE_OF_TRUTH.md §5 |
 | 2 | Weather-wise values match weather breakdown in metrics.json | PAPER_SOURCE_OF_TRUTH.md §5.2 |
-| 3 | Routing entropy values match `evaluation_results/entropy_comparison.json` | PAPER_SOURCE_OF_TRUTH.md §5.3 |
-| 4 | Forced-expert values match `evaluation_results/force_expert_ablation.json` | PAPER_SOURCE_OF_TRUTH.md §5.4 |
+| 3 | Routing entropy values match `results/legacy/legacy_8expert/evaluation_results/entropy_comparison.json` | PAPER_SOURCE_OF_TRUTH.md §5.3 |
+| 4 | Forced-expert values match `results/legacy/legacy_8expert/evaluation_results/force_expert_ablation.json` | PAPER_SOURCE_OF_TRUTH.md §5.4 |
 | 5 | Tensor dimensions match `RESEARCH_TRUTH.md` §1.2 | RESEARCH_TRUTH.md |
 | 6 | No forbidden claims appear (§11.2 above) | FINAL_CLAIM_EVIDENCE_MATRIX.md |
 | 7 | All references are from §6 shortlist | This plan §6 |

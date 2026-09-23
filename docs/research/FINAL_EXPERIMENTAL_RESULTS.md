@@ -1,7 +1,7 @@
 # FINAL EXPERIMENTAL RESULTS — Complete Audit
 
 **Audit date:** 2026-09-02
-**Source of truth:** `evaluation_results/`, `evaluation/`, source code, configs
+**Source of truth:** `results/legacy/legacy_8expert/evaluation_results/`, `evaluation/`, source code, configs
 **Scope:** All completed experiments as of audit date
 
 ---
@@ -45,7 +45,7 @@
 ### 1.3 Complete File Inventory
 
 ```
-evaluation_results/
+results/legacy/legacy_8expert/evaluation_results/
 ├── best/
 │   ├── test_real/none/
 │   │   ├── metrics.json                          ← boundary_MAE=0.4941, boundary_F1=0.0659
@@ -70,7 +70,7 @@ evaluation_results/
 ├── compute_cost.json
 └── qualitative_grid.png
 
-evaluation/best_new_1/
+results/legacy/legacy_8expert/evaluation/best_new_1/
 ├── test_real/none/
 │   ├── metrics.json                              ← boundary_MAE=0.6334, boundary_F1=0.3601
 │   ├── summary.txt
@@ -87,12 +87,12 @@ evaluation/best_new_1/
 
 | ID | Checkpoint | Dataset | Split | N | MAE | S_measure | Boundary Source | Status |
 |----|-----------|---------|-------|---|-----|-----------|----------------|--------|
-| E1 | best.pth | test_real | none | 554 | 0.0168 | 0.9151 | `evaluation_results/best/` (kernel=5, ellipse) | COMPLETED |
-| E2 | best.pth | test_sys | none | 1500 | 0.0192 | 0.9139 | `evaluation_results/best/` (kernel=5, ellipse) | COMPLETED |
+| E1 | best.pth | test_real | none | 554 | 0.0168 | 0.9151 | `results/legacy/legacy_8expert/evaluation_results/best/` (kernel=5, ellipse) | COMPLETED |
+| E2 | best.pth | test_sys | none | 1500 | 0.0192 | 0.9139 | `results/legacy/legacy_8expert/evaluation_results/best/` (kernel=5, ellipse) | COMPLETED |
 | E3 | best.pth | test_real | none | 554 | 0.0168 | 0.9151 | timestamped run (kernel=5, ellipse) | COMPLETED |
 | E4 | best.pth | test_sys | none | 1500 | 0.0192 | 0.9139 | timestamped run (kernel=5, ellipse) | COMPLETED |
-| E5 | best_new_1.pth | test_real | none | 554 | 0.0168 | 0.9151 | `evaluation/best_new_1/` (kernel=5, ellipse) | COMPLETED |
-| E6 | best_new_1.pth | test_sys | none | 1500 | 0.0192 | 0.9139 | `evaluation/best_new_1/` (kernel=5, ellipse) | COMPLETED |
+| E5 | best_new_1.pth | test_real | none | 554 | 0.0168 | 0.9151 | `results/legacy/legacy_8expert/evaluation/best_new_1/` (kernel=5, ellipse) | COMPLETED |
+| E6 | best_new_1.pth | test_sys | none | 1500 | 0.0192 | 0.9139 | `results/legacy/legacy_8expert/evaluation/best_new_1/` (kernel=5, ellipse) | COMPLETED |
 | A1 | best.pth (forced expert 0, scale 4) | test_real | none | 554 | 0.0170 | 0.9139 | force_expert_ablation.json | COMPLETED |
 
 **Note:** E1/E2 and E3/E4 and E5/E6 all use the **same model** (hash `2cd252ad3a3581e1c65961b828857d70`). The core SOD metrics (MAE, S_measure, E_*, F_*) are **identical** across all six. Only boundary metrics differ between evaluation runs.
@@ -105,7 +105,7 @@ The canonical baseline is the **SpatialMoESODNet** (PVTv2-B4 backbone, 8 experts
 
 ### 2.1 Synthetic Test Set (test_sys, 1,500 images)
 
-**Source:** `evaluation/best_new_1/test_sys/none/metrics.json` (or equivalently `evaluation_results/metrics_test_sys_20260901_172914.json`)
+**Source:** `results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/metrics.json` (or equivalently `results/legacy/legacy_8expert/evaluation_results/metrics_test_sys_20260901_172914.json`)
 
 | Metric | Value |
 |--------|-------|
@@ -122,7 +122,7 @@ The canonical baseline is the **SpatialMoESODNet** (PVTv2-B4 backbone, 8 experts
 
 ### 2.2 Real-World Test Set (test_real, 554 images)
 
-**Source:** `evaluation/best_new_1/test_real/none/metrics.json` (or equivalently `evaluation_results/metrics_test_real_20260901_173227.json`)
+**Source:** `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json` (or equivalently `results/legacy/legacy_8expert/evaluation_results/metrics_test_real_20260901_173227.json`)
 
 | Metric | Value |
 |--------|-------|
@@ -281,7 +281,7 @@ However, the comparison between test_sys and test_real performance on matching w
 
 **NO DIRECT SOTA COMPARISON AVAILABLE.**
 
-The `evaluation_results/` directory contains no comparisons against:
+The `results/legacy/legacy_8expert/evaluation_results/` directory contains no comparisons against:
 - WFANet
 - NIFM
 - Any other WXSOD method
@@ -297,7 +297,7 @@ No benchmark numbers from other papers have been recorded in the evaluation file
 
 ### 8.1 Routing Entropy
 
-**Source:** `evaluation_results/entropy_comparison.json`
+**Source:** `results/legacy/legacy_8expert/evaluation_results/entropy_comparison.json`
 
 | Split | Scale 4 (1/4) | Scale 8 (1/8) | Scale 16 (1/16) |
 |-------|---------------|---------------|-----------------|
@@ -339,7 +339,7 @@ The `force_expert_out/` directory contains 554 prediction PNGs from forcing all 
 
 ## 9. Computational Cost
 
-**Source:** `evaluation_results/compute_cost.json`
+**Source:** `results/legacy/legacy_8expert/evaluation_results/compute_cost.json`
 
 | Metric | Value |
 |--------|-------|
@@ -368,7 +368,7 @@ The `force_expert_out/` directory contains 554 prediction PNGs from forcing all 
 | Issue | Details | Severity |
 |-------|---------|----------|
 | Two checkpoints, same model | `best.pth` and `best_new_1.pth` have identical model hash | LOW — same model, different filenames |
-| Three evaluation runs of same model | `evaluation/best_new_1/`, `evaluation_results/best/`, timestamped files | LOW — core metrics match |
+| Three evaluation runs of same model | `results/legacy/legacy_8expert/evaluation/best_new_1/`, `results/legacy/legacy_8expert/evaluation_results/best/`, timestamped files | LOW — core metrics match |
 | No prediction images in timestamped runs | Only metrics/summary saved, not per-image PNGs | LOW — metrics are the canonical output |
 
 ### 10.2 Boundary Metric Discrepancy
@@ -377,12 +377,12 @@ The `force_expert_out/` directory contains 554 prediction PNGs from forcing all 
 
 | Source | test_real boundary_MAE | test_real boundary_F1 | test_sys boundary_MAE | test_sys boundary_F1 |
 |--------|----------------------|---------------------|---------------------|---------------------|
-| `evaluation_results/best/` | 0.4941 | 0.0659 | 0.5494 | 0.1494 |
-| `evaluation/best_new_1/` + timestamped | 0.6334 | 0.3601 | 0.4817 | 0.5472 |
+| `results/legacy/legacy_8expert/evaluation_results/best/` | 0.4941 | 0.0659 | 0.5494 | 0.1494 |
+| `results/legacy/legacy_8expert/evaluation/best_new_1/` + timestamped | 0.6334 | 0.3601 | 0.4817 | 0.5472 |
 
-**Root cause:** The `evaluation_results/best/` subdirectory appears to have been produced by an earlier evaluation run with a different boundary metric implementation. The timestamped files and `evaluation/best_new_1/` are consistent with each other.
+**Root cause:** The `results/legacy/legacy_8expert/evaluation_results/best/` subdirectory appears to have been produced by an earlier evaluation run with a different boundary metric implementation. The timestamped files and `results/legacy/legacy_8expert/evaluation/best_new_1/` are consistent with each other.
 
-**Resolution:** The `evaluation/best_new_1/` and timestamped results should be treated as canonical, since they are internally consistent and use the same boundary computation as the current `src/metrics.py`.
+**Resolution:** The `results/legacy/legacy_8expert/evaluation/best_new_1/` and timestamped results should be treated as canonical, since they are internally consistent and use the same boundary computation as the current `src/metrics.py`.
 
 ### 10.3 Core Metric Consistency
 
@@ -412,7 +412,7 @@ Based on the completed experiments, the following claims are supported:
 ### 11.1 Strongly Supported
 
 1. **The model achieves MAE = 0.0192 on synthetic test (1,500 images) and MAE = 0.0168 on real-world test (554 images).**
-   - Evidence: `evaluation/best_new_1/test_sys/none/metrics.json`, `evaluation/best_new_1/test_real/none/metrics.json`
+   - Evidence: `results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/metrics.json`, `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json`
 
 2. **The model performs across 5 real-world weather categories and 9 synthetic weather categories.**
    - Evidence: Weather-wise breakdowns in all metrics.json files
@@ -424,15 +424,15 @@ Based on the completed experiments, the following claims are supported:
    - Evidence: test_sys weather-wise metrics (rainafog MAE=0.0237, worst among 9 categories)
 
 5. **Forcing all tokens at one scale to a single expert causes only marginal degradation (ΔMAE = +0.0002 on test_real).**
-   - Evidence: `evaluation_results/force_expert_ablation.json`
+   - Evidence: `results/legacy/legacy_8expert/evaluation_results/force_expert_ablation.json`
 
 6. **The model has 66.27M parameters, 278.2G MACs, and runs at 3.83 FPS (hardware unspecified).**
-   - Evidence: `evaluation_results/compute_cost.json`
+   - Evidence: `results/legacy/legacy_8expert/evaluation_results/compute_cost.json`
 
 ### 11.2 Partially Supported
 
 7. **Routing entropy is similar between synthetic and real data.**
-   - Evidence: `evaluation_results/entropy_comparison.json` (scale-wise means)
+   - Evidence: `results/legacy/legacy_8expert/evaluation_results/entropy_comparison.json` (scale-wise means)
    - Limitation: Only mean entropy reported; no per-token or per-weather analysis
 
 8. **The model handles synthetic-to-real transfer without severe degradation.**
@@ -465,7 +465,7 @@ Based on the completed experiments, the following claims are supported:
 
 5. **No controlled domain generalization test.** The synthetic→real comparison is observational, not experimental.
 
-6. **Boundary metric ambiguity.** Two different boundary metric implementations produce different values. The canonical values are from `evaluation/best_new_1/`.
+6. **Boundary metric ambiguity.** Two different boundary metric implementations produce different values. The canonical values are from `results/legacy/legacy_8expert/evaluation/best_new_1/`.
 
 7. **Hardware context for compute measurements is incomplete.** FPS of 3.83 is reported without specifying GPU model, batch size, or resolution.
 

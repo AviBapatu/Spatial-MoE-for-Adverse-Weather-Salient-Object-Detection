@@ -112,7 +112,7 @@ Cite the specific evaluation directory.
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| MAE | 0.0192 | `evaluation/best_new_1/test_sys/none/metrics.json` |
+| MAE | 0.0192 | `results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/metrics.json` |
 | S_measure | 0.9139 | same |
 | E_adaptive | 0.9591 | same |
 | E_mean | 0.9585 | same |
@@ -127,7 +127,7 @@ Cite the specific evaluation directory.
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| MAE | 0.0168 | `evaluation/best_new_1/test_real/none/metrics.json` |
+| MAE | 0.0168 | `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json` |
 | S_measure | 0.9151 | same |
 | E_adaptive | 0.9530 | same |
 | E_mean | 0.9551 | same |
@@ -148,7 +148,7 @@ Cite the specific evaluation directory.
 | dark | 125 | 0.0191 | 0.9072 | 0.8885 |
 | light | 93 | 0.0243 | 0.8897 | 0.8629 |
 
-Source: `evaluation/best_new_1/test_real/none/metrics.json`
+Source: `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json`
 
 ### 2.4 Weather-Wise Breakdown (test_sys)
 
@@ -183,7 +183,7 @@ All tokens at scale 4 forced to expert 0, evaluated on test_real (554 images).
 | S_measure | 0.9151 | 0.9139 | -0.0012 (-0.1%) |
 | F_mean | 0.8747 | 0.8713 | -0.0034 (-0.4%) |
 
-Source: `evaluation_results/force_expert_ablation.json`
+Source: `results/legacy/legacy_8expert/evaluation_results/force_expert_ablation.json`
 
 ### 2.7 Routing Entropy
 
@@ -192,7 +192,7 @@ Source: `evaluation_results/force_expert_ablation.json`
 | Synthetic | 0.6910 | 0.6931 | 0.6800 |
 | Real | 0.6912 | 0.6931 | 0.6822 |
 
-Source: `evaluation_results/entropy_comparison.json`
+Source: `results/legacy/legacy_8expert/evaluation_results/entropy_comparison.json`
 
 ### 2.8 Computational Cost
 
@@ -202,7 +202,7 @@ Source: `evaluation_results/entropy_comparison.json`
 | MACs | 278.2G |
 | FPS | 3.83 |
 
-Source: `evaluation_results/compute_cost.json`
+Source: `results/legacy/legacy_8expert/evaluation_results/compute_cost.json`
 
 ---
 
@@ -231,7 +231,7 @@ Do not make these claims without explicit evidence:
 
 | Claim | Status | What's Needed |
 |-------|--------|---------------|
-| Exact parameter count | VERIFIED: 66.27M | `evaluation_results/compute_cost.json` |
+| Exact parameter count | VERIFIED: 66.27M | `results/legacy/legacy_8expert/evaluation_results/compute_cost.json` |
 | Training epochs completed | Unknown | No training logs in repo |
 | Comparison to SOTA methods | NOT DONE | Need to run baselines |
 | Ablation study results | NOT RUN | Ablation system exists but zero runs in registry.csv |
@@ -249,7 +249,7 @@ Do not make these claims without explicit evidence:
 
 **Checkpoint identity:** `best.pth` and `best_new_1.pth` are the same model (hash `2cd252ad3a3581e1c65961b828857d70`).
 
-**Boundary metric discrepancy:** `evaluation_results/best/` has different boundary metrics than `evaluation/best_new_1/`. The latter is canonical (matches timestamped re-run).
+**Boundary metric discrepancy:** `results/legacy/legacy_8expert/evaluation_results/best/` has different boundary metrics than `results/legacy/legacy_8expert/evaluation/best_new_1/`. The latter is canonical (matches timestamped re-run).
 
 **Core metric consistency:** MAE, S_measure, E_*, F_* are identical across all 6 evaluation runs of the same model. Evaluation pipeline is deterministic.
 

@@ -1,0 +1,12 @@
+{
+    "test_sys": {
+        "non_trivial_padding_fraction": 0.9106666666666666,
+        "mean_padded_pixel_fraction": 0.26119560185185164
+    },
+    "test_real": {
+        "non_trivial_padding_fraction": 0.9657039711191335,
+        "mean_padded_pixel_fraction": 0.3267402143971868
+    },
+    "loss_masks_padding_region": false,
+    "evidence": "SpatialMoELoss.forward (src/loss.py lines 164-167) and _soft_iou_loss (line 89) compute loss on entire [B, 1, H, W] tensors without masking."
+}

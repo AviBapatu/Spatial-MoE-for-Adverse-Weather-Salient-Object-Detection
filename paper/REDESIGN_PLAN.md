@@ -102,11 +102,11 @@ Output y_i + entropy H_i
 4. Entropy map (scale 1/8, upsampled)
 
 **Rows selected from actual evaluation outputs:**
-- Row 1: Snow (best MAE=0.0094) — `evaluation/best_new_1/test_real/none/` PNG
+- Row 1: Snow (best MAE=0.0094) — `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/` PNG
 - Row 2: Fog (mid MAE=0.0148)
 - Row 3: Low-light (worst MAE=0.0243)
 
-**Source:** Use actual PNG files from `evaluation/best_new_1/test_real/none/*.png` matched to input images.
+**Source:** Use actual PNG files from `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/*.png` matched to input images.
 
 **Note:** If entropy maps are not saved as separate files, this can be replaced with a simple 2-column (input vs prediction) qualitative grid. The key is showing actual model outputs, not synthetic illustrations.
 

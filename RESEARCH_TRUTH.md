@@ -92,7 +92,7 @@ Cite the specific evaluation directory.
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| MAE | 0.0192 | `evaluation/best_new_1/test_sys/none/summary.txt` |
+| MAE | 0.0192 | `results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/summary.txt` |
 | S_measure | 0.9139 | same |
 | E_adaptive | 0.9591 | same |
 | E_mean | 0.9585 | same |
@@ -107,7 +107,7 @@ Cite the specific evaluation directory.
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| MAE | 0.0168 | `evaluation/best_new_1/test_real/none/summary.txt` |
+| MAE | 0.0168 | `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/summary.txt` |
 | S_measure | 0.9151 | same |
 | E_adaptive | 0.9530 | same |
 | E_mean | 0.9551 | same |
@@ -128,7 +128,7 @@ Cite the specific evaluation directory.
 | dark | 125 | 0.0191 | 0.9072 | 0.8885 |
 | light | 93 | 0.0243 | 0.8897 | 0.8629 |
 
-Source: `evaluation/best_new_1/test_real/none/summary.txt`
+Source: `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/summary.txt`
 
 ### 2.4 Key Experimental Observations
 
@@ -141,7 +141,7 @@ Source: `evaluation/best_new_1/test_real/none/summary.txt`
 
 ### 2.5 Forced-Expert Ablation
 
-Source: `evaluation_results/force_expert_ablation.json`
+Source: `results/legacy/legacy_8expert/evaluation_results/force_expert_ablation.json`
 
 | Metric | Normal | Forced Expert 0 (scale 4) | Delta |
 |--------|--------|---------------------------|-------|
@@ -150,7 +150,7 @@ Source: `evaluation_results/force_expert_ablation.json`
 
 ### 2.6 Computational Cost
 
-Source: `evaluation_results/compute_cost.json`
+Source: `results/legacy/legacy_8expert/evaluation_results/compute_cost.json`
 
 | Metric | Value |
 |--------|-------|
@@ -200,7 +200,7 @@ These are claims that need verification before inclusion in the paper.
 
 | Claim | Status | What's Needed |
 |-------|--------|---------------|
-| Exact parameter count | VERIFIED: 66.27M | `evaluation_results/compute_cost.json` |
+| Exact parameter count | VERIFIED: 66.27M | `results/legacy/legacy_8expert/evaluation_results/compute_cost.json` |
 | Training epochs completed | Unknown | No training logs in repo |
 | Comparison to SOTA methods | NOT DONE | Need to run baselines |
 | Ablation study results | NOT RUN | Ablation code exists but no registry.csv |

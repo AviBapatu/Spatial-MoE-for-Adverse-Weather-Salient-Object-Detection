@@ -139,7 +139,7 @@ Three-axis positioning against prior work:
 
 ## Existing Results for Paper
 
-From `evaluation/best_new_1/`:
+From `results/legacy/legacy_8expert/evaluation/best_new_1/`:
 
 **Synthetic test (test_sys, 1500 images):**
 - Global: MAE=0.0192, S=0.9139, F_max=0.9015

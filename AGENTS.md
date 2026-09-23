@@ -81,9 +81,9 @@ uv run pytest tests/ -v
 
 | Location | Contents |
 |----------|----------|
-| `evaluation/best_new_1/` | Evaluation results for `best_new_1.pth` checkpoint |
-| `evaluation/best_new_1/test_sys/none/` | Synthetic test metrics + predictions |
-| `evaluation/best_new_1/test_real/none/` | Real-world test metrics + predictions |
+| `results/legacy/legacy_8expert/evaluation/best_new_1/` | Evaluation results for `best_new_1.pth` checkpoint |
+| `results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/` | Synthetic test metrics + predictions |
+| `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/` | Real-world test metrics + predictions |
 | `checkpoints/best.pth` | Best model weights (by val MAE) |
 | `checkpoints/best_new_1.pth` | Another best model (source of current evaluation) |
 | `experiments/registry.csv` | Run registry (not yet created — no formal ablation runs recorded) |

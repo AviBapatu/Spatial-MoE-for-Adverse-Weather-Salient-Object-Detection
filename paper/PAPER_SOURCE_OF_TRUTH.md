@@ -92,7 +92,7 @@
 
 | Metric | test_sys (N=1500) | test_real (N=554) | Source |
 |--------|-------------------|-------------------|--------|
-| MAE ↓ | 0.0192 | 0.0168 | `evaluation/best_new_1/*/none/metrics.json` |
+| MAE ↓ | 0.0192 | 0.0168 | `results/legacy/legacy_8expert/evaluation/best_new_1/*/none/metrics.json` |
 | S_measure ↑ | 0.9139 | 0.9151 | same |
 | E_adaptive ↑ | 0.9591 | 0.9530 | same |
 | E_mean ↑ | 0.9585 | 0.9551 | same |
@@ -115,7 +115,7 @@
 
 | Scale | Synthetic | Real | Source |
 |-------|-----------|------|--------|
-| 1/4 | 0.6910 | 0.6912 | `evaluation_results/entropy_comparison.json` |
+| 1/4 | 0.6910 | 0.6912 | `results/legacy/legacy_8expert/evaluation_results/entropy_comparison.json` |
 | 1/8 | 0.6931 | 0.6931 | same |
 | 1/16 | 0.6800 | 0.6822 | same |
 
@@ -128,7 +128,7 @@
 | F_mean ↑ | 0.8747 | 0.8713 | −0.0034 | −0.39% |
 | F_max ↑ | 0.8936 | 0.8928 | −0.0008 | −0.09% |
 
-Source: `evaluation_results/force_expert_ablation.json`
+Source: `results/legacy/legacy_8expert/evaluation_results/force_expert_ablation.json`
 
 **Interpretation note:** Only 1 of 3 scales forced. Full disabling of all routers remains untested.
 
@@ -136,7 +136,7 @@ Source: `evaluation_results/force_expert_ablation.json`
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| Parameters | 66.27M | `evaluation_results/compute_cost.json` |
+| Parameters | 66.27M | `results/legacy/legacy_8expert/evaluation_results/compute_cost.json` |
 | MACs | 278.2G | same |
 | FPS | 3.83 | same (hardware unspecified) |
 

@@ -216,8 +216,8 @@ l_lb = E × Σ(f_j × P_j)                                         # product for
 |----------|-------|--------|
 | Total images | 14,945 | `spatial-moe-adverse-weather-sod-blueprint.md:10-11`, DB-34 |
 | Training split | `train_sys`: 12,891 images | `docs/research/DATASETS.md:26` |
-| Synthetic test | `test_sys`: 1,500 images | `evaluation/best_new_1/test_sys/none/summary.txt:2` |
-| Real-world test | `test_real`: 554 images | `evaluation/best_new_1/test_real/none/summary.txt:2` |
+| Synthetic test | `test_sys`: 1,500 images | `results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/summary.txt:2` |
+| Real-world test | `test_real`: 554 images | `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/summary.txt:2` |
 | Weather labels | Per-image weather type in filename: `{scene_id}_{weather}.{ext}` | `src/dataset.py:216-220` |
 
 ### 4.2 Weather Categories
@@ -262,7 +262,7 @@ Deterministic per-sample augmentation seeding via MD5 hash (`src/dataset.py:171-
 
 ### 5.1 Canonical Results: best_new_1.pth
 
-**Source:** `evaluation/best_new_1/{test_sys,test_real}/none/`
+**Source:** `results/legacy/legacy_8expert/evaluation/best_new_1/{test_sys,test_real}/none/`
 
 #### test_sys (1,500 images)
 
@@ -320,7 +320,7 @@ Deterministic per-sample augmentation seeding via MD5 hash (`src/dataset.py:171-
 
 ### 5.4 Forced-Expert Ablation
 
-**Source:** `evaluation_results/force_expert_ablation.json`
+**Source:** `results/legacy/legacy_8expert/evaluation_results/force_expert_ablation.json`
 
 All tokens at scale 1/4 forced to expert 0 (router bypassed). Scales 1/8 and 1/16 still routed normally.
 
@@ -334,7 +334,7 @@ All tokens at scale 1/4 forced to expert 0 (router bypassed). Scales 1/8 and 1/1
 
 ### 5.5 Routing Entropy
 
-**Source:** `evaluation_results/entropy_comparison.json`
+**Source:** `results/legacy/legacy_8expert/evaluation_results/entropy_comparison.json`
 
 | Split | Scale 1/4 | Scale 1/8 | Scale 1/16 |
 |-------|-----------|-----------|------------|
@@ -345,7 +345,7 @@ All values normalized by log(2). Maximum possible = 1.0 (uniform over 2 experts)
 
 ### 5.6 Computational Cost
 
-**Source:** `evaluation_results/compute_cost.json`
+**Source:** `results/legacy/legacy_8expert/evaluation_results/compute_cost.json`
 
 | Metric | Value |
 |--------|-------|
@@ -463,7 +463,7 @@ Do NOT make these claims in the paper.
 | Exact PVTv2-B4 channel dims | timm returns `[64, 128, 320]` at `out_indices=(0,1,2)`. Verified by backbone assertion. | None — resolved. |
 | Whether `deep_supervision=false` is actually enforced | Config says false. Model constructor Python default is True. `train_ddp.py` passes `config.model.deep_supervision`. Loss checks aux_logits not None. **If model is instantiated without train_ddp (e.g., direct import), deep_supervision defaults to True.** | Baseline training uses false. Paper should state this explicitly. |
 | Whether `moe_type` or `router_variant` config fields are consumed | **NOT consumed.** Forward path always runs sparse dispatch regardless of these fields. | Ablation system defines variants that are not implemented. |
-| Boundary metric discrepancy between evaluation runs | `evaluation_results/best/` has different boundary values than `evaluation/best_new_1/`. Root cause: earlier evaluation run with different boundary implementation. | Use `evaluation/best_new_1/` as canonical (consistent with current `src/metrics.py`). |
+| Boundary metric discrepancy between evaluation runs | `results/legacy/legacy_8expert/evaluation_results/best/` has different boundary values than `results/legacy/legacy_8expert/evaluation/best_new_1/`. Root cause: earlier evaluation run with different boundary implementation. | Use `results/legacy/legacy_8expert/evaluation/best_new_1/` as canonical (consistent with current `src/metrics.py`). |
 | FPS hardware context | Not specified in `compute_cost.json`. Likely Kaggle T4. | Report number without claiming efficiency. |
 | Training logs / convergence | Not present in repository. | Cannot assess overfitting or convergence. |
 | Multiple training runs / variance | Only one training run completed. No multiple seeds. | Cannot report confidence intervals. |

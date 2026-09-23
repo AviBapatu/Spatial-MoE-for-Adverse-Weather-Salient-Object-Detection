@@ -106,12 +106,12 @@ LR but it is not used in the current config.
 |----------|-------|--------|
 | Dataset | WXSOD | `src/dataset.py:31-41` |
 | Train split | train_sys (12,891 images) | File count verification |
-| Test synthetic | test_sys (1,500 images) | `evaluation/best_new_1/test_sys/none/metrics.json` |
-| Test real | test_real (554 images) | `evaluation/best_new_1/test_real/none/metrics.json` |
+| Test synthetic | test_sys (1,500 images) | `results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/metrics.json` |
+| Test real | test_real (554 images) | `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json` |
 | Train/Val split | 80/20 scene-aware GroupShuffleSplit | `src/dataset.py:260` |
 | Disjointness | Strict assertion: `train_scenes.isdisjoint(val_scenes)` | `src/dataset.py:269` |
-| Weather categories (test_real) | dark, fog, light, rain, snow | `evaluation/best_new_1/test_real/none/metrics.json` |
-| Weather categories (test_sys) | clean, dark, fog, light, rain, rainafog, rainasnow, snow, snowafog | `evaluation/best_new_1/test_sys/none/metrics.json` |
+| Weather categories (test_real) | dark, fog, light, rain, snow | `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json` |
+| Weather categories (test_sys) | clean, dark, fog, light, rain, rainafog, rainasnow, snow, snowafog | `results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/metrics.json` |
 
 **Augmentations (train):**
 - HorizontalFlip(p=0.5)
@@ -132,7 +132,7 @@ LR but it is not used in the current config.
 |----------|-------|
 | Config | `experiments/baseline_v1.json` |
 | Checkpoints | `checkpoints/best.pth`, `checkpoints/best_new_1.pth` |
-| Evaluation | `evaluation/best_new_1/` |
+| Evaluation | `results/legacy/legacy_8expert/evaluation/best_new_1/` |
 | Training epochs completed | UNKNOWN (no training logs in repo) |
 | Training GPU count | UNKNOWN (requires ≥2 GPUs per code) |
 | TensorBoard events | 14 files in `runs/spatial_moe_sod/` |

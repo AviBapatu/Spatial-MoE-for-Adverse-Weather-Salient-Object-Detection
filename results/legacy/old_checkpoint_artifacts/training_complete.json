@@ -1,0 +1,7 @@
+{
+    "status": "COMPLETE",
+    "epoch": 4,
+    "global_step": 35,
+    "best_checkpoint": "best.pth",
+    "config_hash": "20d139ea6c91cbd2b2834d26c6ff84e9"
+}

@@ -1,0 +1,60 @@
+{
+  "files": {
+    "best.pth": {
+      "sha256": "a2591b00b30cc6ebad22fdbe85e029ba5491acbebe1da9671f63a0dade997af9",
+      "size_bytes": 831865501,
+      "updated_at": 1789201160.2683697,
+      "epoch": 4,
+      "global_step": 1288,
+      "best_metric": 0.023225968465595496,
+      "config_hash": "c29ce4427dce4613c365977bad514777"
+    },
+    "latest.pth": {
+      "sha256": "628083249e692fbecdf0c6d168547108aca64530ee20b35765b882553e002782",
+      "size_bytes": 831873755,
+      "updated_at": 1789200586.6909885,
+      "epoch": 3,
+      "global_step": 1200,
+      "config_hash": "c29ce4427dce4613c365977bad514777"
+    },
+    "training_complete.json": {
+      "sha256": "6678eb38ee7b1b260055493dd32c61f7e21cca67bad4119d8fd48632a5a396ac",
+      "size_bytes": 157,
+      "updated_at": 1788282509.4949791
+    },
+    "latest_prev.pth": {
+      "sha256": "dc8e805a89339850bd62c223dcf28ebf86acdcb2b6c21d95608b4443773b9c19",
+      "size_bytes": 389815706,
+      "updated_at": 1788282520.5478377
+    },
+    "routing_stats_ep1.json": {
+      "sha256": "5a26537a412a8939c910557d9b66a1f15afa104abe219340c919c6e0a957317e",
+      "size_bytes": 1027523,
+      "updated_at": 1789196367.5928473,
+      "epoch": 1,
+      "type": "diagnostics"
+    },
+    "routing_stats_ep1.csv": {
+      "sha256": "311da08f7225a69e1421784629258266d35f04596b5f9fa82117ba8c22111860",
+      "size_bytes": 1868,
+      "updated_at": 1789196369.0835989,
+      "epoch": 1,
+      "type": "diagnostics"
+    },
+    "routing_stats_ep4.json": {
+      "sha256": "3433627181a9a745e1bc78ca7a41d29591f8831a44374054e6ae513020cf1dee",
+      "size_bytes": 1012382,
+      "updated_at": 1789201313.7416916,
+      "epoch": 4,
+      "type": "diagnostics"
+    },
+    "routing_stats_ep4.csv": {
+      "sha256": "74b3e710f32b6501fdb8adbb718bbd0e56a0daed6bfb11c28b4521ffa58eb79f",
+      "size_bytes": 1861,
+      "updated_at": 1789201315.7662964,
+      "epoch": 4,
+      "type": "diagnostics"
+    }
+  },
+  "updated_at": 1789201315.7662995
+}

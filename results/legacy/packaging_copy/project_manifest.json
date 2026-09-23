@@ -1,0 +1,15 @@
+{
+  "source_version": "unversioned",
+  "git_commit": "85cecec146ea044040689af8d0cce92f4659448e",
+  "creation_time": 1789201467.1086936,
+  "archive_name": "spatial_moe_sod_code.zip",
+  "archive_sha256": "388f8cd1b69dbb8cc7e49d3d667d9ff57ef4a41e87fba39e8725f53cf0e225c5",
+  "source_content_sha256": "7d960fdee347a8273b2bb4cd08e684452735a8916c29577faff037ca56126cff",
+  "included_paths": [
+    "src",
+    "experiments",
+    "requirements.txt",
+    "pyproject.toml",
+    "train.py"
+  ]
+}

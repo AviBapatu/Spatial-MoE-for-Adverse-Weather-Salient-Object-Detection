@@ -37,13 +37,13 @@ PROBLEM:
 This novelty claim is stated as fact but has not been empirically validated. The paper correctly qualifies this in the Discussion and Limitations sections, but the Related Work section presents it as an established differentiator without noting it is unvalidated. The entropy fusion mechanism exists in the code and is active during training, but no ablation (entropy ON vs. OFF) has been run to demonstrate that it actually improves performance. The forced-expert ablation, which sets entropy to 0 for the forced scale, shows only marginal degradation — but this test does not isolate the entropy fusion effect because it also changes the routing pattern.
 
 ACTUAL FACT:
-`src/decoder.py:14-27` — `EntropyFusionBlock` is implemented and active. `experiments/baseline_v1.json:33` — `deep_supervision` is false but the entropy fusion is always on (no config flag to disable it). `evaluation_results/force_expert_ablation.json` — forcing expert 0 at scale 4 sets entropy to 0 at that scale, but the overall MAE change is only +0.0002, which cannot distinguish entropy-fusion effect from routing-pattern effect. No ON/OFF ablation of entropy fusion alone exists.
+`src/decoder.py:14-27` — `EntropyFusionBlock` is implemented and active. `experiments/baseline_v1.json:33` — `deep_supervision` is false but the entropy fusion is always on (no config flag to disable it). `results/legacy/legacy_8expert/evaluation_results/force_expert_ablation.json` — forcing expert 0 at scale 4 sets entropy to 0 at that scale, but the overall MAE change is only +0.0002, which cannot distinguish entropy-fusion effect from routing-pattern effect. No ON/OFF ablation of entropy fusion alone exists.
 
 WHAT PAPER SHOULD SAY:
 "Routing entropy has been explored for uncertainty estimation in MoE classifiers. We inject it as an explicit decoder feature for dense prediction, though we have not yet isolated its contribution via ablation."
 
 SOURCE:
-`src/decoder.py:14-27`, `evaluation_results/force_expert_ablation.json`
+`src/decoder.py:14-27`, `results/legacy/legacy_8expert/evaluation_results/force_expert_ablation.json`
 
 SEVERITY:
 MAJOR — Overclaims a contribution that has not been empirically demonstrated.
@@ -131,13 +131,13 @@ PROBLEM:
 The paper correctly qualifies this as "observational" later in the same paragraph, but the initial sentence "suggests effective feature transfer across domains" is a causal interpretation that is not supported by the evidence. The observation that real-world MAE (0.0168) is lower than synthetic MAE (0.0192) could equally reflect that the synthetic test set contains harder compound weather conditions (rainafog, rainasnow, snowafog) not present in the real test set, rather than any "feature transfer." The paper's own caveat partially addresses this, but the initial framing leads the reader toward an unsupported interpretation.
 
 ACTUAL FACT:
-`evaluation/best_new_1/test_sys/none/metrics.json` — test_sys has 9 weather categories including compound conditions (rainafog MAE=0.0237, rainasnow MAE=0.0194, snowafog MAE=0.0189). `evaluation/best_new_1/test_real/none/metrics.json` — test_real has only 5 single-degradation categories. The synthetic test set is compositionally harder, which alone explains the MAE difference without invoking "feature transfer."
+`results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/metrics.json` — test_sys has 9 weather categories including compound conditions (rainafog MAE=0.0237, rainasnow MAE=0.0194, snowafog MAE=0.0189). `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json` — test_real has only 5 single-degradation categories. The synthetic test set is compositionally harder, which alone explains the MAE difference without invoking "feature transfer."
 
 WHAT PAPER SHOULD SAY:
 "Real-world MAE (0.0168) is slightly lower than synthetic MAE (0.0192). However, this comparison is confounded by test set composition: the synthetic test set includes compound weather conditions (rain+fog, rain+snow, snow+fog) absent from the real test set, which may inflate the synthetic MAE independently of any domain gap."
 
 SOURCE:
-`evaluation/best_new_1/test_sys/none/metrics.json`, `evaluation/best_new_1/test_real/none/metrics.json`
+`results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/metrics.json`, `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json`
 
 SEVERITY:
 MAJOR — Misleading causal interpretation of an observational comparison.
@@ -159,7 +159,7 @@ WHAT PAPER SHOULD SAY:
 "Performance varies by $2.6{\times}$ across weather types: snow yields the lowest MAE (0.0094, $N{=}90$) while low-light yields the highest (0.0243, $N{=}93$). Fog (0.0148, $N{=}126$), rain (0.0165, $N{=}120$), and dark (0.0191, $N{=}125$) fall between these extremes." Remove the speculative contrast/SNR explanations, or mark them explicitly as hypotheses.
 
 SOURCE:
-`evaluation/best_new_1/test_real/none/metrics.json`
+`results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json`
 
 SEVERITY:
 MINOR — Speculative explanations presented as plausible interpretations. Acceptable if marked as hypotheses.
@@ -175,13 +175,13 @@ PROBLEM:
 The paper states scale 1/16 is "more confident (lower entropy)" and attributes this to "coarser spatial resolution reduc[ing] the need for specialized routing." This is a speculative interpretation presented as a possible explanation. Additionally, the actual entropy values across scales are very close (0.6800–0.6931), and the difference at scale 1/16 (~0.01 below the others) is small enough that it may not be meaningful. The paper does not quantify whether this difference is statistically significant.
 
 ACTUAL FACT:
-`evaluation_results/entropy_comparison.json` — Scale 1/16 synthetic: 0.679954, real: 0.682216. Scale 1/4: ~0.691, scale 1/8: ~0.693. The difference between scale 1/16 and the others is ~0.01, which is small. No statistical test has been performed.
+`results/legacy/legacy_8expert/evaluation_results/entropy_comparison.json` — Scale 1/16 synthetic: 0.679954, real: 0.682216. Scale 1/4: ~0.691, scale 1/8: ~0.693. The difference between scale 1/16 and the others is ~0.01, which is small. No statistical test has been performed.
 
 WHAT PAPER SHOULD SAY:
 "Mean normalized entropy values range from 0.68 to 0.69 across scales, indicating moderate routing uncertainty. Scale $1/16$ has marginally lower entropy (0.680–0.682) than scales $1/4$ (0.691) and $1/8$ (0.693), though the difference is small."
 
 SOURCE:
-`evaluation_results/entropy_comparison.json`
+`results/legacy/legacy_8expert/evaluation_results/entropy_comparison.json`
 
 SEVERITY:
 MINOR — Speculative interpretation of a small difference.
@@ -197,13 +197,13 @@ PROBLEM:
 The abstract says "across five weather categories" which is only accurate for the real-world test set (which has 5 categories: dark, fog, light, rain, snow). The synthetic test set has 9 weather categories (clean, dark, fog, light, rain, rainafog, rainasnow, snow, snowafog). The phrasing conflates the two test sets.
 
 ACTUAL FACT:
-`evaluation/best_new_1/test_sys/none/metrics.json` — 9 weather categories. `evaluation/best_new_1/test_real/none/metrics.json` — 5 weather categories.
+`results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/metrics.json` — 9 weather categories. `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json` — 5 weather categories.
 
 WHAT PAPER SHOULD SAY:
 "On WXSOD, the model achieves MAE $0.0192$ on 1,500 synthetic test images (9 weather categories) and $0.0168$ on 554 real-world test images (5 weather categories)."
 
 SOURCE:
-`evaluation/best_new_1/test_sys/none/metrics.json`, `evaluation/best_new_1/test_real/none/metrics.json`
+`results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/metrics.json`, `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json`
 
 SEVERITY:
 MINOR — Ambiguous phrasing that could mislead about the synthetic test coverage.
@@ -247,13 +247,13 @@ PROBLEM:
 The paper reports these numbers without specifying the hardware, batch size, or measurement conditions for the MAC count. The MAC count from `compute_cost.json` (278.2G) was computed for a single 384×384 image, but this is not stated. The FPS value (3.83) is also reported in the file but omitted from the paper, which is appropriate given the unspecified hardware.
 
 ACTUAL FACT:
-`evaluation_results/compute_cost.json` — `{"params_M": 66.27, "macs_G": 278.2, "fps": 3.83}`. No hardware specification is recorded.
+`results/legacy/legacy_8expert/evaluation_results/compute_cost.json` — `{"params_M": 66.27, "macs_G": 278.2, "fps": 3.83}`. No hardware specification is recorded.
 
 WHAT PAPER SHOULD SAY:
 "The model has 66.27M parameters and 278.2G MACs per $384{\times}384$ image."
 
 SOURCE:
-`evaluation_results/compute_cost.json`
+`results/legacy/legacy_8expert/evaluation_results/compute_cost.json`
 
 SEVERITY:
 MINOR — Missing the "per image" qualifier.
@@ -313,13 +313,13 @@ PROBLEM:
 The percentage changes are inaccurate. The MAE increase from 0.016841 to 0.016991 is +0.000150, which is +0.89% (not +1.2%). The S_measure decrease from 0.915091 to 0.913917 is -0.001174, which is -0.13% (not -0.1%). The absolute deltas (+0.0002 and -0.0012) are correctly rounded to 4 decimal places, but the percentages are wrong.
 
 ACTUAL FACT:
-`evaluation_results/force_expert_ablation.json` — MAE: 0.016991033084321077 (forced) vs 0.016840667104452152 (normal). Delta = +0.000150365979868925 = +0.89%. S_measure: 0.9139173865148662 (forced) vs 0.9150906427309119 (normal). Delta = -0.0011732562160457 = -0.13%.
+`results/legacy/legacy_8expert/evaluation_results/force_expert_ablation.json` — MAE: 0.016991033084321077 (forced) vs 0.016840667104452152 (normal). Delta = +0.000150365979868925 = +0.89%. S_measure: 0.9139173865148662 (forced) vs 0.9150906427309119 (normal). Delta = -0.0011732562160457 = -0.13%.
 
 WHAT PAPER SHOULD SAY:
 "MAE increased by $+0.0002$ ($+0.9\%$), $S_\phi$ decreased by $-0.0012$ ($-0.1\%$)."
 
 SOURCE:
-`evaluation_results/force_expert_ablation.json`
+`results/legacy/legacy_8expert/evaluation_results/force_expert_ablation.json`
 
 SEVERITY:
 MINOR — Percentage values are slightly inaccurate. The absolute deltas are correct.
@@ -533,13 +533,13 @@ PROBLEM:
 The paper correctly identifies this limitation. However, it could be more precise about what the forced-expert experiment actually tested. The experiment forced only scale 1/4 to expert 0 while leaving scales 1/8 and 1/16 routed normally. The marginal degradation (+0.0002 MAE) could mean either (a) expert specialization is limited, or (b) the remaining routing at scales 1/8 and 1/16 compensated for the forced scale. The paper acknowledges this ambiguity ("Since only 1 of 3 scales was affected, the full effect of disabling all routing remains unknown") which is appropriate.
 
 ACTUAL FACT:
-`evaluation_results/force_expert_ablation.json` — Only scale 1/4 was forced. Scales 1/8 and 1/16 remained normally routed. The paper's caveat is accurate.
+`results/legacy/legacy_8expert/evaluation_results/force_expert_ablation.json` — Only scale 1/4 was forced. Scales 1/8 and 1/16 remained normally routed. The paper's caveat is accurate.
 
 WHAT PAPER SHOULD SAY:
 The paper's discussion is appropriately cautious. No change needed.
 
 SOURCE:
-`evaluation_results/force_expert_ablation.json`
+`results/legacy/legacy_8expert/evaluation_results/force_expert_ablation.json`
 
 SEVERITY:
 N/A (correctly handled)
@@ -555,13 +555,13 @@ PROBLEM:
 The paper reports the entropy values to 4 decimal places, which implies a level of precision that may not be meaningful given these are means over thousands of tokens and hundreds of images. Additionally, the paper does not report standard deviations or confidence intervals for these values.
 
 ACTUAL FACT:
-`evaluation_results/entropy_comparison.json` — values are reported to 16 decimal places. The paper rounds to 4 decimal places. No standard deviations are computed or reported.
+`results/legacy/legacy_8expert/evaluation_results/entropy_comparison.json` — values are reported to 16 decimal places. The paper rounds to 4 decimal places. No standard deviations are computed or reported.
 
 WHAT PAPER SHOULD SAY:
 Consider reporting entropy values as 0.68–0.69 (range) rather than precise 4-decimal values, or compute and report standard deviations. This is a presentation choice, not a factual error.
 
 SOURCE:
-`evaluation_results/entropy_comparison.json`
+`results/legacy/legacy_8expert/evaluation_results/entropy_comparison.json`
 
 SEVERITY:
 MINOR — Precision implies more certainty than warranted.
