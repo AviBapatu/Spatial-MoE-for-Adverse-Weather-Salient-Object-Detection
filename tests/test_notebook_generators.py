@@ -18,8 +18,8 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 GENERATORS = [
-    ("generate_notebook_accountA.py", "moe-of-sod__2expert_accountA.ipynb"),
-    ("generate_notebook_accountB.py", "moe-of-sod__4expert_accountB.ipynb"),
+    ("generate_notebook_accountA.py", "moe-of-sod__accountA__v_e8_repro_best.ipynb"),
+    ("generate_notebook_accountB.py", "moe-of-sod__accountB__v_e8_repro_gatedense.ipynb"),
 ]
 
 

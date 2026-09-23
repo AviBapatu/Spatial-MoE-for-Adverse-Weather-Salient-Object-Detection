@@ -1,6 +1,6 @@
 """account B — 4-expert, top_k=2 run.
 
-Regenerates ``moe-of-sod__4expert_accountB.ipynb`` and is the editable source of truth for it — change a
+Regenerates ``moe-of-sod__accountB__v_e8_repro_gatedense.ipynb`` and is the editable source of truth for it — change a
 cell here and re-run this script to rebuild the notebook. The generate_notebook_accountA.py
 generator holds the same cells for the other account (the two differ only in
 ACTIVE_CONFIG_PATH), so a shared cell change has to be applied to
@@ -11,7 +11,7 @@ Usage:
 """
 import json
 
-OUTPUT_NOTEBOOK = "moe-of-sod__4expert_accountB.ipynb"
+OUTPUT_NOTEBOOK = "moe-of-sod__accountB__v_e8_repro_gatedense.ipynb"
 
 
 def create_notebook() -> None:
