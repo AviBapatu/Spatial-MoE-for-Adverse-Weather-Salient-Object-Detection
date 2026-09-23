@@ -158,8 +158,10 @@ def build_model(config: ExperimentConfig, device: torch.device) -> Any:
         total = sum(p.numel() for p in model.parameters())
         trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
         log.info(f"Architecture OK. Total: {total:,} | Trainable: {trainable:,}")
-        log.info(f"Found {bn_count} BatchNorm layers." if bn_count
-                 else "No BatchNorm layers detected. SyncBatchNorm disabled.")
+        log.info(f"{bn_count} BatchNorm layer(s) present — DDP uses them per rank."
+                 if bn_count else
+                 "No BatchNorm layers (LayerNorm-based model) — nothing to synchronise "
+                 "across ranks.")
 
     model = nn.parallel.DistributedDataParallel(
         model, device_ids=[get_local_rank()], output_device=get_local_rank(),

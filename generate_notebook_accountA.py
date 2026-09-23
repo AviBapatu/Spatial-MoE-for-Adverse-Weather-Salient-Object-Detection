@@ -90,6 +90,10 @@ FINAL_EPOCHS = 50
 # These get exported so train_ddp.py picks them up
 os.environ["CHECKPOINT_ROOT"] = CHECKPOINT_ROOT
 os.environ["PREFLIGHT_ROOT"] = PREFLIGHT_ROOT
+# Kaggle logs: unbuffered so lines appear as they happen, and no tqdm
+# redraws (each redraw becomes its own line in the log pane).
+os.environ["PYTHONUNBUFFERED"] = "1"
+os.environ["TQDM_DISABLE"] = "1"
 
 # Global state for dynamic final audit gate
 GATES = {
@@ -740,16 +744,13 @@ if RUN_MODE == "EVALUATE":
         cwd=PROJECT_ROOT,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        bufsize=0,
+        text=True,
+        bufsize=1,
     )
 
-    while True:
-        chunk = process.stdout.read(1)
-        if not chunk and process.poll() is not None:
-            break
-        if chunk:
-            sys.stdout.write(chunk.decode(errors="replace"))
-            sys.stdout.flush()
+    # Line-based, not byte-based: one write per line instead of per character.
+    for line in process.stdout:
+        sys.stdout.write(line)
 
     retcode = process.wait()
     if retcode != 0:

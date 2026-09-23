@@ -126,6 +126,32 @@ def _should_break(args: Any, engine: Any, ctx: TrainCtx, is_final: bool) -> bool
     return False
 
 
+_AMP_OVERFLOW_COUNTS = {}
+_AMP_LAST_EPOCH = -1
+
+
+def _note_amp_overflow(epoch: int) -> None:
+    """Record an optimizer step skipped because AMP overflowed.
+
+    Overflows arrive in bursts, so one warning per skipped step buries the log
+    under identical lines.  The first one in an epoch warns; the rest are
+    counted and reported when the next epoch starts.
+    """
+    global _AMP_LAST_EPOCH
+    if epoch != _AMP_LAST_EPOCH:
+        if _AMP_LAST_EPOCH >= 0:
+            previous = _AMP_OVERFLOW_COUNTS.get(_AMP_LAST_EPOCH, 0)
+            if previous:
+                log.info(f"[Epoch {_AMP_LAST_EPOCH+1}] AMP skipped {previous} "
+                         f"optimizer step(s).")
+        _AMP_LAST_EPOCH = epoch
+    count = _AMP_OVERFLOW_COUNTS.get(epoch, 0) + 1
+    _AMP_OVERFLOW_COUNTS[epoch] = count
+    if count == 1:
+        log.warning(f"[Epoch {epoch+1}] AMP overflow — skipping this optimizer step "
+                    "(further ones this epoch are counted, not logged).")
+
+
 def _train_one_batch(
     iterator: Any,
     model: Any,
@@ -156,7 +182,7 @@ def _train_one_batch(
         overflow, _ = engine.step()
         engine.optimizer.zero_grad()
         if is_rank_zero() and overflow:
-            log.warning(f"[Epoch {epoch+1} Batch {batch_idx+1}] AMP overflow!")
+            _note_amp_overflow(epoch)
 
         maybe_save_periodic_checkpoint(
             engine=engine, model=model, config=config,
