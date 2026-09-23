@@ -1,0 +1,79 @@
+{
+  "data": {
+    "dataset_root": "/kaggle/working/WXSDO_data/WXSDO_data",
+    "split_manifest_path": "",
+    "split_manifest_hash": "",
+    "train_sample_count": 0,
+    "validation_sample_count": 0,
+    "test_sample_counts": {},
+    "max_samples": null
+  },
+  "model": {
+    "backbone": "pvt_v2_b4",
+    "working_dim": 256,
+    "decoder_dim": 256,
+    "num_experts": 8,
+    "top_k": 2,
+    "router_variant": "token_only",
+    "expert_variant": "standard",
+    "attention_config": "default",
+    "window_size": 7,
+    "deep_supervision": true,
+    "moe_type": "sparse",
+    "moe_16_mode": "sparse",
+    "router_noise_enabled": true,
+    "router_noise_scale": 1.0,
+    "router_noise_min_std": 0.1,
+    "gate_mode": "dense"
+  },
+  "loss": {
+    "bce_weight": 1.0,
+    "iou_weight": 1.0,
+    "ssim_weight": 1.0,
+    "boundary_weight": 1.0,
+    "load_balance_weight": 0.01,
+    "importance_weight": 0.05,
+    "z_loss_weight": 0.001,
+    "aux_boundary_weight": 0.5,
+    "deep_supervision_weight": 0.4,
+    "load_balance_weights": [
+      0.08,
+      0.15,
+      0.1
+    ],
+    "moe_16_dense": false
+  },
+  "opt": {
+    "optimizer": "AdamW",
+    "backbone_lr": 0.0001,
+    "new_module_lr": 0.0001,
+    "weight_decay": 0.0001,
+    "warmup_ratio": 0.04,
+    "scheduler": "WarmupCosine",
+    "gradient_clipping": 1.0,
+    "amp": true,
+    "batch_per_gpu": 4,
+    "grad_accum_steps": 4,
+    "effective_global_batch": 32
+  },
+  "train": {
+    "epochs": 8,
+    "freeze_backbone_epochs": 1,
+    "seed": 42,
+    "num_workers": 4,
+    "checkpoint_every_n_steps": 200
+  },
+  "eval": {
+    "validation_metric_selection": "MAE",
+    "tta_mode": "none",
+    "metric_config": "default"
+  },
+  "diag": {
+    "routing_diagnostic_epochs": 1,
+    "expert_ablation_enabled": false
+  },
+  "experiment_id": "",
+  "run_id": "",
+  "batch_equivalence": "MATCHED",
+  "variant": "REPRODENSE"
+}

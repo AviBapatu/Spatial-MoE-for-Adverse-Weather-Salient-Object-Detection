@@ -37,58 +37,8 @@ def create_notebook() -> None:
         })
 
     add_markdown(
-        r"""## 00_hf_sync
-""")
-
-    add_code(
-        r"""# uncomment and run this if you want to manually push your latest checkpoints to Hugging Face
-# import os
-# import sys
-# import subprocess
-# from kaggle_secrets import UserSecretsClient
-# from huggingface_hub import hf_hub_download
-#
-# # 1. Set credentials safely (bypassing Cell 01)
-# os.environ["HF_TOKEN"] = UserSecretsClient().get_secret("HF_TOKEN")
-# os.environ["HF_REPO_ID"] = "Avi2006/spatial-moe-results"
-# PROJECT_ROOT = "/kaggle/working/spatial_moe_sod"
-#
-# # 2. Download ONLY the latest code (bypasses Checkpoint downloads)
-# print("Downloading latest code...")
-# zip_path = hf_hub_download(
-#     repo_id=os.environ["HF_REPO_ID"], repo_type="dataset",
-#     filename="code/spatial_moe_sod_code.zip", token=os.environ["HF_TOKEN"],
-# )
-# subprocess.run(["unzip", "-q", "-o", zip_path, "-d", PROJECT_ROOT], check=True)
-# print("Code updated!")
-#
-# # 3. Now run the push script
-# sys.path.insert(0, PROJECT_ROOT)
-# from src.config import ExperimentConfig
-# from src.experiment import generate_experiment_id
-# from src.hf_sync import push_checkpoint
-#
-# # Namespace both the local directory and the remote filename by this run's
-# # experiment ID, so pushing from one account can never overwrite the other
-# # account's checkpoints.
-# ACTIVE_CONFIG_PATH = "experiments/v_2expert_gatedense.json"
-# experiment_id = generate_experiment_id(
-#     ExperimentConfig.load(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH))
-# )
-# ckpt_dir = os.path.join("/kaggle/working/WXSOD_Checkpoints", experiment_id)
-# for name in ["best.pth", "latest.pth", "training_complete.json", "latest_prev.pth"]:
-#     path = os.path.join(ckpt_dir, name)
-#     if os.path.exists(path):
-#         print(f"Uploading {name}...")
-#         push_checkpoint(path, name=f"{experiment_id}_{name}")
-# print("Done!")
-
-""")
-
-    add_markdown(
         r"""## 01_config
 """)
-
     add_code(
         r"""import os
 import json
@@ -98,8 +48,8 @@ import hashlib
 # Configuration & Modes
 # RUN_MODE strictly governs the allowed execution path.
 # Allowed: "VALIDATE", "TRAIN", "RESUME", "EVALUATE"
-RUN_MODE = "EVALUATE"
-ACTIVE_CONFIG_PATH = "experiments/v_2expert_gatedense.json"
+RUN_MODE = "TRAIN"
+ACTIVE_CONFIG_PATH = "experiments/v_e8_repro_best.json"
 # Analysis results are uploaded under the experiment ID derived from
 # ACTIVE_CONFIG_PATH (see the upload cell), so there is no separate label here
 # that could drift out of sync with the checkpoints.
@@ -231,11 +181,9 @@ else:
     print("No checkpoint found on HF — training from scratch.")
 
 """)
-
     add_markdown(
-        r"""## 02_environment
+        r"""## 02_environment_info
 """)
-
     add_code(
         r"""import torch
 import os
@@ -265,11 +213,9 @@ else:
     mark_gate("ENV_CHECK", "PASS")
 
 """)
-
     add_markdown(
         r"""## 03_dataset_acquire
 """)
-
     add_code(
         r"""import subprocess
 
@@ -305,11 +251,9 @@ else:
     print("Dataset successfully extracted and validated at:", valid_root)
 
 """)
-
     add_markdown(
         r"""## 04_dataset_validate
 """)
-
     add_code(
         r"""import glob
 
@@ -356,11 +300,9 @@ else:
     raise RuntimeError("Dataset integrity check failed.")
 
 """)
-
     add_markdown(
         r"""## 05_project_deploy
 """)
-
     add_code(
         r"""import sys
 import json
@@ -409,11 +351,9 @@ sys.path.insert(0, PROJECT_ROOT)
 mark_gate("PROJECT_CHECK", "PASS")
 
 """)
-
     add_markdown(
         r"""## 06_dependencies
 """)
-
     add_code(
         r"""import importlib
 import subprocess
@@ -450,11 +390,9 @@ else:
     raise RuntimeError("Failed to resolve dependencies.")
 
 """)
-
     add_markdown(
-        r"""## 07_pretrained_b4
+        r"""## 07_backbone_check
 """)
-
     add_code(
         r"""if RUN_MODE in ["VALIDATE", "TRAIN"]:
     from src.backbone import MultiScaleBackbone
@@ -479,11 +417,9 @@ else:
         raise RuntimeError(f"PVT Instantiation failed: {e}")
 
 """)
-
     add_markdown(
-        r"""## 08_static_checks
+        r"""## 08_static_import_check
 """)
-
     add_code(
         r"""if RUN_MODE in ["VALIDATE", "TRAIN"]:
     try:
@@ -496,11 +432,9 @@ else:
         raise e
 
 """)
-
     add_markdown(
-        r"""## 09_data_transform
+        r"""## 09_dataset_alignment_check
 """)
-
     add_code(
         r"""if RUN_MODE in ["VALIDATE", "TRAIN"]:
     from src.dataset import WXSODDataset
@@ -540,11 +474,9 @@ else:
         raise e
 
 """)
-
     add_markdown(
-        r"""## 10_model_shapes
+        r"""## 10_model_shape_check
 """)
-
     add_code(
         r"""if RUN_MODE in ["VALIDATE", "TRAIN"]:
     from src.model import SpatialMoESODNet
@@ -571,343 +503,24 @@ else:
         raise e
 
 """)
-
     add_markdown(
-        r"""## 13_empty_batch_check
+        r"""## 11_train
 """)
-
     add_code(
-        r"""# if RUN_MODE in ["VALIDATE", "TRAIN"]:
-#     print("Running Empty Batch Check...")
-#     with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
-#         canonical_cfg = json.load(f)
-#     from src.config import ExperimentConfig
-#     canonical_cfg = ExperimentConfig.from_dict(canonical_cfg).to_dict()
-#     from src.train_ddp import get_config_hash
-#     CURRENT_CONFIG_HASH = get_config_hash(canonical_cfg, "model_config_hash")
-#     CURRENT_RUN_ID = canonical_cfg.get("run_id") or "test_run_id"
+        r"""if RUN_MODE == "TRAIN":
+    import subprocess
+    import os
 
-#     res = subprocess.run(["torchrun", "--nproc_per_node=2", "-m", "src.smoke_test", "--mode", "empty_batch", "--data_root", valid_root, "--result_file", "test_empty_batch.json", "--run_id", CURRENT_RUN_ID, "--config_hash", CURRENT_CONFIG_HASH], cwd=PROJECT_ROOT)
-#     with open(os.path.join(PROJECT_ROOT, "test_empty_batch.json"), "r") as f:
-#         data = json.load(f)
-#         if data.get("status") == "PASS":
-#             mark_gate("EMPTY_BATCH_CHECK", "PASS")
-#         else:
-#             mark_gate("EMPTY_BATCH_CHECK", "FAIL")
-#             raise RuntimeError(f"Empty Batch Check Failed: {data}")
+    PROJECT_ROOT = "/kaggle/working/spatial_moe_sod"
 
+    subprocess.run([
+        "torchrun", "--nproc_per_node=2", "-m", "src.train_ddp",
+        "--config", ACTIVE_CONFIG_PATH, "--overwrite"
+    ], cwd=PROJECT_ROOT, check=True)
 """)
-
     add_markdown(
-        r"""## 14_smoke_2gpu
+        r"""## 12_resume
 """)
-
-    add_code(
-        r"""# if RUN_MODE in ["VALIDATE", "TRAIN"]:
-#     with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
-#         canonical_cfg = json.load(f)
-#     from src.config import ExperimentConfig
-#     canonical_cfg = ExperimentConfig.from_dict(canonical_cfg).to_dict()
-#     from src.train_ddp import get_config_hash
-#     CURRENT_CONFIG_HASH = get_config_hash(canonical_cfg, "model_config_hash")
-#     CURRENT_RUN_ID = canonical_cfg.get("run_id") or "test_run_id"
-
-#     print("Running 2-GPU DDP Smoke Test...")
-#     res = subprocess.run(["torchrun", "--nproc_per_node=2", "-m", "src.smoke_test", "--mode", "ddp", "--data_root", valid_root, "--result_file", "test_2gpu.json", "--run_id", CURRENT_RUN_ID, "--config_hash", CURRENT_CONFIG_HASH], cwd=PROJECT_ROOT)
-#     with open(os.path.join(PROJECT_ROOT, "test_2gpu.json"), "r") as f:
-#         data = json.load(f)
-#         if data.get("status") == "PASS" and data.get("world_size") == 2 and set(data.get("ranks_completed", [])) == {0, 1}:
-#             mark_gate("DDP_CHECK", "PASS")
-#             mark_gate("MOE_CHECK", data.get("moe_check", "FAIL"), "Sparsity/Token Identity")
-#             mark_gate("LOSS_CHECK", data.get("loss_check", "FAIL"), "Loss Gradients/Behavior")
-#             mark_gate("OPT_CHECK", data.get("optimizer_check", "FAIL"), "Optimizer Groups/Behavior")
-#         else:
-#             mark_gate("DDP_CHECK", "FAIL")
-#             raise RuntimeError(f"DDP Smoke Failed: {data}")
-
-""")
-
-    add_markdown(
-        r"""## 15_production_calibration
-""")
-
-    add_code(
-        r"""# if RUN_MODE in ["VALIDATE", "TRAIN"]:
-#     print("Running 2-GPU Production Memory Calibration...")
-#     res = subprocess.run(["torchrun", "--nproc_per_node=2", "-m", "src.smoke_test", "--mode", "memory", "--data_root", valid_root, "--result_file", "test_mem.json", "--run_id", CURRENT_RUN_ID, "--config_hash", CURRENT_CONFIG_HASH], cwd=PROJECT_ROOT)
-#     with open(os.path.join(PROJECT_ROOT, "test_mem.json"), "r") as f:
-#         data = json.load(f)
-#         if data.get("status") == "PASS":
-#             mark_gate("MEMORY_CHECK", "PASS", f"Peak: {data.get('peak_allocated_gb')} GB")
-#         else:
-#             mark_gate("MEMORY_CHECK", "FAIL")
-#             raise RuntimeError(data.get("reason"))
-
-""")
-
-    add_markdown(
-        r"""## 16_checkpoint_test
-""")
-
-    add_code(
-        r"""# if RUN_MODE in ["VALIDATE", "TRAIN"]:
-#     print("Running Checkpoint Write Test...")
-#     res = subprocess.run(["torchrun", "--nproc_per_node=2", "-m", "src.smoke_test", "--mode", "resume_a", "--data_root", valid_root, "--result_file", "test_ckpt.json", "--run_id", CURRENT_RUN_ID, "--config_hash", CURRENT_CONFIG_HASH], cwd=PROJECT_ROOT)
-#     with open(os.path.join(PROJECT_ROOT, "test_ckpt.json"), "r") as f:
-#         if json.load(f).get("status") == "PASS":
-#             mark_gate("CHECKPOINT_CHECK", "PASS")
-#         else:
-#             mark_gate("CHECKPOINT_CHECK", "FAIL")
-
-""")
-
-    add_markdown(
-        r"""## 17_resume_test
-""")
-
-    add_code(
-        r"""# if RUN_MODE in ["VALIDATE", "TRAIN"]:
-#     print("Running Checkpoint Resume Test...")
-#     res = subprocess.run(["torchrun", "--nproc_per_node=2", "-m", "src.smoke_test", "--mode", "resume_b", "--data_root", valid_root, "--result_file", "test_res.json", "--run_id", CURRENT_RUN_ID, "--config_hash", CURRENT_CONFIG_HASH], cwd=PROJECT_ROOT)
-#     with open(os.path.join(PROJECT_ROOT, "test_res.json"), "r") as f:
-#         if json.load(f).get("status") == "PASS":
-#             mark_gate("RESUME_CHECK", "PASS")
-#         else:
-#             mark_gate("RESUME_CHECK", "FAIL")
-
-""")
-
-    add_markdown(
-        r"""## 18_final_gate
-""")
-
-    add_code(
-        r"""# if RUN_MODE == "TRAIN":
-#     print("Running Preflight Dry Run (2-5 steps)...")
-#     with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
-#         runtime_cfg = json.load(f)
-        
-#     runtime_cfg["data"]["dataset_root"] = valid_root
-    
-#     RUNTIME_CONFIG = os.path.join(PROJECT_ROOT, "experiments", "kaggle_runtime.json")
-    
-#     with open(RUNTIME_CONFIG, "w") as f:
-#         json.dump(runtime_cfg, f, indent=4)
-        
-#     print("Runtime dataset root:")
-#     print(runtime_cfg["data"]["dataset_root"])
-#     print("Runtime config:")
-#     print(RUNTIME_CONFIG)
-    
-#     res = subprocess.run([
-#         "torchrun", "--nproc_per_node=2", "-m", "src.train_ddp",
-#         "--config", RUNTIME_CONFIG,
-#         "--preflight", "--max_optimizer_steps", "5"
-#     ], cwd=PROJECT_ROOT, check=True)
-    
-# _pf_exp_id = runtime_cfg.get("experiment_id", "")
-# with open(os.path.join(PREFLIGHT_ROOT, _pf_exp_id, "preflight_results.json"), "r") as f:
-#         pf_data = json.load(f)
-#     with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
-#         canonical_cfg = json.load(f)
-#     from src.config import ExperimentConfig
-#     canonical_cfg = ExperimentConfig.from_dict(canonical_cfg).to_dict()
-#     from src.train_ddp import get_config_hash
-#     canonical_hash = get_config_hash(canonical_cfg, "model_config_hash")
-    
-#     if pf_data.get("status") == "PASS":
-#         mark_gate("PREFLIGHT_DRY_RUN_CHECK", "PASS", run_id=pf_data.get("run_id"), config_hash=pf_data.get("config_hash"))
-#     else:
-#         mark_gate("PREFLIGHT_DRY_RUN_CHECK", "FAIL")
-#         raise RuntimeError(f"Preflight validation failed: {pf_data}")
-
-# FINAL_STATUS = "PASS"
-# # Some gates are only for train/validate
-# if RUN_MODE in ["VALIDATE", "TRAIN"]:
-#     with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
-#         canonical_cfg = json.load(f)
-#     from src.config import ExperimentConfig
-#     canonical_cfg = ExperimentConfig.from_dict(canonical_cfg).to_dict()
-#     from src.train_ddp import get_config_hash
-#     CURRENT_CONFIG_HASH = get_config_hash(canonical_cfg, "model_config_hash")
-#     CURRENT_RUN_ID = canonical_cfg.get("run_id") or "test_run_id"
-
-#     # 9. Current-run evidence validation
-#     import time
-#     required_files = [
-#         "test_empty_batch.json", "test_2gpu.json", "test_mem.json", "test_ckpt.json", "test_res.json"
-#     ]
-#     for filename in required_files:
-#         fpath = os.path.join(PROJECT_ROOT, filename)
-#         if not os.path.exists(fpath):
-#             print(f"Missing required test result: {filename}")
-#             FINAL_STATUS = "FAIL"
-#             continue
-#         with open(fpath, "r") as f:
-#             data = json.load(f)
-#             if data.get("status") != "PASS":
-#                 print(f"Test result not PASS: {filename}")
-#                 FINAL_STATUS = "FAIL"
-#             if data.get("run_id") != CURRENT_RUN_ID or data.get("config_hash") != CURRENT_CONFIG_HASH:
-#                 print(f"Evidence mismatch (run_id/config_hash) in {filename}")
-#                 FINAL_STATUS = "FAIL"
-        
-#         # Freshness check: file must be modified recently (within the last hour)
-#         mtime = os.path.getmtime(fpath)
-#         if time.time() - mtime > 3600:
-#             print(f"Stale test result (timestamp): {filename}")
-#             FINAL_STATUS = "FAIL"
-            
-#     if RUN_MODE == "TRAIN":
-# _pf_exp_id = runtime_cfg.get("experiment_id", "")
-# with open(os.path.join(PREFLIGHT_ROOT, _pf_exp_id, "preflight_results.json"), "r") as f:
-#         if os.path.exists(fpath):
-#             with open(fpath, "r") as f:
-#                 pf_data = json.load(f)
-#                 # Note: run_id is always a fresh timestamped value (e.g. EXP_...timestamp...),
-#                 # so we only validate config_hash here. The PREFLIGHT_DRY_RUN_CHECK gate
-#                 # already enforces that the preflight actually passed.
-#                 if pf_data.get("config_hash") != CURRENT_CONFIG_HASH:
-#                     print(f"Evidence mismatch (config_hash) in preflight_results.json: "
-#                           f"expected {CURRENT_CONFIG_HASH}, got {pf_data.get('config_hash')}")
-#                     FINAL_STATUS = "FAIL"
-#             mtime = os.path.getmtime(fpath)
-#             if time.time() - mtime > 3600:
-#                 print(f"Stale preflight result (timestamp).")
-#                 FINAL_STATUS = "FAIL"
-
-#     MODE_REQUIRED_GATES = {
-#         "VALIDATE": [
-#             "ENV_CHECK", "GPU_CHECK", "DATA_CHECK", "PROJECT_CHECK", "DEPENDENCY_CHECK",
-#             "PVT_CHECK", "STATIC_CHECK", "TRANSFORM_CHECK", "MODEL_CHECK", "MOE_CHECK",
-#             "LOSS_CHECK", "OPT_CHECK", "DDP_CHECK", "MEMORY_CHECK",
-#             "CHECKPOINT_CHECK", "RESUME_CHECK", "EMPTY_BATCH_CHECK"
-#         ],
-#         "TRAIN": [
-#             "ENV_CHECK", "GPU_CHECK", "DATA_CHECK", "PROJECT_CHECK", "DEPENDENCY_CHECK",
-#             "PVT_CHECK", "STATIC_CHECK", "TRANSFORM_CHECK", "MODEL_CHECK", "MOE_CHECK",
-#             "LOSS_CHECK", "OPT_CHECK", "DDP_CHECK", "MEMORY_CHECK",
-#             "CHECKPOINT_CHECK", "RESUME_CHECK", "PREFLIGHT_DRY_RUN_CHECK", "EMPTY_BATCH_CHECK"
-#         ],
-#         "RESUME": [
-#             "ENV_CHECK", "GPU_CHECK", "DATA_CHECK", "PROJECT_CHECK", "DEPENDENCY_CHECK",
-#             "STATIC_CHECK", "RESUME_PREFLIGHT_CHECK"
-#         ]
-#     }
-    
-#     required = MODE_REQUIRED_GATES.get(RUN_MODE, [])
-#     for k in required:
-#         v = GATES.get(k)
-#         if v != "PASS":
-#             print(f"GATE {k} FAILED or NOT RUN.")
-#             FINAL_STATUS = "FAIL"
-
-#     with open(os.path.join(PROJECT_ROOT, "final_audit.json"), "w") as f:
-#         json.dump({
-#             "timestamp": time.time(),
-#             "gates": GATES,
-#             "final_status": FINAL_STATUS
-#         }, f, indent=4)
-
-# print(f"FINAL AUDIT STATUS: {FINAL_STATUS}")
-
-""")
-
-    add_markdown(
-        r"""## 18b_smoke_100_images (optional, commented out)
-
-Quick sanity check before committing to the full 50-epoch run: trains a few real epochs (train -> val -> checkpoint -> diagnostics) on a 100-image slice of the data, so you can watch each epoch complete cleanly while it's still fast.
-
-Uses `--preflight`, so it writes to `WXSOD_Preflight` only — it never touches your production `WXSOD_Checkpoints` and never pushes anything to Hugging Face. Safe to re-run as many times as you like.
-
-To run it: select all lines in the cell below and toggle comments off (Edit > Toggle Comment, or Ctrl+/), then run the cell.
-""")
-
-    add_code(
-        r"""# with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
-#     smoke_cfg = json.load(f)
-
-# smoke_cfg["data"]["dataset_root"] = valid_root
-# smoke_cfg["data"]["max_samples"] = 100
-# smoke_cfg["train"]["epochs"] = 3
-# smoke_cfg["train"]["num_workers"] = 2
-
-# SMOKE_CONFIG = os.path.join(PROJECT_ROOT, "experiments", "smoke_100_config.json")
-# with open(SMOKE_CONFIG, "w") as f:
-#     json.dump(smoke_cfg, f, indent=4)
-
-# print(f"Running 100-image smoke check across {smoke_cfg['train']['epochs']} epochs...")
-# subprocess.run([
-#     "torchrun", "--nproc_per_node=2", "-m", "src.train_ddp",
-#     "--config", SMOKE_CONFIG,
-#     "--preflight",
-#     "--max_epochs", str(smoke_cfg["train"]["epochs"]),
-#     "--max_optimizer_steps", "100000",
-# ], cwd=PROJECT_ROOT, check=True)
-
-# _pf_exp_id = runtime_cfg.get("experiment_id", "")
-# with open(os.path.join(PREFLIGHT_ROOT, _pf_exp_id, "preflight_results.json"), "r") as f:
-#     smoke_result = json.load(f)
-# print(json.dumps(smoke_result, indent=2))
-# if smoke_result.get("status") != "PASS":
-#     raise RuntimeError(f"Smoke check failed: {smoke_result}")
-# print(f"Smoke check PASSED - {smoke_cfg['train']['epochs']} epochs completed cleanly on 100 images.")
-""")
-
-    add_markdown(
-        r"""## 19_train
-""")
-
-    add_code(
-        r"""# if RUN_MODE == "TRAIN":
-#     if FINAL_STATUS != "PASS" or GATES.get("PREFLIGHT_DRY_RUN_CHECK") != "PASS":
-#         raise RuntimeError("Refusing to train: Not all gates passed.")
-        
-#     with open(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH), "r") as f:
-#         canonical_cfg = json.load(f)
-#     from src.config import ExperimentConfig
-#     canonical_cfg = ExperimentConfig.from_dict(canonical_cfg).to_dict()
-#     from src.train_ddp import get_config_hash
-#     canonical_hash = get_config_hash(canonical_cfg, "model_config_hash")
-    
-# _pf_exp_id = canonical_cfg.get("experiment_id", "")
-# with open(os.path.join(PREFLIGHT_ROOT, _pf_exp_id, "preflight_results.json"), "r") as f:
-#         pf_data = json.load(f)
-#     actual_hash = pf_data.get("config_hash")
-    
-#     print(f"Validated config hash: {canonical_hash}")
-#     print(f"Training config hash:  {actual_hash}")
-#     if canonical_hash != actual_hash:
-#         raise RuntimeError("Config hash mismatch between canonical config and actual runtime config!")
-#     print("MATCH")
-    
-#     print("Launching final 50-epoch training...")
-#     RUNTIME_CONFIG = os.path.join(PROJECT_ROOT, "experiments", "kaggle_runtime.json")
-#     subprocess.run([
-#         "torchrun", "--nproc_per_node=2", "-m", "src.train_ddp",
-#         "--config", RUNTIME_CONFIG,
-#         "--overwrite"
-#     ], cwd=PROJECT_ROOT, check=True)
-
-""")
-
-    add_markdown(
-        r"""## 20_status
-""")
-
-    add_code(
-        r"""# if RUN_MODE == "TRAIN":
-#     if os.path.exists(os.path.join(CHECKPOINT_ROOT, "training_complete.json")):
-#         print("Training successfully reached completion state.")
-#     else:
-#         print("Training did not produce completion marker.")
-
-""")
-
-    add_markdown(
-        r"""## 21_resume
-""")
-
     add_code(
         r"""if RUN_MODE == "RESUME":
     print("Initiating Resume Recovery Sequence...")
@@ -956,11 +569,9 @@ To run it: select all lines in the cell below and toggle comments off (Edit > To
     ], cwd=PROJECT_ROOT, check=True)
 
 """)
-
     add_markdown(
-        r"""## 22_evaluate
+        r"""## 13_evaluate
 """)
-
     add_code(
         r"""import os, sys, subprocess
 from src.config import ExperimentConfig
@@ -1017,11 +628,9 @@ if RUN_MODE == "EVALUATE":
     for f in os.listdir(eval_out_dir):
         print(f)
 """)
-
     add_markdown(
-        r"""## 23_load_model_for_analysis
+        r"""## 14_load_model_for_analysis
 """)
-
     add_code(
         r"""import os, json, torch
 import numpy as np
@@ -1088,40 +697,9 @@ if RUN_MODE == "EVALUATE":
     for sub in ['compute_cost', 'proxy_ablations', 'routing_entropy', 'qualitative', 'diagnostics']:
         os.makedirs(os.path.join(RESULTS_ROOT, sub), exist_ok=True)
 """)
-
     add_markdown(
-        r"""## 23a_compute_cost
+        r"""## 15_proxy_ablations
 """)
-
-    add_code(
-        r"""# !pip install thop --quiet
-# import time
-# from thop import profile
-
-# dummy = torch.randn(1, 3, 384, 384).to(device)
-# macs, params = profile(model, inputs=(dummy,), verbose=False)
-
-# with torch.no_grad():
-#     for _ in range(10):
-#         model(dummy)  # warmup
-#     if device.type == 'cuda': torch.cuda.synchronize()
-#     start = time.time()
-#     N = 50
-#     for _ in range(N):
-#         model(dummy)
-#     if device.type == 'cuda': torch.cuda.synchronize()
-#     elapsed = time.time() - start
-# fps = N / elapsed
-
-# compute_cost = {'params_M': round(params/1e6, 2), 'macs_G': round(macs/1e9, 2), 'fps': round(fps, 2)}
-# print(compute_cost)
-# save_json(os.path.join(RESULTS_ROOT, 'compute_cost', 'compute_cost.json'), compute_cost)
-""")
-
-    add_markdown(
-        r"""## 23b_proxy_ablations
-""")
-
     add_code(
         r"""if RUN_MODE == "EVALUATE":
     from datetime import datetime, timezone
@@ -1168,28 +746,9 @@ if RUN_MODE == "EVALUATE":
     json_out = os.path.join(RESULTS_ROOT, 'proxy_ablations', 'proxy_ablation_results.json')
     save_json(json_out, output)
 """)
-
     add_markdown(
-        r"""## 23c_forced_expert_sanity_check
+        r"""## 16_routing_entropy
 """)
-
-    add_code(
-        r"""# # Targets stride/8 (scale=8), the stage with confirmed DEAD_EXPERT [0, 5], as opposed to 23b's stride/4 (scale=4) check.
-# print("\nForced Expert Sanity Check (Scale 8, Expert 0):")
-# forced_results = evaluate(
-#     model,
-#     test_real_loader,
-#     output_dir=os.path.join(RESULTS_ROOT, 'proxy_ablations', 'force_expert_scale8_out'),
-#     use_tta=False,
-#     ablation_cfg={'scale': 8, 'expert_id': 0}
-# )
-# save_json(os.path.join(RESULTS_ROOT, 'proxy_ablations', 'force_expert_scale8_result.json'), forced_results)
-""")
-
-    add_markdown(
-        r"""## 23d_routing_entropy
-""")
-
     add_code(
         r"""if RUN_MODE == "EVALUATE":
     from collections import defaultdict
@@ -1213,63 +772,69 @@ if RUN_MODE == "EVALUATE":
     print(entropy_comparison)
     save_json(os.path.join(RESULTS_ROOT, 'routing_entropy', 'entropy_comparison.json'), entropy_comparison)
 """)
-
     add_markdown(
-        r"""## 23e_qualitative_figure
+        r"""## 17_qualitative_figure
 """)
-
     add_code(
         r"""if RUN_MODE == "EVALUATE":
     import matplotlib.pyplot as plt
     import cv2
     import numpy as np
+    from src.dataset import get_weather_type
+    from src.evaluate import reverse_geometry
 
     test_real_ds = test_real_loader.dataset
-    snow_idx, rain_or_fog_idx, light_idx = -1, -1, -1
 
-    # TODO(Task 4): replace with canonical weather parser
+    # One image per condition, using the canonical parser so each row really is
+    # the weather it is labelled with.
+    wanted = ("snow", "fog", "light")
+    picked = {}
     for idx in range(len(test_real_ds)):
-        stem = test_real_ds.samples[idx][2]
-        weather = stem.split('-')[0].lower()
-        if 'snow' in weather or 'snow' in stem.lower(): snow_idx = idx
-        elif 'rain' in weather or 'rain' in stem.lower() or 'fog' in weather or 'fog' in stem.lower(): rain_or_fog_idx = idx
-        elif 'light' in weather or 'light' in stem.lower() or 'sun' in stem.lower(): light_idx = idx
-        if snow_idx != -1 and rain_or_fog_idx != -1 and light_idx != -1: break
+        weather = get_weather_type(test_real_ds.samples[idx][2])
+        if weather in wanted and weather not in picked:
+            picked[weather] = idx
+        if len(picked) == len(wanted):
+            break
 
-    if snow_idx == -1: snow_idx = 0
-    if rain_or_fog_idx == -1: rain_or_fog_idx = 1
-    if light_idx == -1: light_idx = 2
-
-    def make_qualitative_grid(model, dataset, indices, device, save_path):
-        fig, axes = plt.subplots(len(indices), 3, figsize=(9, 3*len(indices)))
+    def make_qualitative_grid(model, dataset, picks, device, save_path):
+        rows = list(picks.items())
+        fig, axes = plt.subplots(len(rows), 3, figsize=(12, 4 * len(rows)))
         model.eval()
         with torch.no_grad():
-            for row, idx in enumerate(indices):
+            for row, (weather, idx) in enumerate(rows):
                 sample = dataset[idx]
-                image = sample['image'].unsqueeze(0).to(device)
-                gt_path = sample['meta']['gt_path']
-                out, _ = model(image)
-                pred = torch.sigmoid(out.saliency_logits)[0,0].cpu().numpy()
-                gt = cv2.imread(gt_path, cv2.IMREAD_GRAYSCALE)
-            
-                img_disp = sample['image'].permute(1,2,0).cpu().numpy()
-                img_disp = (img_disp - img_disp.min()) / (img_disp.max() - img_disp.min() + 1e-8)
-            
-                axes[row,0].imshow(img_disp); axes[row,0].set_title(f"Input (idx {idx})")
-                axes[row,1].imshow(gt, cmap='gray'); axes[row,1].set_title("GT")
-                axes[row,2].imshow(pred, cmap='gray'); axes[row,2].set_title("Prediction")
-                for ax in axes[row]: ax.axis('off')
+                meta = {k: v.item() if isinstance(v, torch.Tensor) else v
+                        for k, v in sample['meta'].items()}
+                out, _ = model(sample['image'].unsqueeze(0).to(device))
+                pred = torch.sigmoid(out.saliency_logits)
+
+                # The prediction lives in the padded/resized model frame.  Undo that
+                # exactly as the evaluator does, so all three columns are in ORIGINAL
+                # image coordinates and are directly comparable.
+                pred_orig = reverse_geometry(pred[:1], meta)
+                gt_orig = cv2.imread(str(meta['gt_path']), cv2.IMREAD_GRAYSCALE)
+                img_orig = cv2.cvtColor(cv2.imread(str(dataset.samples[idx][0])),
+                                        cv2.COLOR_BGR2RGB)
+
+                panels = (
+                    (img_orig, f"Input ({weather})", {}),
+                    (gt_orig, "Ground truth", {"cmap": "gray"}),
+                    (pred_orig, "Prediction", {"cmap": "gray", "vmin": 0.0, "vmax": 1.0}),
+                )
+                for col, (panel, title, imshow_kwargs) in enumerate(panels):
+                    axes[row, col].imshow(panel, **imshow_kwargs)
+                    axes[row, col].set_title(title)
+                    axes[row, col].axis("off")
         plt.tight_layout()
         plt.savefig(save_path, dpi=200)
         print(f"Saved to {save_path}")
 
-    make_qualitative_grid(model, test_real_ds, [snow_idx, rain_or_fog_idx, light_idx], device, os.path.join(RESULTS_ROOT, 'qualitative', 'qualitative_grid.png'))
+    make_qualitative_grid(model, test_real_ds, picked, device,
+                          os.path.join(RESULTS_ROOT, 'qualitative', 'qualitative_grid.png'))
 """)
-
     add_markdown(
-        r"""## 23f_diagnostics_and_upload
+        r"""## 18_diagnostics
 """)
-
     add_code(
         r"""if RUN_MODE == "EVALUATE":
     import subprocess
@@ -1295,40 +860,50 @@ if RUN_MODE == "EVALUATE":
 
 
 """)
-
     add_markdown(
-        r"""## 23g_ablation_screening
+        r"""## 19_compute_cost (optional, needs `pip install thop`)
 """)
-
     add_code(
-        r"""if RUN_MODE == "TRAIN":
-    import subprocess
-    import os
+        r"""# !pip install thop --quiet
+# import time
+# from thop import profile
 
-    PROJECT_ROOT = "/kaggle/working/spatial_moe_sod"
+# dummy = torch.randn(1, 3, 384, 384).to(device)
+# macs, params = profile(model, inputs=(dummy,), verbose=False)
 
-    subprocess.run([
-        "torchrun", "--nproc_per_node=2", "-m", "src.train_ddp",
-        "--config", ACTIVE_CONFIG_PATH, "--overwrite"
-    ], cwd=PROJECT_ROOT, check=True)
+# with torch.no_grad():
+#     for _ in range(10):
+#         model(dummy)  # warmup
+#     if device.type == 'cuda': torch.cuda.synchronize()
+#     start = time.time()
+#     N = 50
+#     for _ in range(N):
+#         model(dummy)
+#     if device.type == 'cuda': torch.cuda.synchronize()
+#     elapsed = time.time() - start
+# fps = N / elapsed
+
+# compute_cost = {'params_M': round(params/1e6, 2), 'macs_G': round(macs/1e9, 2), 'fps': round(fps, 2)}
+# print(compute_cost)
+# save_json(os.path.join(RESULTS_ROOT, 'compute_cost', 'compute_cost.json'), compute_cost)
 """)
-
     add_markdown(
-        r"""# Campare Full and moe16 dense Ablation""")
-
+        r"""## 20_forced_expert_check (optional)
+""")
     add_code(
-        r"""# Skipped for this run: run_ablation_comparison.py hardcodes
-# experiments = ["ablation_full_moe", "ablation_moe16_dense"], which does not
-# include this run's checkpoint dir. Re-enable / rewrite once the num_experts
-# ablation has its own comparison logic.
-# subprocess.run([
-#     "python", "-m", "src.run_ablation_comparison"
-# ], cwd=PROJECT_ROOT, check=True)
+        r"""# # Targets stride/8 (scale=8), the stage with confirmed DEAD_EXPERT [0, 5], as opposed to 23b's stride/4 (scale=4) check.
+# print("\nForced Expert Sanity Check (Scale 8, Expert 0):")
+# forced_results = evaluate(
+#     model,
+#     test_real_loader,
+#     output_dir=os.path.join(RESULTS_ROOT, 'proxy_ablations', 'force_expert_scale8_out'),
+#     use_tta=False,
+#     ablation_cfg={'scale': 8, 'expert_id': 0}
+# )
+# save_json(os.path.join(RESULTS_ROOT, 'proxy_ablations', 'force_expert_scale8_result.json'), forced_results)
 """)
-
     add_markdown(
-        r"""# 24_Upload_To_Hugging_Face""")
-
+        r"""## 21_upload_results""")
     add_code(
         r"""RESULTS_ROOT = '/kaggle/working/analysis_results'
 if RUN_MODE == "EVALUATE":
@@ -1378,6 +953,31 @@ if RUN_MODE == "EVALUATE":
                 print(os.path.relpath(os.path.join(root, f), RESULTS_ROOT))
     except Exception as e:
         print(f"Failed to upload to Hugging Face: {e}")
+""")
+    add_markdown(
+        r"""## 22_optional_pre_run_gates
+
+The notebook used to carry these as commented-out cells; they duplicate
+`src.smoke_test`, so they are kept here as commands instead.  Run whichever you
+need -- they fail fast, which is cheaper than discovering the problem four hours
+into a run.
+
+```bash
+torchrun --nproc_per_node=2 -m src.smoke_test --mode empty_batch --data_root <root> --result_file /tmp/eb.json
+torchrun --nproc_per_node=2 -m src.smoke_test --mode ddp         --data_root <root> --result_file /tmp/ddp.json
+torchrun --nproc_per_node=2 -m src.smoke_test --mode memory      --data_root <root> --result_file /tmp/mem.json
+torchrun --nproc_per_node=2 -m src.smoke_test --mode resume_a    --data_root <root> --result_file /tmp/r1.json
+torchrun --nproc_per_node=2 -m src.smoke_test --mode resume_b    --data_root <root> --result_file /tmp/r2.json
+```
+
+Other one-off commands that were in the notebook as dead cells:
+
+```bash
+# 5-step training sanity check on a new config
+torchrun --nproc_per_node=2 -m src.train_ddp --config <cfg> --preflight --max_optimizer_steps 5
+# manual checkpoint push (equivalent of the old 00_hf_sync cell)
+python -m src.hf_sync push-checkpoint <file> --name <remote-name>
+```
 """)
 
     notebook = {
