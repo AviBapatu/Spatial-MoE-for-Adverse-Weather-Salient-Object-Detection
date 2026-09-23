@@ -64,6 +64,16 @@ class ModelConfig:
     router_noise_enabled: bool = True
     router_noise_scale: float = 1.0
     router_noise_min_std: float = 0.05
+    # How the per-token gate weights are formed from the top-k router logits.
+    #   "renormalized" — softmax over the k selected logits (historical default).
+    #       Shift-invariant within the selected pair, so the task loss has zero
+    #       gradient for every expert the token did not pick and selection can
+    #       only drift under noise.
+    #   "dense" — the experts' probabilities from the full softmax over all E
+    #       experts, gathered at the top-k indices (Switch/Shazeer style).  The
+    #       loss then has a gradient for non-selected experts, so the router can
+    #       actually learn which experts to prefer.
+    gate_mode: str = "renormalized"
 
 
 @dataclass
@@ -306,6 +316,11 @@ class ExperimentConfig:
             errors.append(
                 f"model.moe_16_mode must be one of {{'sparse','dense'}}, "
                 f"got '{self.model.moe_16_mode}'"
+            )
+        if self.model.gate_mode not in {"renormalized", "dense"}:
+            errors.append(
+                f"model.gate_mode must be one of {{'renormalized','dense'}}, "
+                f"got '{self.model.gate_mode}'"
             )
         if (self.model.moe_16_mode == "dense") != self.loss.moe_16_dense:
             errors.append(

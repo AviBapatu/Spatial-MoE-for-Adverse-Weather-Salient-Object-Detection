@@ -152,6 +152,7 @@ class SpatialMoELayer(nn.Module):
         router_noise_enabled: bool = True,
         router_noise_scale: float = 1.0,
         router_noise_min_std: float = 0.05,
+        gate_mode: str = "renormalized",
     ) -> None:
         """Initialize the MoE layer.
 
@@ -163,6 +164,9 @@ class SpatialMoELayer(nn.Module):
             router_noise_enabled: Whether noisy routing is active in training.
             router_noise_scale: Multiplier for the learned noise std.
             router_noise_min_std: Lower clamp on the noise std.
+            gate_mode: ``"renormalized"`` (softmax over the k chosen logits) or
+                ``"dense"`` (each chosen expert's probability from the full
+                softmax over all experts).  See :meth:`forward`.
         """
         super().__init__()
         self.dim = dim
@@ -171,6 +175,7 @@ class SpatialMoELayer(nn.Module):
         self.router_noise_enabled = router_noise_enabled
         self.router_noise_scale = router_noise_scale
         self.router_noise_min_std = router_noise_min_std
+        self.gate_mode = gate_mode
 
         # 1. Expert pool (sparse dispatch preserves DDP gradient sync).
         self.experts = nn.ModuleList(
@@ -290,7 +295,19 @@ class SpatialMoELayer(nn.Module):
             noisy_logits, noise_std = clean_logits, None
 
         topk_values, topk_indices = torch.topk(noisy_logits, k=self.k, dim=-1)
-        topk_gates = F.softmax(topk_values, dim=-1)  # [B, H*W, K]
+        # In "dense" mode the gate is the chosen expert's probability under the
+        # FULL softmax over all experts, so the loss keeps a gradient for the
+        # experts this token did not pick — that is what lets the router learn
+        # which experts to prefer.  Renormalising over the k chosen logits (the
+        # historical default) makes the gate shift-invariant within that pair,
+        # leaving the task gradient exactly zero for every unpicked expert
+        # (measured: 128/128 zero entries), so selection could only drift under
+        # noise and the auxiliary uniformity terms.
+        full_gates = F.softmax(noisy_logits, dim=-1)  # [B, H*W, E]
+        if self.gate_mode == "dense":
+            topk_gates = torch.gather(full_gates, -1, topk_indices)  # [B, H*W, K]
+        else:
+            topk_gates = F.softmax(topk_values, dim=-1)  # [B, H*W, K]
 
         # --- True sparse dispatch -------------------------------------------
         flat_x = x_tokens.reshape(B * N_tokens, C)
@@ -329,10 +346,9 @@ class SpatialMoELayer(nn.Module):
             routing_gates.transpose(1, 2).view(B, self.num_experts, H, W).contiguous()
         )
 
-        # Routing entropy over the FULL 8-expert gate distribution (range [0, ln 8]).
+        # Routing entropy over the FULL E-expert gate distribution (range [0, ln E]).
         # Note: Previous version calculated this over top-K gates only, which was
         # a measurement bug that artificially capped entropy at ln(K).
-        full_gates = F.softmax(noisy_logits, dim=-1)
         entropy = -torch.sum(full_gates * torch.log(full_gates + 1e-9), dim=-1)
         entropy_map = entropy.view(B, 1, H, W).contiguous()
 
