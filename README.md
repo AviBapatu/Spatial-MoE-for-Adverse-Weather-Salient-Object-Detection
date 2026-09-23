@@ -32,7 +32,7 @@ tests/                    # Unit + integration tests
 docs/research/            # Persistent research knowledge base
 data/WXSDO_data/          # WXSOD dataset (train_sys, test_sys, test_real splits)
 checkpoints/              # Model weight files (.pth)
-evaluation/               # Saved evaluation results per checkpoint
+results/                  # Evaluation results, routing statistics, legacy artifacts
 ```
 
 ## Environment Setup
@@ -72,7 +72,13 @@ uv run torchrun --nproc_per_node=2 -m src.train_ddp --config experiments/baselin
 
 ### Notebook training (Kaggle)
 
-Open `moe-for-sod-final.ipynb`. The notebook uses `RUN_MODE` to control behavior:
+The notebooks pull the code zip from Hugging Face and verify its hash, so repackage with
+`python package_project.py` after changing anything under `src/` or `experiments/`.
+
+Open one of the generated notebooks: `moe-of-sod__accountA__v_e8_repro_best.ipynb` or
+`moe-of-sod__accountB__v_e8_repro_gatedense.ipynb`, and the `moe-of-sod__v_*.ipynb`
+variants behind them. They are generated from the `generate_notebook_*.py` scripts, which
+are the editable source. Each notebook uses `RUN_MODE` to control behaviour:
 
 | `RUN_MODE` | Description |
 |------------|-------------|
@@ -115,7 +121,8 @@ cat experiments/registry.csv
 uv run python -m src.evaluate --checkpoint checkpoints/best.pth --dataset both
 ```
 
-Results go to `evaluation/<checkpoint_name>/test_sys/` and `evaluation/<checkpoint_name>/test_real/`.
+Results go under `results/<experiment_id>/eval_results/`, with a dataset and TTA subfolder.
+Flip-average TTA is on by default for new runs and keeps its results separate.
 
 ## Testing
 
@@ -158,11 +165,18 @@ The `init_process_group` uses a 45-minute timeout ceiling as a safety net, but t
 
 ### CUDA OOM
 
-T4 GPUs (16 GB) with batch size 16 and gradient accumulation steps 2 should fit. Reduce `batch_per_gpu` or `image_size` in the config if needed.
+The current configs run `batch_per_gpu 4` with `grad_accum_steps 4` on two T4s (effective
+batch 32). Reduce `batch_per_gpu` first if a config does not fit.
 
 ### Config hash mismatch on resume
 
 This means the model architecture or critical hyperparameters changed between training sessions. Use `--overwrite` to start fresh, or resume from the exact same config.
+
+## Documentation
+
+Two documents are canonical: `RESEARCH_TRUTH.md` (what may be claimed, and what is
+forbidden) and `docs/research/RESULTS.md` (every measured number, each traceable to a
+result file). `docs/research/INDEX.md` maps the rest.
 
 ## License
 

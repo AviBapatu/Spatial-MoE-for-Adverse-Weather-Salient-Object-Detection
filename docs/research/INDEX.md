@@ -23,14 +23,8 @@ Two documents are canonical. Read them before writing anything.
 
 | File | Covers |
 |---|---|
-| `docs/research/LITERATURE_DATABASE.md` | The citation database |
-| `docs/research/LITERATURE_CLAIMS.md` | Claims attributed to specific papers |
-| `docs/research/LITERATURE_NOTES.md` | Reading notes |
-| `docs/research/FINAL_RESEARCH_POSITION.md` | Closest competing methods and how this project differs |
-| `docs/research/NOVELTY_MATRIX.md` | Novelty assessed axis by axis |
-
-These five overlap and are the obvious next merge: one related-work document would replace
-them.
+| `docs/research/RELATED_WORK.md` | Closest prior work, where this project differs, which claims survive, which must be qualified, and the experiments each claim still needs |
+| `docs/research/LITERATURE_DATABASE.md` | The underlying citation records, keyed `DB-nn` |
 
 ## Paper
 
