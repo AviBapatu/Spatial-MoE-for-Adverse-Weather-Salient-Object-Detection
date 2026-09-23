@@ -264,6 +264,7 @@ class MoEDiagnosticsEngine:
         self,
         epoch: int = 0,
         run_tag: Optional[str] = None,
+        extra_shards: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """Write per-epoch routing stats (JSON + CSV) and return them.
 
@@ -274,12 +275,28 @@ class MoEDiagnosticsEngine:
                 ``"contentonly"`` or ``"padded_baseline"``.  When provided,
                 filenames become ``routing_stats_{run_tag}.json/csv``
                 instead of ``routing_stats_ep{epoch}.json/csv``.
+            extra_shards: other ranks' shard snapshots, each shaped like
+                ``{"states": {scale: tracker.state()}, "weather": {scale:
+                image_weather_stats}}`` as gathered by ``all_gather_object``.
+                They are merged into this rank's trackers *before* summarising,
+                so the summary covers every rank's share of the split rather
+                than just the caller's.  Callers must pass these from exactly
+                one rank, otherwise the same file is written by several ranks
+                and only the last writer's content survives.
 
         Returns:
             Dict keyed by scale, each with tracker summary, collapse warnings,
             masked_token_fraction, and weather-enrichment divergence.
         """
         tag = run_tag if run_tag is not None else f"ep{epoch}"
+
+        if extra_shards:
+            for shard in extra_shards:
+                for scale in ["moe_4", "moe_8", "moe_16"]:
+                    self.trackers[scale].merge(RoutingTracker.from_state(shard["states"][scale]))
+                    self.weather_analyzers[scale].image_weather_stats.extend(
+                        shard["weather"][scale]
+                    )
 
         stats = {}
         for scale in ["moe_4", "moe_8", "moe_16"]:

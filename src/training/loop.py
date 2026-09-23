@@ -224,17 +224,29 @@ def distributed_diagnostics(
                 getattr(model.module.moe_8, 'is_dense', False),
                 getattr(model.module.moe_16, 'is_dense', False),
             ]
-            diag_engine.update(v_images, moe_outputs, v_batch["meta"], skip_stages=skip_stages)
+            # The engine reads the image stems from the "name" key of the dict it
+            # is handed; the dataset keeps them outside "meta".  Without this the
+            # weather analysis is skipped entirely and the saved visuals are
+            # named batch_<N>.
+            meta_list = dict(v_batch["meta"])
+            meta_list["name"] = v_batch["name"]
+            diag_engine.update(v_images, moe_outputs, meta_list, skip_stages=skip_stages)
 
-    # Each rank finalize locally to get per-rank stats
-    local_stats = diag_engine.finalize(epoch)
+    # Each rank only sees its own DistributedSampler shard.  Every rank used to
+    # call finalize(), which writes the same routing_stats_ep{N}.json — so the
+    # file was whichever rank wrote last: one half of the validation set, chosen
+    # by timing.  Gather the shards and let rank 0 write the merged result.
+    scales = ["moe_4", "moe_8", "moe_16"]
+    local_shard = {
+        "states": {s: diag_engine.trackers[s].state() for s in scales},
+        "weather": {s: diag_engine.weather_analyzers[s].image_weather_stats for s in scales},
+    }
 
-    # Gather stats dicts to rank 0 for logging / HF upload
-    all_stats: List[Dict] = [None] * world_size  # type: ignore[list-item]
-    dist.all_gather_object(all_stats, local_stats)
+    shards: List[Dict] = [None] * world_size  # type: ignore[list-item]
+    dist.all_gather_object(shards, local_shard)
 
     if is_rank_zero():
-        # Use the rank-0 stats as the canonical output (already written by finalize)
+        diag_engine.finalize(epoch, extra_shards=shards[1:])
         log.info("Diagnostics completed safely. Check 'diagnostics' folder.")
         if hf_pusher is not None:
             diag_json = f"{diag_dir}/routing_stats_ep{epoch}.json"
