@@ -16,7 +16,7 @@ This plan is derived exclusively from the research corpus below. No outside assu
 |----------|-------------------|
 | `RESEARCH_TRUTH.md` | Authoritative scientific claims; evidence hierarchy |
 | `RESEARCH_TRUTH.md` | Which claims are supported/unsupported |
-| `docs/research/FINAL_EXPERIMENTAL_RESULTS.md` | All experimental data with sources |
+| `docs/research/RESULTS.md` | All experimental data with sources |
 | `docs/research/FINAL_RESEARCH_POSITION.md` | Defensible novelty claims, corrections to prior work |
 | `RESEARCH_TRUTH.md` | Verified architecture, tensor dims, results |
 | `docs/research/ARCHITECTURE.md` | Component-level architecture details |

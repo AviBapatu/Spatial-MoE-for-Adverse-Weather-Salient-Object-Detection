@@ -40,7 +40,7 @@ them.
 | `paper/FINAL_PAPER_PLAN.md` | Structure, figure and table plan |
 | `paper/REDESIGN_PLAN.md` | Figure, table and reference plan for the 4-page format |
 | `paper/CLAIM_AUDIT.md`, `paper/MANUSCRIPT_AUDIT.md`, `docs/research/PAPER_CORRECTIONS.md` | Audits of a specific manuscript revision; findings are issues to check, not current fact |
-| `paper/BLUEPRINT_CODE_AUDIT.md` | Audit of the original blueprint against the code |
+| `docs/research/BLUEPRINT_CODE_AUDIT.md` | Audit of the original blueprint against the code |
 | `spatial-moe-adverse-weather-sod-blueprint.md` | The original research blueprint (repository root) |
 
 ## Working rules

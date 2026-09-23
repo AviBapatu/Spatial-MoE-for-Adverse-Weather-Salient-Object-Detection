@@ -1,5 +1,19 @@
 # PAPER_CORRECTIONS.md — Audit of paper/main.tex Against Code and Results
 
+> **Status of these findings (updated).**
+>
+> - *Resolved.* `src/decoder.py` is now the `src/decoder/` package, so the file citations
+>   below refer to a layout that no longer exists.
+> - *Resolved.* The entropy normalization this audit flags as dividing by `ln(2)` now divides
+>   by `ln(8)`, with a comment in `EntropyFusionBlock` naming the old value as a measurement
+>   bug. Note the constant is still hard-coded for 8 experts, which changes the scale of the
+>   entropy channel for a four-expert configuration.
+> - *Open.* The parameter count. This audit records 66.27M from the manuscript; training logs
+>   and `build_model` report 69,213,120. Unreconciled, and flagged in `RESEARCH_TRUTH.md`.
+> - *Open.* Claims that were unsupported at the time of this audit (routing causality,
+>   specialisation, SOTA comparison) remain unsupported. `RESEARCH_TRUTH.md` section 3 is the
+>   current forbidden-claim list.
+
 > **Note.** This file audits a specific revision of `paper/main.tex`. Citations to
 > source files refer to the layout at the time of the audit; module paths have since
 > changed (the decoder is now the `src/decoder/` package, training code lives under
