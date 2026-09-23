@@ -406,7 +406,7 @@ def init_training(args: Any, project_root: str) -> TrainCtx:
     engine, criterion = build_optimizer_and_criterion(config, model, train_loader, device)
 
     start_epoch, start_batch, best_mae, best_epoch, best_step = apply_resume(
-        args, config, model, engine, base_dir, device, cfg_hash, project_root,
+        args, config, model, engine, base_dir, device, cfg_hash,
     )
 
     return TrainCtx(
