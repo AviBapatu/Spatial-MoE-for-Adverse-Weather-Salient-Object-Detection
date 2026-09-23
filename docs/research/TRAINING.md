@@ -1,249 +1,114 @@
-# Training Pipeline
+# Training
 
-> **Note on citations.** Line-number citations below predate the current source
-> layout (the decoder is now the `src/decoder/` package, the training loop lives under
-> `src/training/`, the evaluation artifacts are under `results/`). Treat module and
-> function names as authoritative and `RESEARCH_TRUTH.md` as the verified reference;
-> numbers live in `RESULTS.md`, which is generated from the result files.
+Verified against `src/training/`, `src/optimization.py` and `src/config.py`.
 
-## Entry Points
+## Entrypoint
 
-| Script | Use Case | GPUs |
-|--------|----------|------|
-| `src/train_ddp.py` | Production DDP training | 2+ (NCCL) |
-| `train.py` | Legacy single-GPU (has bug) | 1 |
-
-**Known bug in `train.py:61`:** `get_dataloaders()` returns 4 values but the call unpacks 3. Use `train_ddp.py` instead.
-
-## DDP Training (`src/train_ddp.py`)
-
-### Launch
 ```bash
-torchrun --nproc_per_node=2 -m src.train_ddp --config experiments/baseline_v1.json
+torchrun --nproc_per_node=2 -m src.train_ddp --config experiments/<config>.json
+torchrun --nproc_per_node=2 -m src.train_ddp --config <cfg> --resume latest
+torchrun --nproc_per_node=2 -m src.train_ddp --config <cfg> --preflight --max_optimizer_steps 100000
 ```
 
-### Initialization Sequence (`train_ddp.py:136-268`)
+`src/train_ddp.py` is a thin entry point; the loop, setup, checkpointing and DDP helpers
+live under `src/training/`. Two ranks are required except under `--preflight` or
+`--dry_run`.
 
-1. `dist.init_process_group("nccl")` — NCCL backend required
-2. Load `ExperimentConfig` from JSON
-3. Validate dataset root exists
-4. Require `world_size >= 2` for production (not dry_run)
-5. `setup_experiment_run()` — creates run directory, saves config, registers in CSV
-6. Broadcast `run_dir` from rank 0 to all ranks
-7. Deterministic seeding: `seed + rank` for each rank
-8. `get_dataloaders(distributed=True)` — returns train/val/test loaders
+## Configuration
 
-### Model Construction (`train_ddp.py:264-297`)
+`ExperimentConfig` (`src/config.py`) is the single source of truth for hyperparameters.
+Defaults in constructors are not authoritative — `SpatialMoESODNet`, for instance, defaults
+to `num_experts=6` while every config passes its own value. `build_model` asserts that the
+built model matches the config (expert count, top-k, gate mode, MoE type) so a field that
+is validated but never forwarded fails at construction instead of training a different
+model in silence.
 
-```python
-model = SpatialMoESODNet(
-    use_deep_supervision=config.model.deep_supervision,
-    num_experts=config.model.num_experts,
-    window_size=config.model.window_size
-).to(device)
-```
+## Experiment identity
 
-**Architecture consistency check:** MD5 hash of sorted parameter names compared across all ranks via `all_gather`. Mismatch → RuntimeError.
+The ID is `EXP_{backbone}_E{experts}_K{topk}_S{effective_global_batch}_{router}_{loss}_{moe}`
+with `_{variant}` appended when set. It is a **pure function of the config**, derived on
+every rank by `resolve_workspace` before the rank-0-only setup runs — so both ranks agree on
+the output directory. `run_id` carries a timestamp and a uuid and genuinely comes from rank
+0 over a broadcast.
 
-**BatchNorm check:** Static inspection logs any BatchNorm layers (none expected in this architecture — uses GroupNorm/LayerNorm).
+An ID identifies a run's checkpoints locally and on the Hub, so two different recipes must
+never share one. That is what `variant` is for.
 
-**DDP wrap:** `nn.parallel.DistributedDataParallel(model, find_unused_parameters=True)`
+## Distributed invariants
 
-`find_unused_parameters=True` is required because sparse routing means some experts receive zero tokens per step, making their parameters "unused" in that forward pass.
+- `find_unused_parameters=True`. Which modules participate in the forward pass depends on
+  the config (disabling router noise leaves `RouterNoise.noise_linear` unused), so the flag
+  is not optional. The cost is one extra autograd traversal per step.
+- Every expert is called on every rank every step, even when it receives no tokens, or DDP
+  gradient reduction desyncs across ranks with different usage.
+- `dist.init_process_group` is always given an explicit device and timeout; never rely on
+  the default NCCL timeout as the safety margin.
+- Work gated on `rank == 0` (checkpointing, logging, Hub pushes) is kept short, and
+  validation and diagnostics are computed on both ranks so no rank idles into a timeout.
 
-### Optimization (`train_ddp.py:300-310`)
+## Optimisation
 
-**Parameter groups** (`src/optimization.py:6-72`):
-- `backbone_decay` / `backbone_no_decay`: LR = `backbone_lr` (1e-4)
-- `moe_decay` / `moe_no_decay`: LR = `new_module_lr` (1e-4)
-- `decoder_decay` / `decoder_no_decay`: LR = `new_module_lr` (1e-4)
-- `heads_decay` / `heads_no_decay`: LR = `new_module_lr` (1e-4)
+| Element | Value |
+|---|---|
+| Optimizer | AdamW, parameter groups split by module family and by decay / no-decay |
+| Learning rate | `backbone_lr` and `new_module_lr`, both 1e-4 in the current configs |
+| Weight decay | 1e-4 on decay groups |
+| Schedule | linear warmup then cosine decay to 1% of peak (`WarmupCosineScheduler`) |
+| Warmup | `warmup_ratio` of total steps — 0.04 in the current configs |
+| Gradient clipping | max norm 1.0, applied before the optimizer step |
+| Precision | AMP fp16 with a `GradScaler`; the scaler adapts on overflow |
+| Gradient accumulation | `grad_accum_steps`, with `no_sync` on non-final microsteps |
 
-No-decay groups: biases, normalization params, relative_position_bias_table.
+Total steps are `len(train_loader) // grad_accum_steps * epochs`, so warmup and the cosine
+span the whole run.
 
-**Scheduler:** `WarmupCosineScheduler` (`optimization.py:84-102`)
-- Warmup: `warmup_ratio * total_steps` (default 1%)
-- Cosine decay to `min_lr_ratio=0.01` of base LR
+## Backbone freezing
 
-**AMP:** FP16 via `torch.amp.autocast` + `GradScaler`
+`freeze_backbone` / `unfreeze_backbone` in `src/optimization.py` are deliberate no-ops. The
+freeze is implemented by nulling the backbone's gradients after backward, for
+`train.freeze_backbone_epochs` epochs (1 in the current configs). The pretrained backbone
+therefore starts receiving 1e-4 updates at the second epoch — the transition to watch if
+you suspect the learning rate.
 
-**Gradient clipping:** `max_norm=1.0` via `nn.utils.clip_grad_norm_`
+## Checkpointing
 
-### Training Loop (`train_ddp.py:374-655`)
+- `latest.pth` is written every `train.checkpoint_every_n_steps` optimizer steps (200), and
+  **only** when a step falls on that boundary. A very short run writes nothing.
+- `best.pth` is selected by validation MAE.
+- Checkpoints carry the config hash, and resuming validates it. The hash deliberately
+  excludes `experiment_id`, `run_id`, `batch_equivalence`, `variant`, `data.dataset_root`,
+  `train.num_workers` and `train.checkpoint_every_n_steps`.
+- **The hash does include `train.epochs`**, and `--max_epochs` is applied before hashing, so
+  resuming with a different epoch budget is refused by design — the budget changes the LR
+  schedule.
+- Managed-workspace guards refuse to start a config whose checkpoints already exist unless
+  `--overwrite` or `--resume` is given. The training notebooks therefore pass `--overwrite`
+  only when their `ALLOW_OVERWRITE` flag is set, so an accidental re-run stops instead of
+  destroying finished work.
 
-```
-for epoch in range(start_epoch, config.train.epochs):
-    1. model.train()
-    2. set_epoch(epoch) on sampler and dataset
-    3. Freeze backbone epoch 0, unfreeze epoch 1
-    4. For each batch:
-       a. Forward with autocast
-       b. Compute loss
-       c. Scale loss, backward
-       d. On final microstep: unscale → clip → step → update scaler
-       e. Checkpoint every N steps
-    5. Validation on rank 0 only
-    6. Save best model if val MAE improved
-```
+## Pre-flight run (`--preflight`)
 
-**Gradient accumulation:**
-```python
-is_final_microstep = (batch_idx + 1) % config.opt.grad_accum_steps == 0
-sync_context = model.no_sync() if not is_final_microstep else nullcontext()
-```
-Non-final microsteps skip DDP gradient synchronization via `no_sync()`.
+Redirects outputs to a separate root, disables Hub pushes, permits a single rank, and
+defaults `--max_optimizer_steps` to 5. The notebook's pre-run check uses it to train one
+real epoch over 100 images, exercising the epoch-boundary paths (validation, routing
+diagnostics, checkpoint write) that a normal run would only reach hours in. It does **not**
+test resume: a resume cannot be exercised through a config whose hash covers `train.epochs`.
+That round trip belongs to `src.smoke_test --mode resume_a / resume_b`.
 
-**Backbone freezing:**
-```python
-if epoch == 0 and not args.resume:
-    freeze_backbone(model.module)  # epoch 0: warmup
-elif epoch == 1:
-    unfreeze_backbone(model.module)  # epoch 1+: full training
-```
+## Logging
 
-### Checkpointing (`train_ddp.py:446-497`)
+Progress lines report step, batch, loss and — since the current code — the distinct learning
+rates among the optimizer's parameter groups and the AMP scaler's scale. A scaler that keeps
+halving means the learning rate is too high for fp16. Logging is written so that a failure
+to read a value degrades to `?` rather than raising: a log line must never kill a run.
 
-**Format version:** `CHECKPOINT_FORMAT_VERSION = 1`
+## Kaggle workflow
 
-**Atomic write pattern:**
-```python
-torch.save(state, tmp_path)           # Write to .tmp
-_ = torch.load(tmp_path)              # Validate readable
-os.replace(tmp_path, final_path)      # Atomic rename
-```
+The notebook pulls the code zip and manifests from the Hub, verifies the archive hash,
+unpacks into the working directory, and runs `torchrun` from there. Checkpoints and
+diagnostics are pushed back under their experiment ID, which is what makes a wiped session
+recoverable: the resume path pulls `{experiment_id}_latest.pth` back down.
 
-**Checkpoint contents:**
-```python
-{
-    'checkpoint_format_version': 1,
-    'epoch': int,
-    'batch_in_epoch': int,
-    'global_step': int,
-    'best_metric': float,
-    'model_state_dict': dict,
-    'engine_state_dict': {
-        'optimizer': ...,
-        'scheduler': ...,
-        'scaler': ...,
-        'global_step': int
-    },
-    'rng_states': {
-        'python': ...,
-        'numpy': ...,
-        'torch_cpu': ...,
-        'torch_cuda': ...
-    },
-    'config': dict,
-    'config_hash': str,
-    'world_size': int,
-    'timestamp': float
-}
-```
-
-**Resume validation (`train_ddp.py:342-349`):**
-1. `checkpoint_format_version` must match
-2. `world_size` must match current run
-3. `config_hash` must match current config
-
-**Best model:** Saved when `val_mae < best_mae` with all same fields.
-
-### HuggingFace Sync (`src/hf_sync/`)
-
-**Async pusher** (`hf_sync.py:437-491`): Background thread with FIFO queue, never blocks training. Enqueued after checkpoint write.
-
-**Repo layout** (HF dataset repo):
-```
-code/spatial_moe_sod_code.zip
-code/project_manifest.json
-checkpoints/latest.pth
-checkpoints/best.pth
-checkpoints/checkpoint_manifest.json
-```
-
-### Validation (`train_ddp.py:529-655`)
-
-- Runs on rank 0 only
-- Uses `SODMetrics` (MAE, S, E, F via py_sod_metrics)
-- Geometry reversal: unpad + resize to original resolution
-- Saves best model when MAE improves
-
-### Signal Handling (`train_ddp.py:146-153`)
-
-SIGINT and SIGTERM handled gracefully:
-```python
-signal.signal(signal.SIGINT, handle_signal)
-signal.signal(signal.SIGTERM, handle_signal)
-```
-Sets `global_stop_flag[0] = True`, training completes current step then exits cleanly.
-
-## Loss Computation (`src/loss.py:62-219`)
-
-### Saliency Losses
-- **BCE:** `nn.BCEWithLogitsLoss()` — per-pixel binary cross-entropy
-- **IoU:** `1 - (intersection + eps) / (union + eps)` computed per-image, averaged over batch
-- **SSIM:** Custom implementation (`loss.py:9-57`), window_size=11, Gaussian window
-- **Boundary:** Gradient magnitude of predictions vs GT boundary, `SmoothL1Loss`
-
-### MoE Auxiliary Losses (`loss.py:109-152`)
-
-**Load balancing loss** (Shazeer-style):
-```python
-f_j = bincount(flat_indices) / total_assignments  # Hard fraction (detached)
-P_j = scatter_add(flat_gates) / (B * N_tokens)    # Soft mass (differentiable)
-l_lb = E * sum(f_j * P_j)                          # Product form
-```
-
-**Importance loss:**
-```python
-mean_imp = P_j_sum.mean()
-std_imp = P_j_sum.std(unbiased=False)
-l_imp = (std_imp / (mean_imp + 1e-6))**2           # Coefficient of variation squared
-```
-
-**Z-loss (optional):**
-```python
-l_z = mean(logsumexp(clean_logits, dim=1)**2)
-```
-
-### Deep Supervision (`loss.py:183-195`)
-
-BCE loss on each auxiliary head, target resized via nearest-neighbor interpolation:
-```python
-l_deep_supervision = (l_ds_16 + l_ds_8 + l_ds_4) / 3.0
-```
-
-### Total Loss
-```python
-L_total = L_bce + λ_iou*L_iou + λ_ssim*L_ssim + λ_boundary*L_boundary
-        + λ_lb*L_lb + λ_importance*L_imp + λ_z*L_z
-        + λ_aux_boundary*L_aux_boundary + λ_deep_supervision*L_deep_supervision
-```
-
-**Default weights (baseline_v1.json):**
-| Weight | Value |
-|--------|-------|
-| λ_bce | 1.0 |
-| λ_iou | 1.0 |
-| λ_ssim | 0.0 |
-| λ_boundary | 0.0 |
-| λ_lb | 0.01 |
-| λ_importance | 0.01 |
-| λ_z | 0.0 |
-| λ_aux_boundary | 0.0 |
-| λ_deep_supervision | 0.4 |
-
-## Smoke Test Suite (`src/smoke_test.py`)
-
-### Modes
-- `smoke1gpu`: Single-GPU forward + loss + gradient + optimizer checks
-- `ddp`: 2-GPU DDP validation
-- `memory`: Memory calibration (150 steps, check < 15GB)
-- `resume_a`: Write checkpoint
-- `resume_b`: Load checkpoint, verify behavioral resume
-
-### Checks Performed
-1. **Sparsity:** Every token dispatched exactly K times, no dense expert execution
-2. **Loss:** All loss terms finite, perfect prediction loss < random prediction loss
-3. **Gradients:** At least one parameter has non-zero gradient, deep supervision heads get gradients
-4. **Optimizer:** Frozen params unchanged, trainable params updated
-5. **Resume:** Parameter/loss/scaler state matches after interrupted+resumed run
+Evaluate one config per session. The evaluation output paths are fixed within a session, so
+a second config evaluated without clearing them would upload the first config's results
+under its own label.
