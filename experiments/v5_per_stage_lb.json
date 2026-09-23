@@ -31,7 +31,11 @@
         "iou_weight": 1.0,
         "ssim_weight": 1.0,
         "boundary_weight": 1.0,
-        "load_balance_weights": [0.08, 0.15, 0.1],
+        "load_balance_weights": [
+            0.08,
+            0.15,
+            0.1
+        ],
         "importance_weight": 0.05,
         "z_loss_weight": 0.001,
         "aux_boundary_weight": 0.5,
@@ -66,5 +70,6 @@
         "routing_diagnostic_epochs": 1,
         "expert_ablation_enabled": false
     },
-    "batch_equivalence": "MATCHED"
+    "batch_equivalence": "MATCHED",
+    "variant": "V5_PERSTAGELB"
 }

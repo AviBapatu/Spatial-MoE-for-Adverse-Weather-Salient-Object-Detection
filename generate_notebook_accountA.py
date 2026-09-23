@@ -54,6 +54,9 @@ RUN_MODE = "TRAIN"
 # Pre-run checks (architecture agreement + a 100-image end-to-end run).
 # Set False to skip the "## 11_preflight_checks" cell entirely.
 RUN_PREFLIGHT = True
+# Training refuses to touch a run whose checkpoints already exist, so a
+# name can never silently overwrite finished work. Set True to wipe and redo.
+ALLOW_OVERWRITE = False
 # Evaluation only: "none" or "hflip" (flip-average TTA). The model is trained with
 # HorizontalFlip and the padding is centre + reflect, so the flipped forward pass
 # is in-distribution. Every model in a comparison table must use the same setting;
@@ -621,10 +624,13 @@ in the config cell to skip this cell.
 
     PROJECT_ROOT = "/kaggle/working/spatial_moe_sod"
 
-    subprocess.run([
+    train_cmd = [
         "torchrun", "--nproc_per_node=2", "-m", "src.train_ddp",
-        "--config", ACTIVE_CONFIG_PATH, "--overwrite"
-    ], cwd=PROJECT_ROOT, check=True)
+        "--config", ACTIVE_CONFIG_PATH,
+    ]
+    if ALLOW_OVERWRITE:
+        train_cmd.append("--overwrite")
+    subprocess.run(train_cmd, cwd=PROJECT_ROOT, check=True)
 """)
     add_markdown(
         r"""## 13_resume
@@ -688,6 +694,15 @@ from src.hf_sync import pull_checkpoint
 
 if RUN_MODE == "EVALUATE":
     print("Evaluating Best Checkpoint...")
+
+    # These two paths are shared by every config within a session, so a second
+    # evaluation would silently mix its results into this run's upload.
+    for _shared in ("/kaggle/working/WXSOD_EvalResults", "/kaggle/working/analysis_results"):
+        if os.path.isdir(_shared) and os.listdir(_shared):
+            raise RuntimeError(
+                f"{_shared} already holds results from another config -- delete it or "
+                "restart the session before evaluating a different config."
+            )
     # The trainer writes to WXSOD_Checkpoints/<experiment_id>/ and derives that
     # id from the config at startup, so recompute it here rather than guessing a
     # path — and pull it from the Hub when this session is fresh.

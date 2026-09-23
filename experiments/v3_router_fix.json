@@ -63,5 +63,6 @@
     },
     "experiment_id": "",
     "run_id": "",
-    "batch_equivalence": "MATCHED"
+    "batch_equivalence": "MATCHED",
+    "variant": "V3_ROUTERFIX"
 }
