@@ -1,5 +1,10 @@
 # CLAIM_AUDIT.md — Systematic Verification of Every Paper Claim
 
+> **Note.** This file audits a specific revision of `paper/main.tex`. Citations to
+> source files refer to the layout at the time of the audit; module paths have since
+> changed (the decoder is now the `src/decoder/` package, training code lives under
+> `src/training/`). Treat the findings as issues to check, not as current fact.
+
 **Date:** 2026-09-02
 **Paper:** paper/main.tex (v1)
 **Authority:** Source code + evaluation results + docs/research/
@@ -139,7 +144,7 @@
 
 | Metric | Paper | Source | Status |
 |--------|-------|--------|--------|
-| 66.27M params | L392 | `compute_cost.json` | VERIFIED |
+| 69,213,120 params | L392 | `compute_cost.json` | VERIFIED |
 | 278.2G MACs | L392 | `compute_cost.json` | VERIFIED |
 
 ---

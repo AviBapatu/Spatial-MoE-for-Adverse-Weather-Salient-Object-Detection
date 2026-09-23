@@ -28,7 +28,7 @@
 | Top-k | 2 | `experiments/baseline_v1.json:15` |
 | Router | DWConv3x3 + MLP (2-layer) | `src/moe_layer.py:49-57` |
 | MoE type | Sparse (true sparse dispatch) | `src/moe_layer.py:119-141` |
-| Decoder | Cross-attention fusion | `src/decoder.py:232-233` |
+| Decoder | Cross-attention fusion | `src/decoder/:232-233` |
 | Window size | 7 | `experiments/baseline_v1.json:18` |
 | Deep supervision | OFF (weight=0.4 but config=false) | `experiments/baseline_v1.json:20` |
 | SSIM loss | OFF (weight=0.0) | `experiments/baseline_v1.json:27` |
@@ -323,7 +323,7 @@ The following analyses were planned but not completed:
 - Per-expert assignment heatmaps
 - t-SNE/UMAP of expert embeddings
 
-The `RoutingTracker` and `WeatherAnalyzer` classes exist in `src/diagnostics.py` but are **disabled in production training** (`train_ddp.py:560` has `if False and ...`).
+The `RoutingTracker` and `WeatherAnalyzer` classes exist in `src/diagnostics/` but are **disabled in production training** (`train_ddp.py:560` has `if False and ...`).
 
 **Cannot claim:** "Experts specialize by weather/artifact type" without actual per-expert assignment statistics.
 
@@ -343,7 +343,7 @@ The `force_expert_out/` directory contains 554 prediction PNGs from forcing all 
 
 | Metric | Value |
 |--------|-------|
-| Parameters | 66.27M |
+| Parameters | 69,213,120 (training log) |
 | MACs | 278.2G |
 | FPS | 3.83 |
 
@@ -426,7 +426,7 @@ Based on the completed experiments, the following claims are supported:
 5. **Forcing all tokens at one scale to a single expert causes only marginal degradation (ΔMAE = +0.0002 on test_real).**
    - Evidence: `results/legacy/legacy_8expert/evaluation_results/force_expert_ablation.json`
 
-6. **The model has 66.27M parameters, 278.2G MACs, and runs at 3.83 FPS (hardware unspecified).**
+6. **The model has 69,213,120 parameters, 278.2G MACs, and runs at 3.83 FPS (hardware unspecified).**
    - Evidence: `results/legacy/legacy_8expert/evaluation_results/compute_cost.json`
 
 ### 11.2 Partially Supported

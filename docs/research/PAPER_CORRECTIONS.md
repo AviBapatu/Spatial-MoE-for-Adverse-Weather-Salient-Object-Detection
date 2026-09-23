@@ -1,5 +1,10 @@
 # PAPER_CORRECTIONS.md — Audit of paper/main.tex Against Code and Results
 
+> **Note.** This file audits a specific revision of `paper/main.tex`. Citations to
+> source files refer to the layout at the time of the audit; module paths have since
+> changed (the decoder is now the `src/decoder/` package, training code lives under
+> `src/training/`). Treat the findings as issues to check, not as current fact.
+
 **Audit date:** 2026-09-03
 **Paper version:** paper/main.tex (v1)
 **Authority:** Source code, evaluation results, configuration files, docs/research/

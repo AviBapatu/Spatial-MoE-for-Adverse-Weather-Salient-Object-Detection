@@ -62,7 +62,7 @@ Input [B, 3, 384, 384]
 | Backbone | `src/backbone.py` | 5-39 |
 | MoE layer (router + experts) | `src/moe_layer.py` | 35-165 |
 | Expert architecture | `src/moe_layer.py` | 14-33 |
-| Decoder | `src/decoder.py` | 219-280 |
+| Decoder | `src/decoder/` | 219-280 |
 | Loss system | `src/loss.py` | 62-219 |
 | Config system | `src/config.py` | 7-148 |
 | Dataset | `src/dataset.py` | 19-293 |
@@ -217,11 +217,11 @@ LR but it is not used in the current config.
 | **N=6–8 experts** | N=8 | MATCHES | `experiments/baseline_v1.json:14` |
 | **Independent experts per scale** | 3 separate SpatialMoELayer instances | MATCHES | `src/model.py:14-16` |
 | **Expert = depthwise-separable + residual** | Expert = LN→4C→C residual MLP (NOT depthwise-separable) | DOES NOT MATCH | `src/moe_layer.py:14-33` |
-| **Cross-attention fusion** | GlobalCrossAttention (1/16→1/8), WindowedCrossAttention (1/8→1/4) | MATCHES | `src/decoder.py:232-233` |
-| **Fusion formula: Q=Y_s, K=V=Upsample(Y_{s+1})** | Q=F16_up, KV=F8_local (cross-attn, not residual add) | PARTIALLY MATCHES | `src/decoder.py:253,259` |
-| **Router entropy as decoder input** | Yes, via EntropyFusionBlock | MATCHES | `src/decoder.py:14-27,247-250` |
+| **Cross-attention fusion** | GlobalCrossAttention (1/16→1/8), WindowedCrossAttention (1/8→1/4) | MATCHES | `src/decoder/:232-233` |
+| **Fusion formula: Q=Y_s, K=V=Upsample(Y_{s+1})** | Q=F16_up, KV=F8_local (cross-attn, not residual add) | PARTIALLY MATCHES | `src/decoder/:253,259` |
+| **Router entropy as decoder input** | Yes, via EntropyFusionBlock | MATCHES | `src/decoder/:14-27,247-250` |
 | **Entropy: full over all N experts** | Entropy computed over top-k gates only | DOES NOT MATCH | `src/moe_layer.py:151` |
-| **Decoder concatenates entropy** | Decoder adds entropy (learned projection + scale param) | DOES NOT MATCH | `src/decoder.py:25-27` |
+| **Decoder concatenates entropy** | Decoder adds entropy (learned projection + scale param) | DOES NOT MATCH | `src/decoder/:25-27` |
 | **BCE loss** | BCEWithLogitsLoss | MATCHES | `src/loss.py:82,165` |
 | **IoU loss** | Soft IoU (per-image, averaged) | MATCHES | `src/loss.py:86-93` |
 | **Edge/boundary loss** | Boundary loss = SmoothL1(grad_mag, gt_boundary), λ=0.0 (OFF) | PARTIALLY MATCHES | `src/loss.py:95-107` |
@@ -238,7 +238,7 @@ LR but it is not used in the current config.
 | **Multi-scale independent vs shared routing** | Not implemented | NOT IMPLEMENTED | — |
 | **Domain-generalization cross-check** | Not implemented | NOT IMPLEMENTED | — |
 | **t-SNE/UMAP analysis** | Not implemented | NOT IMPLEMENTED | — |
-| **Per-expert heatmap visualization** | Code exists in diagnostics, disabled in training | NOT IMPLEMENTED | `src/diagnostics.py:243-270` |
+| **Per-expert heatmap visualization** | Code exists in diagnostics, disabled in training | NOT IMPLEMENTED | `src/diagnostics/:243-270` |
 | **Routing consistency across severity** | Not implemented | NOT IMPLEMENTED | — |
 
 ---

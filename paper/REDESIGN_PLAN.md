@@ -66,7 +66,7 @@ SpatialMoE       SpatialMoE       SpatialMoE
 
 **Style:** Clean boxes, color-coded (blue=backbone, orange=router, green=expert, red=entropy, gray=decoder, purple=heads). Include tensor dims at key points. No decorative elements.
 
-**Source:** Derived from `src/model.py`, `src/backbone.py`, `src/moe_layer.py`, `src/decoder.py`.
+**Source:** Derived from `src/model.py`, `src/backbone.py`, `src/moe_layer.py`, `src/decoder/`.
 
 ### FIGURE 2 — Zoomed Spatial-MoE Routing Mechanism (Page 2, half width or page 3)
 

@@ -103,7 +103,7 @@ When `force_expert_id` is set, the router is bypassed:
 - Entropy set to 0.0
 - Used for single-expert knockout studies
 
-## Decoder (`src/decoder.py`)
+## Decoder (`src/decoder/`)
 
 ### Entropy Fusion (`decoder.py:14-27`)
 

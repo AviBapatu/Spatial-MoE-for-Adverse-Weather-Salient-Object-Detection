@@ -147,7 +147,7 @@ os.replace(tmp_path, final_path)      # Atomic rename
 
 **Best model:** Saved when `val_mae < best_mae` with all same fields.
 
-### HuggingFace Sync (`src/hf_sync.py`)
+### HuggingFace Sync (`src/hf_sync/`)
 
 **Async pusher** (`hf_sync.py:437-491`): Background thread with FIFO queue, never blocks training. Enqueued after checkpoint write.
 

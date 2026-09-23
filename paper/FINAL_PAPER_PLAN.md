@@ -14,11 +14,11 @@ This plan is derived exclusively from the research corpus below. No outside assu
 
 | Document | Role in this plan |
 |----------|-------------------|
-| `docs/research/RESEARCH_TRUTH.md` | Authoritative scientific claims; evidence hierarchy |
-| `docs/research/FINAL_CLAIM_EVIDENCE_MATRIX.md` | Which claims are supported/unsupported |
+| `RESEARCH_TRUTH.md` | Authoritative scientific claims; evidence hierarchy |
+| `RESEARCH_TRUTH.md` | Which claims are supported/unsupported |
 | `docs/research/FINAL_EXPERIMENTAL_RESULTS.md` | All experimental data with sources |
 | `docs/research/FINAL_RESEARCH_POSITION.md` | Defensible novelty claims, corrections to prior work |
-| `docs/research/PAPER_SOURCE_OF_TRUTH.md` | Verified architecture, tensor dims, results |
+| `RESEARCH_TRUTH.md` | Verified architecture, tensor dims, results |
 | `docs/research/ARCHITECTURE.md` | Component-level architecture details |
 | `docs/research/EXPERIMENTS.md` | Config, weather-wise breakdown, key observations |
 | `docs/research/RESULTS_NARRATIVE.md` | Honest scientific interpretation of results |
@@ -29,7 +29,7 @@ This plan is derived exclusively from the research corpus below. No outside assu
 | `docs/research/DATASETS.md` | WXSOD dataset structure and splits |
 | `docs/research/TRAINING.md` | Training pipeline, loss, optimization |
 | `paper/REDESIGN_PLAN.md` | Layout redesign guidance |
-| `paper/PAPER_SOURCE_OF_TRUTH.md` | Paper-level verified claims |
+| `RESEARCH_TRUTH.md` | Paper-level verified claims |
 
 ---
 
@@ -115,7 +115,7 @@ SpatialMoELayer    SpatialMoELayer   SpatialMoELayer
 - Scale labels ($1/4$, $1/8$, $1/16$) prominently displayed
 - No decorative elements — pure scientific communication
 
-**Source:** Derived from `src/model.py:6-48`, `src/backbone.py:5-39`, `src/moe_layer.py:35-165`, `src/decoder.py:219-280`
+**Source:** Derived from `src/model.py:6-48`, `src/backbone.py:5-39`, `src/moe_layer.py:35-165`, `src/decoder/:219-280`
 
 **LaTeX:** Full-width `figure*` environment with TikZ. Keep arrow labels in `\scriptsize`.
 
@@ -360,7 +360,7 @@ Brief pipeline description. Reference Fig. 1.
 - **Dataset:** WXSOD [Chen et al.]. train_sys (12,891 images, scene-aware 80/20 split), test_sys (1,500 synthetic, 9 weather categories), test_real (554 real-world, 5 categories: fog, rain, snow, dark, low-light).
 - **Implementation:** PyTorch, DDP on 2 GPUs, AMP FP16, AdamW (lr $10^{-4}$, weight decay $10^{-4}$), WarmupCosine (1% warmup, 50 epochs), gradient accumulation (effective batch 32), gradient clipping (1.0). Backbone frozen epoch 0.
 - **Metrics:** MAE, $S_\phi$ [Cheng et al.], $E_\phi^{\text{adp}}$ [Fan et al.], $F_\beta^{\max}$ [Margolin et al.].
-- **Compute:** 66.27M parameters, 278.2G MACs.
+- **Compute:** 69,213,120 parameters, 278.2G MACs.
 
 ### §4 Results and Analysis (~0.7 page, 21 lines)
 

@@ -50,7 +50,7 @@ Input [B, 3, 384, 384]
 **Key source files:**
 - `src/backbone.py` — PVTv2-B4 feature extraction
 - `src/moe_layer.py` — Router + expert pool + sparse dispatch
-- `src/decoder.py` — Cross-attention fusion + prediction heads
+- `src/decoder/` — Cross-attention fusion + prediction heads
 - `src/loss.py` — BCE + IoU + load-balance + importance + deep supervision
 
 ## 4. How Experiments Are Run
@@ -103,7 +103,8 @@ uv run pytest tests/ -v
 | `docs/research/DATASETS.md` | WXSOD dataset structure, splitting, augmentation |
 | `docs/research/EXPERIMENTS.md` | Config system, baseline, existing results |
 | `docs/research/ABLATIONS.md` | Ablation matrices, counterfactual studies |
-| `docs/research/PAPER_PLAN.md` | Suggested paper structure, figures, open questions |
+| `docs/research/INDEX.md` | Which document to read for what |
+| `paper/FINAL_PAPER_PLAN.md` | Suggested paper structure, figures, open questions |
 | `docs/research/LITERATURE_NOTES.md` | Key papers, differentiators, benchmarks |
 | `spatial-moe-adverse-weather-sod-blueprint.md` | Research blueprint with literature review |
 
@@ -125,7 +126,7 @@ No paper manuscript file exists yet in the repository. The `docs/research/` dire
 
 6. **Use `docs/research/` as the persistent research knowledge base.** Read the relevant file before answering architecture/experiment/paper questions. Update these files when new information is discovered.
 
-7. **Verify mathematical notation against implementation.** Before writing equations in the paper, check the actual code in `src/loss.py`, `src/moe_layer.py`, and `src/decoder.py`. The blueprint formulas are aspirational; the code is definitive.
+7. **Verify mathematical notation against implementation.** Before writing equations in the paper, check the actual code in `src/loss.py`, `src/moe_layer.py`, and `src/decoder/`. The blueprint formulas are aspirational; the code is definitive.
 
 8. **Do not modify source code unless explicitly asked.** This is a research codebase. Code changes should only happen with explicit user instruction. Analysis and documentation are the default mode. "Explicitly asked" means the session prompt names specific files/modules to change — see Section 8 for what governs those sessions once that bar is met.
 

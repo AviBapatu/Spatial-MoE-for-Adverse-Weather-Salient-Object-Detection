@@ -117,7 +117,7 @@ if expert_ablation is not None:
     out, _ = model.module(v_images, ablation_cfg=ablation_cfg)
 ```
 
-### Diagnostic Outputs (`src/diagnostics.py`)
+### Diagnostic Outputs (`src/diagnostics/`)
 
 **RoutingTracker** (`diagnostics.py:12-78`):
 - Hard assignment counts per expert

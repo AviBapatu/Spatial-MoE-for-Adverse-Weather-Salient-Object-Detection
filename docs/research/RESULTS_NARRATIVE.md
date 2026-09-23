@@ -16,7 +16,7 @@ The SpatialMoESODNet — a PVTv2-B4 backbone with three independent spatial MoE 
 | Synthetic (test_sys) | 1,500 | 0.0192 | 0.9139 | 0.9015 |
 | Real-world (test_real) | 554 | 0.0168 | 0.9151 | 0.8936 |
 
-The model processes images at 384×384 resolution and produces pixel-wise saliency maps plus boundary maps. It has 66.27M parameters and 278.2G MACs.
+The model processes images at 384×384 resolution and produces pixel-wise saliency maps plus boundary maps. It has 69,213,120 parameters and 278.2G MACs.
 
 **What this establishes:** The architecture is functional and produces reasonable SOD predictions across diverse weather conditions. The evaluation pipeline is deterministic (identical metrics across 6 independent evaluation runs of the same checkpoint).
 

@@ -153,6 +153,15 @@ Not supported by any evidence in this repository. Do not write them.
 
 ---
 
+### Known discrepancy: parameter count
+
+Two numbers circulate. The training log reports **69,213,120** for the current E8 k=2
+configuration, and `build_model` prints the same figure on every run. A legacy
+`results/legacy/legacy_8expert/evaluation_results/compute_cost.json` reports **66.27M** for
+the older checkpoint. They disagree by ~2.9M and nobody has reconciled them, so any
+parameter-count claim in the paper must cite which measurement it uses and how it was
+taken. Do not present 66.27M and 278.2G MACs as a matched pair without re-measuring.
+
 ## 5. Maintenance
 
 Update this file whenever a claim becomes supported or stops being supported, and
