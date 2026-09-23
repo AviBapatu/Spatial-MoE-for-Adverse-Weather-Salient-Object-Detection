@@ -103,10 +103,14 @@ are the editable source. Each notebook uses `RUN_MODE` to control behaviour:
 
 ## Experiment Configs
 
-Configs live in `experiments/`. The canonical baseline is `experiments/baseline_v1.json`.
+Configs live in `experiments/`. `baseline_v1.json` is the preset template; the configs
+behind published runs are the `v_e8_*` and `v_e4_*` files.
 
-Each config gets a unique `run_id` derived from its SHA-256 hash, and outputs go to `experiments/EXP_{hash}/`. This ensures every run is self-contained and reproducible.
-
+Each config derives an **experiment ID** from its own fields — backbone, expert count,
+top-k, effective batch, router and loss variants, MoE type, plus an optional `variant`.
+That ID names the output directory and every artifact on the Hub, so **a different
+recipe needs a different `variant`**, or two runs will overwrite each other's
+checkpoints. `docs/research/EXPERIMENTS.md` has the rule and the current run set.
 ```bash
 # Generate ablation configs
 uv run python -m src.ablations
