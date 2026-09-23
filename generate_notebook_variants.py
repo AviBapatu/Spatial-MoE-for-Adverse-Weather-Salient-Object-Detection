@@ -14,6 +14,8 @@ VARIANTS = [
     ("moe-of-sod__v_e8_repro_best_seed43.ipynb", "experiments/v_e8_repro_best_seed43.json"),
     ("moe-of-sod__v_e8_repro_best_seed44.ipynb", "experiments/v_e8_repro_best_seed44.json"),
     ("moe-of-sod__v_e4_repro_renorm.ipynb", "experiments/v_e4_repro_renorm.json"),
+    ("moe-of-sod__v_e4_repro_densectrl.ipynb", "experiments/v_e4_repro_densectrl.json"),
+    ("moe-of-sod__v_e4_repro_nonectrl.ipynb", "experiments/v_e4_repro_nonectrl.json"),
 ]
 
 
