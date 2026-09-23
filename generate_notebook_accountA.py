@@ -578,7 +578,11 @@ in the config cell to skip this cell.
     # epochs=2 so the resume below genuinely continues the schedule instead of
     # resuming into a run that has already finished.
     tiny["data"] = dict(tiny["data"], max_samples=100)
-    tiny["train"] = dict(tiny["train"], epochs=2)
+    # epochs=2 so the resume below continues the schedule rather than resuming
+    # into a finished run; checkpoint_every_n_steps=1 because the mini epoch is
+    # ~3 optimizer steps, far short of the production cadence of 200, so
+    # otherwise no checkpoint would exist to resume from.
+    tiny["train"] = dict(tiny["train"], epochs=2, checkpoint_every_n_steps=1)
     TINY_CONFIG = "/kaggle/working/preflight_config.json"
     with open(TINY_CONFIG, "w") as f:
         json.dump(tiny, f, indent=2)
@@ -599,7 +603,10 @@ in the config cell to skip this cell.
     print("PREFLIGHT 1/2  100 images: train -> validate -> diagnostics -> checkpoint")
     print("=" * 70)
     subprocess.run(common + ["--max_epochs", "1"], cwd=PROJECT_ROOT, check=True)
-    assert os.path.exists(checkpoint), f"epoch finished but wrote no checkpoint: {checkpoint}"
+    assert os.path.exists(checkpoint), (
+        f"epoch finished but wrote no checkpoint: {checkpoint} "
+        f"(checkpoint_every_n_steps={tiny['train']['checkpoint_every_n_steps']})"
+    )
     written_at = os.path.getmtime(checkpoint)
 
     print("\n" + "=" * 70)

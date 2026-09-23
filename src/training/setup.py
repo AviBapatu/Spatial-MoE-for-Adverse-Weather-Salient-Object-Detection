@@ -281,6 +281,20 @@ def resolve_workspace(
     return base_dir, cfg_hash, hf_pusher
 
 
+def _resolve_resume_path(args: Any, base_dir: str) -> str:
+    """Resolve the checkpoint path for ``--resume``.
+
+    ``base_dir`` already points at this run's own directory in both modes: the
+    preflight root with the experiment ID under it, or the production checkpoint
+    directory.  Resolving ``latest`` against the preflight *root* instead -- as
+    this did -- meant a preflight resume could never find the checkpoint the run
+    had just written.
+    """
+    if args.resume != "latest":
+        return args.resume
+    return os.path.join(base_dir, "latest.pth")
+
+
 def apply_resume(
     args: Any,
     config: ExperimentConfig,
@@ -289,18 +303,12 @@ def apply_resume(
     base_dir: str,
     device: torch.device,
     cfg_hash: str,
-    project_root: str,
 ) -> Tuple[int, int, float, int, int]:
     """Restore model+optimizer state from ``--resume`` if requested."""
     if not args.resume:
         return 0, 0, float("inf"), 0, 0
 
-    ckpt_path = args.resume
-    if args.resume == "latest":
-        ckpt_path = os.path.join(
-            default_preflight_base(project_root) if args.preflight else base_dir,
-            "latest.pth",
-        )
+    ckpt_path = _resolve_resume_path(args, base_dir)
     if not os.path.exists(ckpt_path):
         raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
 
