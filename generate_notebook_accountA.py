@@ -54,9 +54,11 @@ RUN_MODE = "TRAIN"
 # Pre-run checks (architecture agreement + a 100-image end-to-end run).
 # Set False to skip the "## 11_preflight_checks" cell entirely.
 RUN_PREFLIGHT = True
-# Evaluation only: "none" or "hflip" (flip-average TTA). hflip results
-# land under their own subfolder, so both can coexist.
-EVAL_TTA = "none"
+# Evaluation only: "none" or "hflip" (flip-average TTA). The model is trained with
+# HorizontalFlip and the padding is centre + reflect, so the flipped forward pass
+# is in-distribution. Every model in a comparison table must use the same setting;
+# hflip results land under their own subfolder, so both can coexist.
+EVAL_TTA = "hflip"
 ACTIVE_CONFIG_PATH = "experiments/v_e8_repro_best.json"
 # Analysis results are uploaded under the experiment ID derived from
 # ACTIVE_CONFIG_PATH (see the upload cell), so there is no separate label here
