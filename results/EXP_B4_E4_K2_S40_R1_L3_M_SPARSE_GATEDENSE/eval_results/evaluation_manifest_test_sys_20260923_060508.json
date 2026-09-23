@@ -1,0 +1,10 @@
+{
+    "checkpoint": "/kaggle/working/WXSOD_Checkpoints/EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_GATEDENSE/best.pth",
+    "dataset": "test_sys",
+    "tta": "none",
+    "num_images": 1500,
+    "prediction_resolution": "original",
+    "boundary_kernel": 5,
+    "boundary_shape": "ellipse",
+    "model_hash": "4a3b8ba773a11f9526d9e8b426888bb6"
+}
