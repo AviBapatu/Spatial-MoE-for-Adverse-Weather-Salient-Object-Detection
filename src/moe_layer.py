@@ -35,6 +35,10 @@ class MoEOutput(NamedTuple):
     entropy: torch.Tensor
     clean_logits: torch.Tensor
     noise_std: Optional[torch.Tensor] = None
+    # False for stages that contain no router (dense / passthrough ablations), so
+    # consumers can skip their sentinel routing fields instead of treating them as
+    # real routing statistics.
+    has_router: bool = True
 
 
 class TokenWiseMLPExpert(nn.Module):
@@ -382,7 +386,7 @@ class DenseMoE16Adapter(nn.Module):
     def __init__(self, dim: int = 256) -> None:
         super().__init__()
         self.expert = TokenWiseMLPExpert(dim=dim)
-        self.is_dense = True
+        self.is_dense = True  # no sparse router here; diagnostics skip this stage
 
     def forward(
         self,
@@ -409,6 +413,40 @@ class DenseMoE16Adapter(nn.Module):
             topk_gates=sentinel_gates,
             entropy=torch.zeros(B, 1, H, W, device=x.device, dtype=x.dtype),
             clean_logits=torch.zeros(B, 1, H, W, device=x.device, dtype=x.dtype),
+            has_router=False,
+        )
+
+
+class PassthroughMoELayer(nn.Module):
+    """No MoE at all: the features pass through untouched (``moe_type="none"``).
+
+    Returns a :class:`MoEOutput` carrying the input features and sentinel routing
+    fields, so the decoder keeps receiving the same structure as the sparse path.
+    Note this removes both the routing *and* the expert parameters — so it is a
+    different-capacity control; use ``DenseMoE16Adapter`` for the capacity-matched
+    "same experts, no routing" comparison.
+    """
+
+    def __init__(self, dim: int = 256) -> None:
+        super().__init__()
+        self.is_dense = True  # no sparse router here; diagnostics skip this stage
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        force_expert_id: Optional[int] = None,   # absorbed, unused
+        random_routing: bool = False,             # absorbed, unused
+    ) -> MoEOutput:
+        B, C, H, W = x.shape
+        N = H * W
+        return MoEOutput(
+            features=x,
+            routing_probs=torch.zeros(B, 1, H, W, device=x.device, dtype=x.dtype),
+            topk_indices=torch.zeros(B, N, 2, device=x.device, dtype=torch.long),
+            topk_gates=torch.full((B, N, 2), 0.5, device=x.device, dtype=x.dtype),
+            entropy=torch.zeros(B, 1, H, W, device=x.device, dtype=x.dtype),
+            clean_logits=torch.zeros(B, 1, H, W, device=x.device, dtype=x.dtype),
+            has_router=False,
         )
 
 

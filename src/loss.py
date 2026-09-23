@@ -405,11 +405,17 @@ class CombinedLoss(nn.Module):
         if gt_boundary is not None and cfg.boundary_weight > 0:
             l_boundary = image_gradient_magnitude_loss(P, gt_boundary, mask=pad_mask)
 
-        # 3. Router (MoE) losses
-        moe_for_routing = moe_outputs[:2] if self._moe_16_dense else moe_outputs
-        lb_per_stage, l_imp, l_z = moe_routing_losses(
-            moe_for_routing, z_enabled=cfg.z_loss_weight > 0, pad_mask=pad_mask
-        )
+        # 3. Router (MoE) losses.  Stages without a router (the "dense" and
+        #    "none" ablation arms) carry sentinel routing fields, so they are
+        #    skipped rather than allowed to pollute the balance statistics.
+        moe_for_routing = [o for o in moe_outputs if getattr(o, "has_router", True)]
+        if moe_for_routing:
+            lb_per_stage, l_imp, l_z = moe_routing_losses(
+                moe_for_routing, z_enabled=cfg.z_loss_weight > 0, pad_mask=pad_mask
+            )
+        else:
+            _zero_like = torch.zeros((), device=saliency_logits.device)
+            lb_per_stage, l_imp, l_z = [], _zero_like, _zero_like
 
         # Combine per-stage load-balance values.
         # Per-stage weights path: each stage gets its own scalar weight so a

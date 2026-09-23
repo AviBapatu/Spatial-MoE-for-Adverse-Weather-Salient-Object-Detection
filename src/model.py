@@ -11,7 +11,7 @@ import torch.nn as nn
 from src.backbone import MultiScaleBackbone
 from src.decoder import DecoderOutput, SpatialMoEDecoder
 from src.log import get_logger
-from src.moe_layer import DenseMoE16Adapter, MoEOutput, SpatialMoELayer
+from src.moe_layer import DenseMoE16Adapter, MoEOutput, PassthroughMoELayer, SpatialMoELayer
 
 log = get_logger(__name__)
 
@@ -44,6 +44,8 @@ class SpatialMoESODNet(nn.Module):
         router_noise_min_std: float = 0.05,
         pretrained_backbone: bool = True,
         moe_16_mode: str = "sparse",
+        gate_mode: str = "renormalized",
+        moe_type: str = "sparse",
     ) -> None:
         """Initialize the full network.
 
@@ -56,6 +58,10 @@ class SpatialMoESODNet(nn.Module):
             router_noise_enabled: Whether noisy routing is active in training.
             router_noise_scale: Multiplier for the learned noise std.
             router_noise_min_std: Lower clamp on the noise std.
+            gate_mode: ``"renormalized"`` or ``"dense"`` — how the top-k gates are
+                formed (see ``SpatialMoELayer``).
+            moe_type: ``"sparse"`` (routed experts), ``"dense"`` (one shared expert
+                on every token) or ``"none"`` (no MoE).
             pretrained_backbone: Whether the PVTv2 backbone loads pretrained
                 ImageNet weights from the HF Hub. Leave ``True`` for real
                 training runs; set ``False`` only for offline/CI smoke tests
@@ -67,34 +73,34 @@ class SpatialMoESODNet(nn.Module):
         # 1. Hierarchical multi-scale backbone.
         self.backbone = MultiScaleBackbone(d=dim, pretrained=pretrained_backbone)
 
-        # 2. Independent Spatial MoE layers for each scale.
-        self.moe_4 = SpatialMoELayer(
-            dim=dim,
-            num_experts=num_experts,
-            k=k,
-            router_noise_enabled=router_noise_enabled,
-            router_noise_scale=router_noise_scale,
-            router_noise_min_std=router_noise_min_std,
-        )
-        self.moe_8 = SpatialMoELayer(
-            dim=dim,
-            num_experts=num_experts,
-            k=k,
-            router_noise_enabled=router_noise_enabled,
-            router_noise_scale=router_noise_scale,
-            router_noise_min_std=router_noise_min_std,
-        )
-        if moe_16_mode == "dense":
-            self.moe_16 = DenseMoE16Adapter(dim=dim)
-        else:
-            self.moe_16 = SpatialMoELayer(
+        # 2. Independent MoE layers for each scale.  `moe_type` selects the
+        #    ablation arm:
+        #      "sparse" — routed top-k experts: the model under study.
+        #      "dense"  — one shared expert applied to every token: the same
+        #                 expert machinery with routing AND sparsity removed, so
+        #                 this is the capacity-matched control for "does learned
+        #                 routing beat just applying an expert to everything?".
+        #      "none"   — no MoE at all (features pass through); a lighter control
+        #                 that also removes the expert parameters.
+        def _moe_layer() -> nn.Module:
+            if moe_type == "none":
+                return PassthroughMoELayer(dim=dim)
+            if moe_type == "dense":
+                return DenseMoE16Adapter(dim=dim)
+            return SpatialMoELayer(
                 dim=dim,
                 num_experts=num_experts,
                 k=k,
+                gate_mode=gate_mode,
                 router_noise_enabled=router_noise_enabled,
                 router_noise_scale=router_noise_scale,
                 router_noise_min_std=router_noise_min_std,
             )
+
+        self.moe_4 = _moe_layer()
+        self.moe_8 = _moe_layer()
+        # moe_16_mode="dense" keeps its own single-expert 16-scale arm.
+        self.moe_16 = DenseMoE16Adapter(dim=dim) if moe_16_mode == "dense" else _moe_layer()
 
         # 3. Spatial MoE decoder for feature fusion and prediction.
         self.decoder = SpatialMoEDecoder(
