@@ -136,3 +136,12 @@ The completed experiments do NOT demonstrate:
 6. That entropy fusion provides benefit.
 
 **The paper should be framed as an architectural proposal with comprehensive empirical characterization, not as a validated design with proven contributions.**
+
+
+## Provenance note
+
+`best.pth` and `best_new_1.pth` are the same checkpoint (identical file hash), and
+MAE / S-measure / E-* / F-* are byte-identical across every evaluation run of that model,
+so the evaluation pipeline is deterministic. The differing boundary numbers under
+`legacy_8expert/evaluation_results/best/` come from an earlier scoring pass; the
+timestamped re-run is canonical. Source: `results/legacy/legacy_8expert/`.

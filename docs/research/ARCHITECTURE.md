@@ -1,172 +1,180 @@
-# Architecture Details
+# Architecture
 
-## End-to-End Pipeline
+> **Note on citations.** Line-number citations below predate the current source
+> layout (the decoder is now the `src/decoder/` package, the training loop lives under
+> `src/training/`, the evaluation artifacts are under `results/`). Treat module and
+> function names as authoritative and `RESEARCH_TRUTH.md` as the verified reference;
+> numbers live in `RESULTS.md`, which is generated from the result files.
+
+Verified against the source in `src/`. Where a claim comes from reading code it says which
+file; where it is inference, it says so. Anything the code contradicts is called out in
+**Findings** at the end — those are the parts a paper must not repeat wrongly.
+
+## End-to-end pipeline
 
 ```
-Input [B,3,384,384]
-  → Backbone (PVTv2-B4) → {res_4, res_8, res_16}
-  → 1x1 projection → [B,256,H_s,W_s] per scale
-  → Independent SpatialMoELayer per scale
-  → EntropyFusionBlock (features + entropy channel)
-  → Top-down cross-attention fusion
-  → Refinement blocks → bilinear upsample to full res
-  → Saliency head (1x1 conv) → [B,1,384,384]
-  → Boundary head (1x1 conv) → [B,1,384,384]
+Input [B, 3, 384, 384]
+  -> MultiScaleBackbone (PVTv2-B4 via timm)          src/backbone.py
+       crops out_indices=(0,1,2) -> 1/4, 1/8, 1/16
+       three 1x1 convs project each scale to d=256
+  -> one SpatialMoELayer per scale                   src/moe_layer.py
+       router: depthwise 3x3 conv + MLP, noisy top-k (k=2)
+       experts: E x TokenWiseMLP (LayerNorm -> 4C -> C, residual)
+       true sparse dispatch: one call per expert over its selected tokens
+  -> SpatialMoEDecoder                               src/decoder/decoder.py
+       per scale: EntropyFusionBlock(features, entropy channel)
+       top-down: global cross-attention 1/16 -> 1/8
+                 windowed cross-attention 1/8 -> 1/4
+       refinement blocks, bilinear upsample to 384x384
+  -> saliency head (1x1 conv) -> [B, 1, 384, 384]
+  -> boundary head (1x1 conv) -> [B, 1, 384, 384]
 ```
 
-## Backbone (`src/backbone.py`)
+## Backbone — `src/backbone.py`
 
-**Model:** `timm.create_model('pvt_v2_b4', pretrained=True, features_only=True, out_indices=(0,1,2))`
+`MultiScaleBackbone` wraps a timm model with `features_only=True, out_indices=(0, 1, 2)` and
+projects each scale to a common width with a 1x1 convolution. The projection widths are read
+from the backbone itself (`feature_info.channels()`), so a different backbone's channel counts
+adapt automatically — only the pyramid strides have to match.
 
-**Raw channel dims from PVTv2-B4:** `[64, 128, 320]`
-
-**Projection:** Three separate 1x1 convolutions map each scale to unified dimension `d=256`:
-- `self.proj_4 = nn.Conv2d(feature_channels[0], d, 1)`
-- `self.proj_8 = nn.Conv2d(feature_channels[1], d, 1)`
-- `self.proj_16 = nn.Conv2d(feature_channels[2], d, 1)`
-
-**Output shapes (verified at `backbone.py:62-64`):**
-| Scale | Shape | Token Count |
-|-------|-------|-------------|
+| Scale | Shape | Tokens |
+|---|---|---|
 | 1/4 | `[B, 256, 96, 96]` | 9,216 |
 | 1/8 | `[B, 256, 48, 48]` | 2,304 |
 | 1/16 | `[B, 256, 24, 24]` | 576 |
 
-## Spatial MoE Layer (`src/moe_layer.py:35-165`)
+**Finding (Backbone name is not wired).** `MultiScaleBackbone` accepts `model_name`, but
+`SpatialMoESODNet` constructs it as `MultiScaleBackbone(d=dim, pretrained=pretrained_backbone)`
+— the name is never passed, so **the model is always `pvt_v2_b4`**. `config.model.backbone` is
+read only by `src/experiment.py` for the experiment ID and the run record. Changing it in a
+config changes the run's *name* and nothing else. The generated ablation matrix in
+`src/ablations.py` varies exactly this field, so those arms would train identical
+architectures. Do not report a backbone comparison until this is wired through.
+
+## Spatial MoE layer — `src/moe_layer.py`
 
 ### Router
 
-**Spatial context extraction:**
-```python
-self.router_dwconv = nn.Conv2d(dim, dim, kernel_size=3, padding=1, groups=dim)
+Spatial context is gathered with a depthwise 3x3 convolution; the token embedding and the
+local context are concatenated and passed through a small MLP to produce one logit per expert.
+During training, Gaussian noise is added before the top-k selection, with a learned or
+clamped standard deviation (`router_noise_enabled`, `router_noise_scale`,
+`router_noise_min_std`).
+
+### Gate mode — what the top-k weights are
+
+`gate_mode` selects how the selected experts' weights are formed. Both modes are implemented
+and both have been trained.
+
+- `"renormalized"` (default): `softmax` over the **top-k logits only**, so the selected gates
+  sum to 1. Gradient flows only to the experts that were selected.
+- `"dense"`: `softmax` over **all E logits**, with the weights at the top-k indices taken from
+  that distribution. The selected gates no longer sum to 1, and crucially every expert receives
+  gradient, which is what allows an unselected expert to recover.
+
+This distinction is the whole point of the dense arm: under a renormalized gate an expert that
+stops being selected stops receiving gradient, so selection is rich-get-richer and experts die.
+
+### Mixture type — `moe_type`
+
+`SpatialMoESODNet` builds the per-scale module according to `moe_type`:
+
+| `moe_type` | Module per scale | Meaning |
+|---|---|---|
+| `"sparse"` | `SpatialMoELayer` | routed top-k experts — the model under study |
+| `"dense"` | `DenseMoE16Adapter` | one shared expert on every token: routing and sparsity removed, capacity-matched control |
+| `"none"` | `PassthroughMoELayer` | features pass through; no expert parameters at all |
+
+`moe_16_mode` additionally lets the 1/16 scale alone use the dense adapter, independently of
+the other two scales.
+
+### Experts
+
+`TokenWiseMLP`: `LayerNorm(C) -> Linear(C, 4C) -> GELU -> Linear(4C, C)`, plus a residual.
+Expert count per scale is `config.model.num_experts`; the 1/16 scale uses the same count
+unless `moe_16_mode == "dense"`.
+
+### Sparse dispatch
+
+The forward pass loops over experts and processes only the tokens routed to each:
+
 ```
-
-**MLP for routing logits:**
-```python
-self.router_mlp = nn.Sequential(
-    nn.Linear(2 * dim, router_hidden),  # 2*dim because of concat
-    nn.GELU(),
-    nn.Linear(router_hidden, num_experts)
-)
-```
-
-**Routing computation (`moe_layer.py:96-112`):**
-1. `local_feat = self.router_dwconv(x)` — depthwise 3x3 conv for local context
-2. `router_input = cat([x_tokens, local_tokens], dim=-1)` — `[B, H*W, 2C]`
-3. `clean_logits = self.router_mlp(router_input)` — `[B, H*W, E]`
-4. Add Gaussian noise during training: `noise = randn * softplus(noise_linear(x))`
-5. Top-k selection: `topk(noisy_logits, k=K)`
-6. Gate softmax over selected experts only
-
-**Noise parameters:**
-- `self.router_noise_enabled = True` (default)
-- `self.router_noise_scale = 1.0` (default)
-
-### Expert Pool
-
-**Architecture:** `TokenWiseMLPExpert` (`moe_layer.py:14-33`)
-```
-LayerNorm(C) → Linear(C, 4C) → GELU → Linear(4C, C) → + residual
-```
-- Expansion factor: 4x
-- Residual connection: `return x + z`
-
-**Default count:** 8 experts per scale (3 scales × 8 = 24 total experts)
-
-### Sparse Dispatch (`moe_layer.py:114-141`)
-
-True sparse execution via Python loop:
-```python
 for i, expert in enumerate(self.experts):
-    active_mask = (flat_topk_indices == i).any(dim=-1)
-    token_active = active_mask.any(dim=-1)
-    if not token_active.any(): continue
-    selected_tokens = flat_x[token_active]     # [N_active, C]
-    expert_out = expert(selected_tokens)         # [N_active, C]
-    expert_gates = flat_topk_gates[token_active][active_mask[token_active]]
-    output_tokens[token_active] += expert_out * expert_gates.unsqueeze(-1)
+    active = (flat_topk_indices == i).any(dim=-1)
+    tokens = flat_x[active]
+    out[active] += expert(tokens) * gates[active].unsqueeze(-1)
 ```
 
-**Critical:** Experts receive `[N_active, 256]` (variable-size 2D), never `[B, C, H, W]`.
+Every expert is called on every step, even with zero routed tokens — that is deliberate and
+load-bearing for DDP (see `TRAINING.md`), not an inefficiency to remove.
 
-### Counterfactual Ablation (`moe_layer.py:68-94`)
+### Counterfactual ablation
 
-When `force_expert_id` is set, the router is bypassed:
-- All tokens routed to specified expert
-- Routing probs set to 1.0 for that expert
-- Entropy set to 0.0
-- Used for single-expert knockout studies
+When a forced expert is requested, the router is bypassed: all tokens go to that expert, its
+routing probability is 1.0 and entropy is 0.0. Used for the expert-knockout studies in
+`RESULTS.md`.
 
-## Decoder (`src/decoder.py`)
+## Decoder — `src/decoder/decoder.py`, `src/decoder/blocks.py`
 
-### Entropy Fusion (`decoder.py:14-27`)
+### Entropy fusion
 
-Each scale's MoE output is fused with its routing entropy:
+Each scale's routed features are fused with that scale's routing entropy. The entropy is
+normalized before projection, and the normalization constant is hard-coded:
+
 ```python
-entropy_norm = entropy / math.log(2.0 + 1e-8)  # Normalize assuming K=2
-y_proj = self.proj_y(Y)          # Conv2d(in_dim, out_dim, 1)
-e_proj = self.proj_entropy(entropy_norm)  # Conv2d(1, out_dim, 1)
-return y_proj + self.scale * e_proj  # Learnable scale (init=0.1)
+entropy_norm = entropy / math.log(2.0 + 1e-8)   # normalize assuming K=2
+y = self.proj_y(Y)
+e = self.proj_entropy(entropy_norm)
+return y + self.scale * e                        # learnable scale, init 0.1
 ```
 
-### Top-Down Fusion (`decoder.py:247-259`)
+### Top-down fusion
 
-**1/16 → 1/8 (Global Cross-Attention):**
-```python
-F16_up = F.interpolate(F16, size=F8_local.shape[-2:], mode='bilinear')
-F8 = GlobalCrossAttentionBlock(q_x=F16_up, kv_x=F8_local)
-```
+- **1/16 -> 1/8**: global cross-attention, with the 1/16 features upsampled to the 1/8 grid.
+- **1/8 -> 1/4**: windowed cross-attention (window size `config.model.window_size`, default 7),
+  with a relative position bias table and attention masking for non-divisible dimensions.
+- **Global context** is pooled from the 1/8 features and added at the 1/4 scale.
 
-**1/8 → 1/4 (Windowed Cross-Attention):**
-```python
-F8_up = F.interpolate(F8, size=F4_ctx.shape[-2:], mode='bilinear')
-F4 = WindowedCrossAttentionBlock(q_x=F8_up, kv_x=F4_ctx)
-```
+### Refinement and heads
 
-**Global context injection at 1/4:**
-```python
-g_ctx = self.global_context_proj(self.global_context_pool(F8))  # AdaptiveAvgPool2d(1)
-F4_ctx = F4_local + g_ctx
-```
+Three refinement blocks (two 3x3 convs with GroupNorm and a residual) take the 1/4 features to
+full resolution, feeding the saliency and boundary heads. With
+`config.model.deep_supervision` enabled, auxiliary heads predict at 1/16, 1/8 and 1/4.
 
-### Windowed Cross-Attention (`decoder.py:74-203`)
-
-- Window size: configurable (default 7 in baseline)
-- Relative position bias table: `(2*w-1)^2 × num_heads` parameters
-- Handles padding with attention mask for non-divisible dimensions
-- 8 attention heads
-
-### Refinement + Prediction (`decoder.py:205-280`)
-
-Three `RefinementBlock`s (Conv3x3→GroupNorm32→ReLU→Conv3x3→GroupNorm32→ReLU + residual):
-```
-F4 → refine_4 → upsample 2x → refine_2 → upsample 2x → refine_1
-→ saliency_head (1x1 conv) → [B, 1, 384, 384]
-→ edge_head (1x1 conv) → [B, 1, 384, 384]
-```
-
-**Deep supervision heads** (optional, controlled by `config.model.deep_supervision`):
-- `aux_head_16`: `[B, 1, 24, 24]`
-- `aux_head_8`: `[B, 1, 48, 48]`
-- `aux_head_4`: `[B, 1, 96, 96]`
-
-## Output Tensor Summary
+## Outputs
 
 | Output | Shape | Notes |
-|--------|-------|-------|
-| Saliency logits | `[B, 1, 384, 384]` | Sigmoid at inference |
-| Boundary logits | `[B, 1, 384, 384]` | Sigmoid at inference |
-| Aux logits 16 | `[B, 1, 24, 24]` | Deep supervision |
-| Aux logits 8 | `[B, 1, 48, 48]` | Deep supervision |
-| Aux logits 4 | `[B, 1, 96, 96]` | Deep supervision |
-| Routing probs (per scale) | `[B, E, H_s, W_s]` | Full routing probability map |
-| Entropy (per scale) | `[B, 1, H_s, W_s]` | Per-token routing entropy |
+|---|---|---|
+| Saliency logits | `[B, 1, 384, 384]` | sigmoid at inference |
+| Boundary logits | `[B, 1, 384, 384]` | sigmoid at inference |
+| Aux logits (16 / 8 / 4) | `[B, 1, 24, 24]` / `[B, 1, 48, 48]` / `[B, 1, 96, 96]` | deep supervision |
+| Routing probs, per scale | `[B, E, H_s, W_s]` | full routing distribution |
+| Entropy, per scale | `[B, 1, H_s, W_s]` | per-token routing entropy |
 
-## Parameter Counts
+## Parameter count
 
-Total parameters are reported during training at `train_ddp.py:285-287`:
-```python
-total_params = sum(p.numel() for p in model.parameters())
-train_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-```
-Exact counts depend on configuration; run `python -c "from src.model import SpatialMoESODNet; ..."` to verify.
+For the 8-expert, k=2 configuration used by the reproduction runs, the trainer reports
+**69,213,120 parameters, all trainable** (read from a training log, not computed here).
+
+## Findings — read before writing architecture claims
+
+1. **`config.model.backbone` does not reach the model.** `src/model.py` hard-codes
+   `pvt_v2_b4`. Every number in `RESULTS.md` is therefore PVTv2-B4, and any config that names a
+   different backbone mislabels its run ID. The fix is small: pass the name through
+   `build_model` into `SpatialMoESODNet` into `MultiScaleBackbone`, store it, and extend
+   `assert_model_matches_config` to compare it.
+
+2. **The entropy channel's scale depends on a stale assumption.** The decoder normalizes
+   entropy by `ln(2)`, which was correct when entropy was computed over the renormalized
+   top-k gates (k=2, so entropy <= ln 2). Entropy is now computed over the full softmax, so the
+   channel reaches `ln(E)/ln(2)` times the designed scale — **3x at E=8, 2x at E=4**. Measured
+   per-token entropies are 1.386 (= ln 4) for the E4 runs and 2.075 (= ln 8) for an 8-expert
+   model. The learnable per-scale coefficient can partly absorb this, but the reproduction run
+   does not see the channel at the scale its recipe was tuned for. Any claim that the
+   reproduction is exact must account for this.
+
+3. **A model that does not match its config is now impossible to build silently.**
+   `assert_model_matches_config` (`src/model.py`) compares the constructed MoE layers against
+   the config's expert count, top-k, gate mode and mixture type, and `build_model` calls it.
+   This exists because a `top_k: 1` run once trained a k=2 model. Evaluation and diagnostics
+   have an equivalent guard: a shape mismatch fails the state-dict load.

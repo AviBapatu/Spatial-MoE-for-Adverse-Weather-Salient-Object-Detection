@@ -1,5 +1,11 @@
 # Datasets
 
+> **Note on citations.** Line-number citations below predate the current source
+> layout (the decoder is now the `src/decoder/` package, the training loop lives under
+> `src/training/`, the evaluation artifacts are under `results/`). Treat module and
+> function names as authoritative and `RESEARCH_TRUTH.md` as the verified reference;
+> numbers live in `RESULTS.md`, which is generated from the result files.
+
 ## Primary Dataset: WXSOD
 
 **Source:** `src/dataset.py:19`, `spatial-moe-adverse-weather-sod-blueprint.md:10-11`
