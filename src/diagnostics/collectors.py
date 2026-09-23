@@ -38,6 +38,8 @@ class RoutingTracker:
         self.entropy_max = 0.0
         self.total_tokens = 0
         self.masked_tokens = 0  # padding tokens filtered out when pad_mask is given
+        self.logit_std_sum = 0.0
+        self.top1_top2_margin_sum = 0.0
 
     def update(
         self,
@@ -58,12 +60,23 @@ class RoutingTracker:
         topk_gates = moe_output.topk_gates.view(-1, self.top_k).cpu().double()  # [N_tokens, K]
         entropy = moe_output.entropy.view(-1).cpu().double()  # [N_tokens]
 
+        # Router logit geometry, flattened to [N_tokens, E].  Normalized entropy
+        # saturates near 1.0 for any weakly-trained router, so these two
+        # distinguish "the logits are flat" from "the logits are large but tied".
+        logits = moe_output.clean_logits.float().cpu()
+        logits = (
+            logits.view(logits.size(0), logits.size(1), -1)
+            .permute(0, 2, 1)
+            .reshape(-1, logits.size(1))
+        )
+
         if pad_mask is not None:
             valid = pad_mask.view(-1).bool().cpu()  # [N_tokens]
             self.masked_tokens += int((~valid).sum().item())
             topk_indices = topk_indices[valid]
             topk_gates = topk_gates[valid]
             entropy = entropy[valid]
+            logits = logits[valid]
 
         N = topk_indices.size(0)
 
@@ -87,6 +100,12 @@ class RoutingTracker:
             if max_e > self.entropy_max:
                 self.entropy_max = max_e
 
+            # Logit spread across experts, and the top-1/top-2 decision margin.
+            self.logit_std_sum += logits.std(dim=-1).sum().item()
+            if logits.size(1) >= 2:
+                top2 = logits.topk(2, dim=-1).values
+                self.top1_top2_margin_sum += (top2[:, 0] - top2[:, 1]).sum().item()
+
         self.total_tokens += N
 
     def get_stats(self) -> Dict[str, Any]:
@@ -106,6 +125,8 @@ class RoutingTracker:
             "entropy_max": self.entropy_max,
             "total_tokens": self.total_tokens,
             "masked_tokens": self.masked_tokens,
+            "logit_std_sum": self.logit_std_sum,
+            "top1_top2_margin_sum": self.top1_top2_margin_sum,
         }
 
     @classmethod
@@ -119,6 +140,8 @@ class RoutingTracker:
         tracker.total_tokens = state["total_tokens"]
         # Default to 0 for backward compat with snapshots saved before this field existed.
         tracker.masked_tokens = state.get("masked_tokens", 0)
+        tracker.logit_std_sum = state.get("logit_std_sum", 0.0)
+        tracker.top1_top2_margin_sum = state.get("top1_top2_margin_sum", 0.0)
         return tracker
 
     def merge(self, other: "RoutingTracker") -> "RoutingTracker":
@@ -134,6 +157,8 @@ class RoutingTracker:
         self.entropy_max = max(self.entropy_max, other.entropy_max)
         self.total_tokens += other.total_tokens
         self.masked_tokens += other.masked_tokens
+        self.logit_std_sum += other.logit_std_sum
+        self.top1_top2_margin_sum += other.top1_top2_margin_sum
         return self
 
 
