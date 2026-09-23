@@ -152,6 +152,26 @@ def _note_amp_overflow(epoch: int) -> None:
                     "(further ones this epoch are counted, not logged).")
 
 
+def _optimizer_health(engine: Any) -> str:
+    """Format the learning rates and AMP scale for the training progress line.
+
+    Logging must never be able to stop a run, so every value is read defensively:
+    a missing or renamed attribute degrades to "?" rather than raising.  The param
+    group layout is an implementation detail (there are eight groups, split by
+    decay and module family), so only the distinct learning rates are shown.
+    """
+    try:
+        lrs = sorted({round(float(g["lr"]), 12) for g in engine.optimizer.param_groups})
+        lr_text = ",".join(f"{lr:.2e}" for lr in lrs) or "?"
+    except Exception:
+        lr_text = "?"
+    try:
+        scale_text = f"{engine.scaler.get_scale():.0f}"
+    except Exception:
+        scale_text = "?"
+    return f"lr {lr_text} | amp scale {scale_text}"
+
+
 def _train_one_batch(
     iterator: Any,
     model: Any,
@@ -198,7 +218,7 @@ def _train_one_batch(
     if is_rank_zero() and (batch_idx + 1) % 50 == 0:
         log.info(f"[Train] Ep {epoch+1} | {batch_idx+1}/{len(ctx.train_loader)} | "
                  f"Loss {loss.item()*config.opt.grad_accum_steps:.4f} | "
-                 f"Step {engine.global_step}")
+                 f"Step {engine.global_step} | {_optimizer_health(engine)}")
 
     return batch_idx + 1, False
 
