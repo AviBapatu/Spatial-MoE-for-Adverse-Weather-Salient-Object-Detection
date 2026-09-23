@@ -62,3 +62,7 @@ ignore = ["E501"]
 "src/dataset.py" = ["E402"]
 # sys.path insertion must precede the src.* imports that depend on it.
 "src/training/cli.py" = ["E402"]
+# Notebook cell text is embedded verbatim: the trailing/blank-line whitespace is
+# part of the notebook content, not this script's formatting.
+"generate_notebook_accountA.py" = ["W291", "W293"]
+"generate_notebook_accountB.py" = ["W291", "W293"]
