@@ -78,13 +78,18 @@ def collapse_warnings(summary: Dict[str, Any], num_experts: int) -> List[str]:
     """
     hard_fracs = summary["hard_fractions"]
     dead_experts = [i for i, f in enumerate(hard_fracs) if f < 0.01]
-    uniformity = sum([abs(f - (1.0 / num_experts)) for f in hard_fracs]) < 0.1
     high_entropy = summary["mean_normalized_entropy"] > 0.8
 
     warnings = []
     if dead_experts:
         warnings.append(f"DEAD_EXPERT: {dead_experts}")
-    if uniformity and high_entropy:
+    # Routing entropy on its own is the specialisation signal: gating that is
+    # near-uniform means the router has no expert preference.  This used to be
+    # ANDed with a load-balance test, which let ordinary count drift silence the
+    # warning while routing stayed maximally uncertain — so "no warnings" did not
+    # mean "specialised".  Uneven load is deliberately NOT warned about
+    # separately: uneven load is what specialisation looks like.
+    if high_entropy:
         warnings.append("LOW SPECIALIZATION / HIGH ROUTING UNCERTAINTY")
     elif max(hard_fracs) > 0.8:
         warnings.append("ROUTER COLLAPSE WARNING")
