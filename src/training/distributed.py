@@ -39,13 +39,24 @@ def init_process_group(
     additionally stand up a small secondary GLOO group that exists purely
     to back ``monitored_barrier`` calls. The NCCL group remains the default
     for all actual tensor collectives (all-reduce, all-gather, DDP, etc.).
+
+    ``device_id`` is passed explicitly so NCCL does not have to guess the
+    GPU from the global rank.  Guessing is correct on standard single-node
+    runs but emits a noisy warning and can hang on heterogeneous GPU
+    assignments.  We read LOCAL_RANK from the environment (set by torchrun)
+    and only pass ``device_id`` when CUDA is available.
     """
     if dist.is_initialized():
         return
+
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+    device_id = torch.device(f"cuda:{local_rank}") if torch.cuda.is_available() else None
+
     dist.init_process_group(
         backend,
         init_method="env://",
         timeout=timedelta(minutes=timeout_minutes),
+        device_id=device_id,
     )
 
     global _monitor_group

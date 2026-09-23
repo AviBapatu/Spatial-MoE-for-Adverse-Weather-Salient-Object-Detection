@@ -16,6 +16,7 @@ from src.config import LossConfig
 from src.model import SpatialMoESODNet
 from src.optimization import OptimizationEngine, WarmupCosineScheduler, freeze_backbone, get_parameter_groups
 from src.train_ddp import CHECKPOINT_FORMAT_VERSION, get_config_hash, get_rng_states, set_rng_states
+from src.training.distributed import destroy_process_group_safe, init_process_group
 
 
 def assert_val(condition, msg):
@@ -476,7 +477,7 @@ if __name__ == "__main__":
 
         device = torch.device(f"cuda:{local_rank}")
         torch.cuda.set_device(device)
-        dist.init_process_group(backend="nccl", init_method="env://")
+        init_process_group("nccl", timeout_minutes=45)
 
         if args.mode == "ddp":
             run_tests_on_engine(device, local_rank, rank, world_size, args.data_root, args.result_file, is_ddp=True)
@@ -487,7 +488,7 @@ if __name__ == "__main__":
         elif args.mode == "resume_b":
             run_resume_b(device, local_rank, rank, world_size, args.data_root, args.result_file)
 
-        dist.destroy_process_group()
+        destroy_process_group_safe()
 
     if (not hasattr(args, "mode") or args.mode == "smoke1gpu" or int(os.environ.get("RANK", 0)) == 0) and os.path.exists(args.result_file):
         with open(args.result_file, "r") as f:
