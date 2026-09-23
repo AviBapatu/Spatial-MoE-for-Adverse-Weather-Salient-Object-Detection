@@ -14,11 +14,17 @@ Sweep over backbone, expert count, and top-k:
 
 | Variant | Backbone | Experts | Top-K | Batch/GPU | Notes |
 |---------|----------|---------|-------|-----------|-------|
-| A | pvt_v2_b2 | 8 | 2 | 2 | Smaller backbone |
+| A | pvt_v2_b2 | 8 | 2 | 2 | Smaller backbone — **BROKEN, see below** |
 | B | pvt_v2_b4 | 8 | 2 | 1 | Baseline equivalent |
 | C | pvt_v2_b4 | 6 | 2 | 1 | Fewer experts |
 | D | pvt_v2_b4 | 8 | 1 | 1 | Single expert per token |
 | E | pvt_v2_b4 | 8 | 3 | 1 | More expert redundancy |
+
+> **This matrix cannot currently test the backbone axis.** `config.model.backbone` is
+> never passed to the model — `src/model.py` hard-codes PVTv2-B4 — so arm A and arm B
+> would train *identical* architectures and differ only in batch shape and seed. Do not
+> run or report a backbone comparison until that field is wired through
+> (`build_model` -> `SpatialMoESODNet` -> `MultiScaleBackbone`).
 
 **Batch equivalence adjustment** (`ablations.py:10-18`):
 ```python
@@ -42,7 +48,10 @@ Compare against non-MoE baselines:
 | dense | `"dense"` | Dense MoE (all experts evaluated) |
 | sparse | `"sparse"` | Sparse MoE (top-k routing) |
 
-**Note:** The `moe_type` config field exists but `SpatialMoELayer` always runs sparse dispatch. The "none" and "dense" variants are not currently implemented in the forward path — the layer ignores this config field.
+**Status:** `moe_type` *is* consumed — it selects the arm in `SpatialMoESODNet.__init__`
+(`"none"` passes features through, `"dense"` applies one shared expert, `"sparse"` routes
+top-k experts). However **none of these arms has been run**: `results/` contains zero
+runs with `M_DENSE` or `M_NONE`, so the mixture-vs-dense comparison does not yet exist.
 
 ## Loss Matrix (`ablations.py:93-117`)
 
@@ -126,11 +135,9 @@ if expert_ablation is not None:
 - Per-expert soft gate heatmaps
 - Entropy heatmaps
 
-**Note:** Diagnostics are disabled in production training (`train_ddp.py:560`):
-```python
-if False and config.diag.routing_diagnostic_epochs > 0 and ...:
-    # SKIPPED
-```
+**Status:** diagnostics *do* run in training — they execute at epoch boundaries and
+write per-epoch routing statistics, which is where the expert-usage and weather-enrichment
+numbers in `RESULTS.md` come from.
 
 ## DDP Ablation Tests (`tests/test_moe_ddp.py`)
 
