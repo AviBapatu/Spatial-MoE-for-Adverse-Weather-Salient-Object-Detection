@@ -44,7 +44,7 @@ Input [B, 3, 384, 384]
       → 8 × TokenWiseMLPExpert (LN→Linear(256→1024)→GELU→Linear(1024→256) + residual)
       → True sparse dispatch (for-loop over experts, mask selection, weighted scatter-add)
   → SpatialMoEDecoder
-      → 3 × EntropyFusionBlock (proj_y + scale * proj_entropy, normalized by log(2))
+      → 3 × EntropyFusionBlock (proj_y + scale * proj_entropy, normalized by log(8))
       → GlobalCrossAttentionBlock: 1/16→1/8 fusion
       → WindowedCrossAttentionBlock: 1/8→1/4 fusion (window_size from config)
       → 3 × RefinementBlock (Conv3×3→GN→ReLU→Conv3×3→GN→ReLU + residual)
@@ -217,11 +217,11 @@ LR but it is not used in the current config.
 | **N=6–8 experts** | N=8 | MATCHES | `experiments/baseline_v1.json:14` |
 | **Independent experts per scale** | 3 separate SpatialMoELayer instances | MATCHES | `src/model.py:14-16` |
 | **Expert = depthwise-separable + residual** | Expert = LN→4C→C residual MLP (NOT depthwise-separable) | DOES NOT MATCH | `src/moe_layer.py:14-33` |
-| **Cross-attention fusion** | GlobalCrossAttention (1/16→1/8), WindowedCrossAttention (1/8→1/4) | MATCHES | `src/decoder/:232-233` |
-| **Fusion formula: Q=Y_s, K=V=Upsample(Y_{s+1})** | Q=F16_up, KV=F8_local (cross-attn, not residual add) | PARTIALLY MATCHES | `src/decoder/:253,259` |
-| **Router entropy as decoder input** | Yes, via EntropyFusionBlock | MATCHES | `src/decoder/:14-27,247-250` |
+| **Cross-attention fusion** | GlobalCrossAttention (1/16→1/8), WindowedCrossAttention (1/8→1/4) | MATCHES | `src/decoder/decoder.py` |
+| **Fusion formula: Q=Y_s, K=V=Upsample(Y_{s+1})** | Q=F16_up, KV=F8_local (cross-attn, not residual add) | PARTIALLY MATCHES | `src/decoder/blocks.py` |
+| **Router entropy as decoder input** | Yes, via EntropyFusionBlock | MATCHES | `src/decoder/blocks.py` (EntropyFusionBlock) |
 | **Entropy: full over all N experts** | Entropy computed over top-k gates only | DOES NOT MATCH | `src/moe_layer.py:151` |
-| **Decoder concatenates entropy** | Decoder adds entropy (learned projection + scale param) | DOES NOT MATCH | `src/decoder/:25-27` |
+| **Decoder concatenates entropy** | Decoder adds entropy (learned projection + scale param) | DOES NOT MATCH | `src/decoder/blocks.py` |
 | **BCE loss** | BCEWithLogitsLoss | MATCHES | `src/loss.py:82,165` |
 | **IoU loss** | Soft IoU (per-image, averaged) | MATCHES | `src/loss.py:86-93` |
 | **Edge/boundary loss** | Boundary loss = SmoothL1(grad_mag, gt_boundary), λ=0.0 (OFF) | PARTIALLY MATCHES | `src/loss.py:95-107` |

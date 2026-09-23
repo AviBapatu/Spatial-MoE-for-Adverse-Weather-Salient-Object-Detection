@@ -20,7 +20,7 @@ The target output is a scientific paper. This file and `docs/research/` are the 
 | `src/` | All source code: model, training, evaluation, config, dataset, diagnostics |
 | `tests/` | Unit + integration tests (sparse dispatch, DDP, resume correctness) |
 | `experiments/` | Canonical experiment config JSONs (`baseline_v1.json`) |
-| `evaluation/` | Saved evaluation results per checkpoint (`metrics.json`, `summary.txt`) |
+| `results/` | Evaluations, routing statistics and legacy artifacts per run (`metrics.json`, `summary.txt`) |
 | `checkpoints/` | Model weight files (`.pth`) |
 | `data/WXSDO_data/` | WXSOD dataset (train_sys, test_sys, test_real splits) |
 | `docs/research/` | Persistent research knowledge base for paper writing |

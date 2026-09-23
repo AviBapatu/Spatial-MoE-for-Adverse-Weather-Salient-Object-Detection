@@ -115,7 +115,7 @@ SpatialMoELayer    SpatialMoELayer   SpatialMoELayer
 - Scale labels ($1/4$, $1/8$, $1/16$) prominently displayed
 - No decorative elements — pure scientific communication
 
-**Source:** Derived from `src/model.py:6-48`, `src/backbone.py:5-39`, `src/moe_layer.py:35-165`, `src/decoder/:219-280`
+**Source:** Derived from `src/model.py`, `src/backbone.py`, `src/moe_layer.py`, `src/decoder/`
 
 **LaTeX:** Full-width `figure*` environment with TikZ. Keep arrow labels in `\scriptsize`.
 

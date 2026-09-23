@@ -60,7 +60,11 @@ The forced-expert test only affects one of three scales. The full effect of disa
 
 ## 4. What the Entropy Data Shows
 
-Mean routing entropy across all tokens is 0.68-0.69 (normalized by log(2), so maximum = 1.0). This indicates:
+Mean routing entropy across all tokens is 0.68-0.69 in nats, which is the maximum for a
+two-way top-k distribution and close to the maximum of the eight-way distribution it is
+drawn from (ln 8 = 2.079). Note the decoder's normalization constant has since changed:
+the legacy model's entropy channel was divided by ln(2), the current code divides by
+ln(8). These numbers are the legacy measurement. This indicates:
 - Tokens are NOT being routed to a single expert (entropy would be ~0)
 - Tokens are NOT being routed uniformly (entropy would be ~1.0)
 - The router is making **moderately confident** decisions
