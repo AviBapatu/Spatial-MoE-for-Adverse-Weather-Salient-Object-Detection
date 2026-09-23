@@ -17,6 +17,12 @@ The canonical hash excludes fields that cannot change the mathematics: `experime
 `run_id`, `batch_equivalence`, `variant`, `data.dataset_root`, `train.num_workers`,
 `train.checkpoint_every_n_steps`. It **includes** `train.epochs`.
 
+**The preset is not the recipe.** `experiments/baseline_v1.json` and `src/presets/baseline.json`
+are templates: they carry `ssim_weight: 0.0`, `boundary_weight: 0.0` and
+`importance_weight: 0.01`. The configs behind actual runs are the `v_e8_*` and `v_e4_*` files,
+which use `ssim_weight: 1.0`, `boundary_weight: 1.0` and `importance_weight: 0.05`. A loss
+table quoted from the preset will not match a trained run.
+
 ## Experiment IDs
 
 ```

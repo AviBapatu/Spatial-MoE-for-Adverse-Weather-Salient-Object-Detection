@@ -1,5 +1,18 @@
 # BLUEPRINT_CODE_AUDIT.md — Comprehensive Audit
 
+> **Note.** This is an audit of the blueprint against the code **as of its date**. Line-number
+> citations are historical and the modules have since moved (the decoder and the diagnostics
+> are packages now). Three findings recorded below have since been acted on and should not be
+> re-fixed:
+>
+> - The decoder is no longer `src/decoder.py`.
+> - The entropy channel is no longer "normalized by log(2)"; the code divides by log(8), still
+>   hard-coded to eight experts.
+> - "Entropy computed over top-k gates only" no longer holds. The current `SpatialMoELayer`
+>   computes entropy over the full expert distribution, which is why the measured per-token
+>   entropy reaches ln(8) for an eight-expert run (`RESULTS.md` section 4). This finding is
+>   resolved in the code's favour.
+
 Full audit of the blueprint document against the actual repository implementation.
 
 **Audit date:** 2026-08-31

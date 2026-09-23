@@ -89,7 +89,7 @@ runs with `M_DENSE` or `M_NONE`, so the mixture-vs-dense comparison does not yet
 
 ## Counterfactual Expert Ablation
 
-### Implementation (`moe_layer.py:68-94`)
+### Implementation (`src/moe_layer.py`, `SpatialMoELayer.forward`)
 
 The model supports forcing all tokens to a single expert via `ablation_cfg`:
 
@@ -106,31 +106,33 @@ if force_expert_id is not None:
     # Set routing probs to 1.0 for forced expert
 ```
 
-### Usage in Training (`train_ddp.py:623-654`)
+### Usage in Training (not wired to a CLI flag)
+
+> **Not currently reachable from training.** The forward pass accepts an `ablation_cfg`
+> (`scale` + `expert_id`, `random_routing`, `disable_entropy`), but no command-line parser
+> sets `args.expert_ablation`, so a training-time forced-expert run cannot be launched today.
+> The hook is used by `src/evaluate.py`, which is how the proxy-ablation table in `RESULTS.md`
+> was produced.
 
 ```python
-# Passed via --expert_ablation "scale,expert_id"
-expert_ablation = getattr(args, 'expert_ablation', None)
-if expert_ablation is not None:
-    scale, exp_id = map(int, expert_ablation.split(','))
-    ablation_cfg = {'scale': scale, 'expert_id': exp_id}
-    out, _ = model.module(v_images, ablation_cfg=ablation_cfg)
+# In model.forward(): the ablation_cfg the evaluator passes
+out_4 = self.moe_4(res_4, force_expert_id=force_4, random_routing=random_routing)
 ```
 
 ### Diagnostic Outputs (`src/diagnostics/`)
 
-**RoutingTracker** (`diagnostics.py:12-78`):
+**RoutingTracker** (`src/diagnostics/`):
 - Hard assignment counts per expert
 - Soft gate mass per expert
 - Mean entropy (normalized by log(K))
 - Dead expert detection (hard fraction < 0.01)
 
-**WeatherAnalyzer** (`diagnostics.py:80-177`):
+**WeatherAnalyzer** (`src/diagnostics/`):
 - P(weather | expert) with Laplace smoothing
 - KL divergence from global weather prior
 - JS divergence
 
-**Visualization** (`diagnostics.py:179-270`):
+**Visualization** (`src/diagnostics/`):
 - Per-expert hard assignment heatmaps
 - Per-expert soft gate heatmaps
 - Entropy heatmaps
