@@ -24,7 +24,7 @@ from src.dataset import get_dataloaders
 from src.experiment import setup_experiment_run, update_registry_status
 from src.log import get_logger
 from src.loss import CombinedLoss
-from src.model import SpatialMoESODNet
+from src.model import SpatialMoESODNet, assert_model_matches_config
 from src.optimization import (
     OptimizationEngine,
     WarmupCosineScheduler,
@@ -138,6 +138,10 @@ def build_model(config: ExperimentConfig, device: torch.device) -> Any:
         gate_mode=config.model.gate_mode,
         moe_type=config.model.moe_type,
     ).to(device)
+
+    # The config is the source of truth for the architecture, but every field gets
+    # there through a constructor argument, so verify it actually arrived.
+    assert_model_matches_config(model, config)
 
     local_hash = _parameter_fingerprint(model)
     ht = torch.zeros(1, dtype=torch.int64, device=device)

@@ -16,6 +16,60 @@ from src.moe_layer import DenseMoE16Adapter, MoEOutput, PassthroughMoELayer, Spa
 log = get_logger(__name__)
 
 
+def assert_model_matches_config(model: nn.Module, config: Any) -> None:
+    """Fail loudly when a built model's architecture disagrees with its config.
+
+    Every architecture field reaches the model through a constructor argument, so a
+    field that is validated but never forwarded builds a model that silently differs
+    from the config -- a ``top_k: 1`` run training a k=2 model, for example.  Nothing
+    downstream notices: the run trains happily and only the recorded experiment ID
+    and the paper's description of it are wrong.
+
+    Parameters
+    ----------
+    model:
+        Model built by the caller.
+    config:
+        Config the model was built from (anything exposing a ``model`` namespace
+        with ``num_experts``, ``top_k``, ``gate_mode``, ``moe_type`` and
+        ``moe_16_mode``).
+
+    Raises
+    ------
+    ValueError:
+        If any architecture field disagrees with the constructed modules.
+    """
+    cfg = config.model
+    expected_cls = {
+        "sparse": SpatialMoELayer,
+        "dense": DenseMoE16Adapter,
+        "none": PassthroughMoELayer,
+    }.get(cfg.moe_type)
+    if expected_cls is None:
+        raise ValueError(f"Unknown moe_type in config: {cfg.moe_type!r}")
+
+    mismatches = []
+    for name in ("moe_4", "moe_8", "moe_16"):
+        layer = getattr(model, name, None)
+        want = (DenseMoE16Adapter if (name == "moe_16" and cfg.moe_16_mode == "dense")
+                else expected_cls)
+        if type(layer) is not want:
+            mismatches.append(
+                f"{name}: model={type(layer).__name__} config={want.__name__}")
+            continue
+        if isinstance(layer, SpatialMoELayer):
+            for field, value in (("num_experts", cfg.num_experts),
+                                 ("k", cfg.top_k),
+                                 ("gate_mode", cfg.gate_mode)):
+                if getattr(layer, field) != value:
+                    mismatches.append(
+                        f"{name}.{field}: model={getattr(layer, field)!r} "
+                        f"config={value!r}")
+
+    if mismatches:
+        raise ValueError("Model does not match its config -- " + "; ".join(mismatches))
+
+
 class SpatialMoESODNet(nn.Module):
     """Spatially-dynamic Mixture-of-Experts saliency-detection network.
 

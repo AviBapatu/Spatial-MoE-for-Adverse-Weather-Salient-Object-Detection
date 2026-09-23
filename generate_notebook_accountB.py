@@ -49,6 +49,9 @@ import hashlib
 # RUN_MODE strictly governs the allowed execution path.
 # Allowed: "VALIDATE", "TRAIN", "RESUME", "EVALUATE"
 RUN_MODE = "TRAIN"
+# Pre-run checks (architecture agreement + a 100-image end-to-end run).
+# Set False to skip the "## 11_preflight_checks" cell entirely.
+RUN_PREFLIGHT = True
 ACTIVE_CONFIG_PATH = "experiments/v_e8_repro_gatedense.json"
 # Analysis results are uploaded under the experiment ID derived from
 # ACTIVE_CONFIG_PATH (see the upload cell), so there is no separate label here
@@ -504,7 +507,105 @@ else:
 
 """)
     add_markdown(
-        r"""## 11_train
+        r"""## 11_preflight_checks
+
+Runs before training and stops it if anything is wrong.  About 8 minutes, two stages:
+
+1. **Static check** -- rebuilds the model from the active config on CPU and asserts that
+   every architecture field actually reached the model (expert count, top-k, gate mode,
+   MoE type).  This is the bug class where a config field is validated but never
+   forwarded, so the run silently trains a different model than the config describes.
+
+2. **End-to-end mini run** -- 100 images under 2-GPU DDP: training steps, the epoch-end
+   validation, the routing diagnostics, a checkpoint write, and a resume from that
+   checkpoint.  Those epoch-boundary paths are where an unattended run would otherwise
+   die at the end of epoch 1, four hours in.
+
+Everything is written to ``WXSOD_Preflight/<experiment_id>/``, never to the real
+checkpoint directory, and no Hugging Face upload happens.  Set ``RUN_PREFLIGHT = False``
+in the config cell to skip this cell.
+""")
+    add_code(
+        r"""if RUN_MODE == "TRAIN" and RUN_PREFLIGHT:
+    import json
+    import os
+    import subprocess
+    import sys
+
+    PROJECT_ROOT = "/kaggle/working/spatial_moe_sod"
+    CONFIG_SRC = os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH)
+
+    # --- 1. the config must describe the model that actually gets built ---------
+    sys.path.insert(0, PROJECT_ROOT)
+    from src.config import ExperimentConfig
+    from src.experiment import generate_experiment_id
+    from src.model import SpatialMoESODNet, assert_model_matches_config
+
+    experiment = ExperimentConfig.load(CONFIG_SRC)
+    probe = SpatialMoESODNet(
+        use_deep_supervision=experiment.model.deep_supervision,
+        num_experts=experiment.model.num_experts,
+        k=experiment.model.top_k,
+        window_size=experiment.model.window_size,
+        router_noise_enabled=experiment.model.router_noise_enabled,
+        router_noise_scale=experiment.model.router_noise_scale,
+        router_noise_min_std=experiment.model.router_noise_min_std,
+        moe_16_mode=experiment.model.moe_16_mode,
+        gate_mode=experiment.model.gate_mode,
+        moe_type=experiment.model.moe_type,
+        pretrained_backbone=False,  # weights are irrelevant to an architecture check
+    )
+    assert_model_matches_config(probe, experiment)
+    del probe
+    m = experiment.model
+    print(f"\u2713 config and model agree: {m.num_experts} experts, k={m.top_k}, "
+          f"gate_mode={m.gate_mode}, moe_type={m.moe_type}, moe_16_mode={m.moe_16_mode}")
+
+    # --- 2. one real epoch on a small subset, then a real resume ----------------
+    with open(CONFIG_SRC) as f:
+        tiny = json.load(f)
+    assert {"data", "train"} <= set(tiny), f"unexpected config layout: {list(tiny)}"
+    # epochs=2 so the resume below genuinely continues the schedule instead of
+    # resuming into a run that has already finished.
+    tiny["data"] = dict(tiny["data"], max_samples=100)
+    tiny["train"] = dict(tiny["train"], epochs=2)
+    TINY_CONFIG = "/kaggle/working/preflight_config.json"
+    with open(TINY_CONFIG, "w") as f:
+        json.dump(tiny, f, indent=2)
+
+    # The same experiment ID the trainer derives, so the assertions below read
+    # exactly the files it writes.  Preflight artifacts never touch the real
+    # checkpoint directory.
+    preflight_dir = os.path.join(PREFLIGHT_ROOT, generate_experiment_id(experiment))
+    checkpoint = os.path.join(preflight_dir, "latest.pth")
+    common = ["torchrun", "--nproc_per_node=2", "-m", "src.train_ddp",
+              "--config", TINY_CONFIG, "--preflight",
+              # Without an explicit cap, --preflight defaults to 5 optimizer steps.
+              # That would end the epoch early and skip exactly the epoch-boundary
+              # paths (validation, diagnostics, checkpoint) this run exists to test.
+              "--max_optimizer_steps", "100000"]
+
+    print("\n" + "=" * 70)
+    print("PREFLIGHT 1/2  100 images: train -> validate -> diagnostics -> checkpoint")
+    print("=" * 70)
+    subprocess.run(common + ["--max_epochs", "1"], cwd=PROJECT_ROOT, check=True)
+    assert os.path.exists(checkpoint), f"epoch finished but wrote no checkpoint: {checkpoint}"
+    written_at = os.path.getmtime(checkpoint)
+
+    print("\n" + "=" * 70)
+    print("PREFLIGHT 2/2  resume from the checkpoint that run wrote")
+    print("=" * 70)
+    subprocess.run(common + ["--resume", "latest", "--max_epochs", "2"],
+                   cwd=PROJECT_ROOT, check=True)
+    # A resume that silently does nothing also exits 0, so require new work.
+    assert os.path.getmtime(checkpoint) > written_at, (
+        "resume exited cleanly but never rewrote the checkpoint -- it did no work"
+    )
+
+    print("\n\u2713 preflight passed -- the next cell starts the real run")
+""")
+    add_markdown(
+        r"""## 12_train
 """)
     add_code(
         r"""if RUN_MODE == "TRAIN":
@@ -519,7 +620,7 @@ else:
     ], cwd=PROJECT_ROOT, check=True)
 """)
     add_markdown(
-        r"""## 12_resume
+        r"""## 13_resume
 """)
     add_code(
         r"""if RUN_MODE == "RESUME":
@@ -570,7 +671,7 @@ else:
 
 """)
     add_markdown(
-        r"""## 13_evaluate
+        r"""## 14_evaluate
 """)
     add_code(
         r"""import os, sys, subprocess
@@ -629,7 +730,7 @@ if RUN_MODE == "EVALUATE":
         print(f)
 """)
     add_markdown(
-        r"""## 14_load_model_for_analysis
+        r"""## 15_load_model_for_analysis
 """)
     add_code(
         r"""import os, json, torch
@@ -698,7 +799,7 @@ if RUN_MODE == "EVALUATE":
         os.makedirs(os.path.join(RESULTS_ROOT, sub), exist_ok=True)
 """)
     add_markdown(
-        r"""## 15_proxy_ablations
+        r"""## 16_proxy_ablations
 """)
     add_code(
         r"""if RUN_MODE == "EVALUATE":
@@ -747,7 +848,7 @@ if RUN_MODE == "EVALUATE":
     save_json(json_out, output)
 """)
     add_markdown(
-        r"""## 16_routing_entropy
+        r"""## 17_routing_entropy
 """)
     add_code(
         r"""if RUN_MODE == "EVALUATE":
@@ -773,7 +874,7 @@ if RUN_MODE == "EVALUATE":
     save_json(os.path.join(RESULTS_ROOT, 'routing_entropy', 'entropy_comparison.json'), entropy_comparison)
 """)
     add_markdown(
-        r"""## 17_qualitative_figure
+        r"""## 18_qualitative_figure
 """)
     add_code(
         r"""if RUN_MODE == "EVALUATE":
@@ -833,7 +934,7 @@ if RUN_MODE == "EVALUATE":
                           os.path.join(RESULTS_ROOT, 'qualitative', 'qualitative_grid.png'))
 """)
     add_markdown(
-        r"""## 18_diagnostics
+        r"""## 19_diagnostics
 """)
     add_code(
         r"""if RUN_MODE == "EVALUATE":
@@ -861,7 +962,7 @@ if RUN_MODE == "EVALUATE":
 
 """)
     add_markdown(
-        r"""## 19_compute_cost (optional, needs `pip install thop`)
+        r"""## 20_compute_cost (optional, needs `pip install thop`)
 """)
     add_code(
         r"""# !pip install thop --quiet
@@ -888,10 +989,10 @@ if RUN_MODE == "EVALUATE":
 # save_json(os.path.join(RESULTS_ROOT, 'compute_cost', 'compute_cost.json'), compute_cost)
 """)
     add_markdown(
-        r"""## 20_forced_expert_check (optional)
+        r"""## 21_forced_expert_check (optional)
 """)
     add_code(
-        r"""# # Targets stride/8 (scale=8), the stage with confirmed DEAD_EXPERT [0, 5], as opposed to 23b's stride/4 (scale=4) check.
+        r"""# # Targets stride/8 (scale=8), the stage with confirmed DEAD_EXPERT [0, 5], as opposed to the scale=4 check in "## 16_proxy_ablations".
 # print("\nForced Expert Sanity Check (Scale 8, Expert 0):")
 # forced_results = evaluate(
 #     model,
@@ -903,7 +1004,7 @@ if RUN_MODE == "EVALUATE":
 # save_json(os.path.join(RESULTS_ROOT, 'proxy_ablations', 'force_expert_scale8_result.json'), forced_results)
 """)
     add_markdown(
-        r"""## 21_upload_results""")
+        r"""## 22_upload_results""")
     add_code(
         r"""RESULTS_ROOT = '/kaggle/working/analysis_results'
 if RUN_MODE == "EVALUATE":
@@ -922,7 +1023,7 @@ if RUN_MODE == "EVALUATE":
         ExperimentConfig.load(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH))
     )
     print(f"\n[3/3] Uploading results for {RUN_LABEL} to Hugging Face...")
-    # Copy the 22_evaluate outputs into RESULTS_ROOT so everything is in one tree
+    # Copy the "## 14_evaluate" outputs into RESULTS_ROOT so everything is in one tree
     eval_dir = "/kaggle/working/WXSOD_EvalResults"
     if os.path.exists(eval_dir):
         for ext in ["*.txt", "*.json"]:
@@ -955,7 +1056,7 @@ if RUN_MODE == "EVALUATE":
         print(f"Failed to upload to Hugging Face: {e}")
 """)
     add_markdown(
-        r"""## 22_optional_pre_run_gates
+        r"""## 23_optional_pre_run_gates
 
 The notebook used to carry these as commented-out cells; they duplicate
 `src.smoke_test`, so they are kept here as commands instead.  Run whichever you
