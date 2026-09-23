@@ -87,6 +87,9 @@ class LossConfig:
     load_balance_weight: float = 0.01
     importance_weight: float = 0.01
     z_loss_weight: float = 0.0
+    # Weight on the mean normalised routing entropy (minimising it makes routing
+    # more confident).  0.0 disables the term, i.e. the historical behaviour.
+    entropy_confidence_weight: float = 0.0
     aux_boundary_weight: float = 0.0
     deep_supervision_weight: float = 0.4
     # Per-stage load-balance weights: [w_stride4, w_stride8, w_stride16].

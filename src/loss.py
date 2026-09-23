@@ -17,7 +17,7 @@ The module provides:
   :class:`CombinedLoss` and keeps the old keyword-constructor + dict return
   behaviour bit-for-bit.
 """
-from math import exp
+from math import exp, log
 from typing import Dict, List, Optional, Tuple
 
 import torch
@@ -417,6 +417,20 @@ class CombinedLoss(nn.Module):
             _zero_like = torch.zeros((), device=saliency_logits.device)
             lb_per_stage, l_imp, l_z = [], _zero_like, _zero_like
 
+        # 3b. Routing confidence.  Always measured, so the logged value is the
+        #     actual normalised routing entropy (1.0 = uniform router); only
+        #     weighted into the total when the weight is non-zero.  Minimising it
+        #     pushes the router off the uniform fixed point, letting whatever weak
+        #     task-driven preference exists be expressed instead of averaged away.
+        l_routing_conf = torch.zeros((), device=saliency_logits.device)
+        if moe_for_routing:
+            conf_terms = []
+            for _out in moe_for_routing:
+                _n_experts = _out.clean_logits.shape[1]
+                _denom = log(_n_experts) if _n_experts > 1 else 1.0
+                conf_terms.append((_out.entropy / _denom).mean())
+            l_routing_conf = torch.stack(conf_terms).mean()
+
         # Combine per-stage load-balance values.
         # Per-stage weights path: each stage gets its own scalar weight so a
         # collapsed stage (e.g. stride/8) can be penalised independently without
@@ -467,6 +481,7 @@ class CombinedLoss(nn.Module):
             + cfg.z_loss_weight * l_z
             + cfg.aux_boundary_weight * l_aux_boundary
             + cfg.deep_supervision_weight * l_deep_supervision
+            + cfg.entropy_confidence_weight * l_routing_conf
         )
 
         # l_lb for backward-compat logging (uniform average of per-stage values)
@@ -485,6 +500,7 @@ class CombinedLoss(nn.Module):
             "L_lb_moe_16": lb_stage_values[2],
             "L_importance": l_imp,
             "L_z": l_z,
+            "L_routing_conf": l_routing_conf,
             "L_aux_boundary": l_aux_boundary,
             "L_deep_supervision": l_deep_supervision,
         }

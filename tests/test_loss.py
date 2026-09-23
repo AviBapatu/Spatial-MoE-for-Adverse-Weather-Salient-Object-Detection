@@ -24,6 +24,7 @@ SHARED_CONTRACT_KEYS = [
     "L_lb_moe_16",
     "L_importance",
     "L_z",
+    "L_routing_conf",
     "L_aux_boundary",
     "L_deep_supervision",
 ]
