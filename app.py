@@ -29,11 +29,15 @@ async def lifespan(app: FastAPI):
         model_cfg = checkpoint.get('config', {}).get('model', {})
         use_deep_supervision = model_cfg.get('deep_supervision', True)
         num_experts = model_cfg.get('num_experts', 6)
+        top_k = model_cfg.get('top_k', 2)
         window_size = model_cfg.get('window_size', 8)
         
         model = SpatialMoESODNet(
             num_experts=num_experts,
+            k=top_k,
+            gate_mode=model_cfg.get('gate_mode', 'renormalized'),
             window_size=window_size,
+            moe_type=model_cfg.get('moe_type', 'sparse'),
             use_deep_supervision=use_deep_supervision
         ).to(device)
         

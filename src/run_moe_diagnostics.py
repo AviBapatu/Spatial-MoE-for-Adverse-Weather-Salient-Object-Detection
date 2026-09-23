@@ -241,16 +241,25 @@ def main() -> None:
     model = SpatialMoESODNet(
         use_deep_supervision=use_deep_supervision,
         num_experts=num_experts,
+        k=top_k,
+        gate_mode=model_cfg.get("gate_mode", "renormalized"),
         window_size=window_size,
+        moe_16_mode=model_cfg.get("moe_16_mode", "sparse"),
+        moe_type=model_cfg.get("moe_type", "sparse"),
         router_noise_enabled=router_noise_enabled,
         router_noise_scale=router_noise_scale,
         router_noise_min_std=router_noise_min_std,
     ).to(device)
 
-    assert num_experts == model.moe_4.num_experts, (
-        f"Mismatch: config num_experts={num_experts}, "
-        f"model.moe_4.num_experts={model.moe_4.num_experts}"
-    )
+    # Router-less arms (moe_type dense/none) have no per-expert contract to check.
+    if not getattr(model.moe_4, "is_dense", False):
+        assert num_experts == model.moe_4.num_experts, (
+            f"Mismatch: config num_experts={num_experts}, "
+            f"model.moe_4.num_experts={model.moe_4.num_experts}"
+        )
+        assert top_k == model.moe_4.k, (
+            f"Mismatch: config top_k={top_k}, model.moe_4.k={model.moe_4.k}"
+        )
 
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()

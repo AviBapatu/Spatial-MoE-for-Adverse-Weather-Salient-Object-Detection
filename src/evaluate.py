@@ -248,6 +248,13 @@ def main() -> None:
     log.info("num_experts from checkpoint config: %s", num_experts)
     assert "num_experts" in model_cfg, "checkpoint config missing num_experts — verify before trusting results"
     window_size = model_cfg.get("window_size", 8)  # Default to 8 if missing
+    moe_16_mode = model_cfg.get("moe_16_mode", "sparse")
+    log.info("moe_16_mode from checkpoint config: %s", moe_16_mode)
+    moe_type = model_cfg.get("moe_type", "sparse")
+    top_k = model_cfg.get("top_k", 2)  # Default to 2 if missing (matches model default)
+    log.info("top_k from checkpoint config: %s", top_k)
+    gate_mode = model_cfg.get("gate_mode", "renormalized")
+    log.info("gate_mode from checkpoint config: %s", gate_mode)
     router_noise_enabled = model_cfg.get("router_noise_enabled", True)
     router_noise_scale = model_cfg.get("router_noise_scale", 1.0)
     router_noise_min_std = model_cfg.get("router_noise_min_std", 0.05)
@@ -255,7 +262,11 @@ def main() -> None:
     model = SpatialMoESODNet(
         use_deep_supervision=use_deep_supervision,
         num_experts=num_experts,
+        k=top_k,
+        gate_mode=gate_mode,
         window_size=window_size,
+        moe_16_mode=moe_16_mode,
+        moe_type=moe_type,
         router_noise_enabled=router_noise_enabled,
         router_noise_scale=router_noise_scale,
         router_noise_min_std=router_noise_min_std,

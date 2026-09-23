@@ -129,11 +129,14 @@ def build_model(config: ExperimentConfig, device: torch.device) -> Any:
     model = SpatialMoESODNet(
         use_deep_supervision=config.model.deep_supervision,
         num_experts=config.model.num_experts,
+        k=config.model.top_k,
         window_size=config.model.window_size,
         router_noise_enabled=config.model.router_noise_enabled,
         router_noise_scale=config.model.router_noise_scale,
         router_noise_min_std=config.model.router_noise_min_std,
         moe_16_mode=config.model.moe_16_mode,
+        gate_mode=config.model.gate_mode,
+        moe_type=config.model.moe_type,
     ).to(device)
 
     local_hash = _parameter_fingerprint(model)
