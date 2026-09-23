@@ -21,7 +21,11 @@ from torch.optim import AdamW
 from src import hf_sync
 from src.config import ExperimentConfig, LossConfig
 from src.dataset import get_dataloaders
-from src.experiment import setup_experiment_run, update_registry_status
+from src.experiment import (
+    generate_experiment_id,
+    setup_experiment_run,
+    update_registry_status,
+)
 from src.log import get_logger
 from src.loss import CombinedLoss
 from src.model import SpatialMoESODNet, assert_model_matches_config
@@ -243,6 +247,12 @@ def resolve_workspace(
     from src.train_ddp import get_config_hash
 
     run_dir = ""
+    # experiment_id is a pure function of the config, so every rank derives the same
+    # value here.  setup_experiment_run assigns it too, but only on rank 0, and rank 1
+    # used to keep the empty string -- which made its base_dir the checkpoint root
+    # itself.  That is why "Production checkpoints exist" fired on rank 1 while rank 0
+    # trained on, and why a resume failed on rank 1 alone.
+    config.experiment_id = generate_experiment_id(config)
     experiment_id = config.experiment_id
     run_id = config.run_id
     if is_rank_zero():
