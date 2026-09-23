@@ -55,7 +55,7 @@ def run_tests_on_engine(device, local_rank, rank, world_size, data_root, result_
         model = SpatialMoESODNet(dim=256, use_deep_supervision=True, router_noise_min_std=0.05).to(device)
 
         if is_ddp:
-            model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True)
+            model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=False)
             core_model = model.module
         else:
             core_model = model
@@ -221,7 +221,7 @@ def run_tests_on_engine(device, local_rank, rank, world_size, data_root, result_
 def run_memory_calibration(device, result_file):
     try:
         model = SpatialMoESODNet(dim=256, use_deep_supervision=True, router_noise_min_std=0.05).to(device)
-        model = nn.parallel.DistributedDataParallel(model, device_ids=[device.index], output_device=device.index, find_unused_parameters=True)
+        model = nn.parallel.DistributedDataParallel(model, device_ids=[device.index], output_device=device.index, find_unused_parameters=False)
         opt = AdamW(get_parameter_groups(model.module))
         eng = OptimizationEngine(model, opt, None, amp_enabled=True, amp_dtype=torch.float16)
         criterion = CombinedLoss(LossConfig(deep_supervision_weight=0.4))
@@ -267,7 +267,7 @@ def run_resume_a(device, local_rank, rank, world_size, data_root, result_file):
         train_loader, _, _, _ = get_dataloaders(root_dir=data_root, batch_size=1, image_size=384, num_workers=0, max_samples=16, distributed=True, rank=rank, world_size=world_size)
         torch.manual_seed(1337)
         model = SpatialMoESODNet(dim=256, use_deep_supervision=True, router_noise_min_std=0.05).to(device)
-        model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True)
+        model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=False)
         opt = AdamW(get_parameter_groups(model.module))
         sch = WarmupCosineScheduler(opt, warmup_steps=1, total_steps=4)
         eng = OptimizationEngine(model, opt, sch, amp_enabled=True, amp_dtype=torch.float16)
@@ -342,7 +342,7 @@ def run_resume_b(device, local_rank, rank, world_size, data_root, result_file):
     try:
         train_loader, _, _, _ = get_dataloaders(root_dir=data_root, batch_size=1, image_size=384, num_workers=0, max_samples=16, distributed=True, rank=rank, world_size=world_size)
         model = SpatialMoESODNet(dim=256, use_deep_supervision=True, router_noise_min_std=0.05).to(device)
-        model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True)
+        model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=False)
         opt = AdamW(get_parameter_groups(model.module))
         sch = WarmupCosineScheduler(opt, warmup_steps=1, total_steps=4)
         eng = OptimizationEngine(model, opt, sch, amp_enabled=True, amp_dtype=torch.float16)

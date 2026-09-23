@@ -159,6 +159,13 @@ def build_model(config: ExperimentConfig, device: torch.device) -> Any:
 
     model = nn.parallel.DistributedDataParallel(
         model, device_ids=[get_local_rank()], output_device=get_local_rank(),
+        # True, not False: which modules participate in the forward depends on the
+        # config.  Disabling router noise leaves RouterNoise.noise_linear unused
+        # (add_noise is never called), and any conditionally-built module does the
+        # same — so "every expert is always called" is not enough to guarantee an
+        # unused-parameter-free graph.  With False, DDP aborts with "Expected to
+        # have finished reduction in the prior iteration".  Costs one autograd
+        # traversal per step; correctness is worth more than that.
         find_unused_parameters=True,
     )
     return model
