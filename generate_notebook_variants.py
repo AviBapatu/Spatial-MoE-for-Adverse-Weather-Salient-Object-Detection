@@ -14,6 +14,11 @@ from generate_notebook_accountA import create_notebook
 VARIANTS = [
     ("moe-of-sod__v_e8_repro_best_seed43.ipynb", "experiments/v_e8_repro_best_seed43.json", "TRAIN"),
     ("moe-of-sod__v_e8_repro_best_seed44.ipynb", "experiments/v_e8_repro_best_seed44.json", "TRAIN"),
+    # The flagship: the same recipe and seed as REPRO, trained for 14 epochs instead of 8.
+    # The benchmark's "best" model was a 14-epoch run, and on the real split the budget is
+    # the difference between mid-table and second place.  Nothing else changes, so the pair
+    # is a clean single-variable comparison of training budget.
+    ("moe-of-sod__v_e8_repro_best_14ep.ipynb", "experiments/v_e8_repro_best_14ep.json", "TRAIN"),
     ("moe-of-sod__v_e4_repro_renorm.ipynb", "experiments/v_e4_repro_renorm.json", "TRAIN"),
     ("moe-of-sod__v_e4_repro_densectrl.ipynb", "experiments/v_e4_repro_densectrl.json", "TRAIN"),
     ("moe-of-sod__v_e4_repro_nonectrl.ipynb", "experiments/v_e4_repro_nonectrl.json", "TRAIN"),
