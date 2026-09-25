@@ -694,7 +694,7 @@ from src.config import ExperimentConfig
 from src.experiment import generate_experiment_id
 from src.hf_sync import pull_checkpoint
 
-if RUN_MODE == "EVALUATE":
+if RUN_MODE in ("EVALUATE", "TRAIN"):
     print("Evaluating Best Checkpoint...")
 
     # These two paths are shared by every config within a session, so a second
@@ -798,7 +798,7 @@ def save_json(path, data):
     print(f"Saved {path}")
 
 
-if RUN_MODE == "EVALUATE":
+if RUN_MODE in ("EVALUATE", "TRAIN"):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     experiment_id = generate_experiment_id(
         ExperimentConfig.load(os.path.join(PROJECT_ROOT, ACTIVE_CONFIG_PATH))
@@ -824,7 +824,7 @@ if RUN_MODE == "EVALUATE":
         r"""## 16_proxy_ablations
 """)
     add_code(
-        r"""if RUN_MODE == "EVALUATE":
+        r"""if RUN_MODE in ("EVALUATE", "TRAIN"):
     from datetime import datetime, timezone
     from src.evaluate import evaluate
 
@@ -873,7 +873,7 @@ if RUN_MODE == "EVALUATE":
         r"""## 17_routing_entropy
 """)
     add_code(
-        r"""if RUN_MODE == "EVALUATE":
+        r"""if RUN_MODE in ("EVALUATE", "TRAIN"):
     from collections import defaultdict
 
     def collect_entropy_stats(model, dataloader, device, max_batches=None):
@@ -899,7 +899,7 @@ if RUN_MODE == "EVALUATE":
         r"""## 18_qualitative_figure
 """)
     add_code(
-        r"""if RUN_MODE == "EVALUATE":
+        r"""if RUN_MODE in ("EVALUATE", "TRAIN"):
     import matplotlib.pyplot as plt
     import cv2
     import numpy as np
@@ -959,7 +959,7 @@ if RUN_MODE == "EVALUATE":
         r"""## 19_diagnostics
 """)
     add_code(
-        r"""if RUN_MODE == "EVALUATE":
+        r"""if RUN_MODE in ("EVALUATE", "TRAIN"):
     import subprocess
     import shutil
     import glob
@@ -1029,7 +1029,7 @@ if RUN_MODE == "EVALUATE":
         r"""## 22_upload_results""")
     add_code(
         r"""RESULTS_ROOT = '/kaggle/working/analysis_results'
-if RUN_MODE == "EVALUATE":
+if RUN_MODE in ("EVALUATE", "TRAIN"):
     import glob
     import shutil
     from huggingface_hub import login, HfApi, create_repo
