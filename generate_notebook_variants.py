@@ -22,6 +22,11 @@ VARIANTS = [
     # Multi-scale-routing ablation: routed experts at 1/4 only, pass-through at 1/8
     # and 1/16.  Without it the three-scale routing claim has no arm behind it.
     ("moe-of-sod__v_e8_repro_scale1.ipynb", "experiments/v_e8_repro_scale1.json", "TRAIN"),
+    # Clean S32 arms for the two axes that existed only in the S40 generation, whose
+    # arms differ in batch size, loss weights AND router noise, so they cannot isolate
+    # expert count or top-k. Cloned from the S32 baseline so only the axis changes.
+    ("moe-of-sod__v_e2_k2_s32.ipynb", "experiments/v_e2_k2_s32.json", "TRAIN"),
+    ("moe-of-sod__v_e4_k1_s32.ipynb", "experiments/v_e4_k1_s32.json", "TRAIN"),
     ("moe-of-sod__v_e4_repro_renorm.ipynb", "experiments/v_e4_repro_renorm.json", "TRAIN"),
     ("moe-of-sod__v_e4_repro_densectrl.ipynb", "experiments/v_e4_repro_densectrl.json", "TRAIN"),
     ("moe-of-sod__v_e4_repro_nonectrl.ipynb", "experiments/v_e4_repro_nonectrl.json", "TRAIN"),
