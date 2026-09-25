@@ -16,7 +16,8 @@ OUTPUT_NOTEBOOK = "moe-of-sod__accountA__v_e8_repro_best.ipynb"
 
 
 def create_notebook(output_notebook: str = OUTPUT_NOTEBOOK,
-                    config_path: str = DEFAULT_CONFIG_PATH) -> None:
+                    config_path: str = DEFAULT_CONFIG_PATH,
+                    run_mode: str = "TRAIN") -> None:
     """Build the notebook cell list and write it to ``OUTPUT_NOTEBOOK``."""
     cells = []
 
@@ -1116,6 +1117,20 @@ python -m src.hf_sync push-checkpoint <file> --name <remote-name>
                 DEFAULT_CONFIG_PATH, config_path).splitlines(keepends=True)
             _swapped += 1
     assert _swapped == 1, f"config path appears in {_swapped} cells, expected 1"
+
+    # An evaluation-only notebook differs from a training notebook in exactly one more
+    # line: the run mode.  Swap it here rather than keeping a second copy of every cell.
+    if run_mode != "TRAIN":
+        _mode_swapped = 0
+        for _cell in cells:
+            _joined = "".join(_cell["source"])
+            if 'RUN_MODE = "TRAIN"' in _joined:
+                _cell["source"] = _joined.replace(
+                    'RUN_MODE = "TRAIN"', f'RUN_MODE = "{run_mode}"'
+                ).splitlines(keepends=True)
+                _mode_swapped += 1
+        assert _mode_swapped == 1, (
+            f"run mode line appears in {_mode_swapped} cells, expected 1")
 
     notebook = {
         "cells": cells,
