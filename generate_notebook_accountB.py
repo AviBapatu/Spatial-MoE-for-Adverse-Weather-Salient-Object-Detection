@@ -723,29 +723,25 @@ if RUN_MODE in ("EVALUATE", "TRAIN"):
     os.makedirs(eval_out_dir, exist_ok=True)
     print(f"Checkpoint: {best_ckpt}")
 
-    process = subprocess.Popen(
-        [
-            "python", "-u", "-m", "src.evaluate",
-            "--checkpoint", best_ckpt,
-            "--dataset", "both",
-            "--data_dir", data_dir,
-            "--out_dir", eval_out_dir,
-            "--tta", EVAL_TTA,
-        ],
-        cwd=PROJECT_ROOT,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
-    )
+    # One process per test split, one GPU each.  src/evaluate is single-process and each
+    # split writes its own complete metrics, so this is the whole speed-up available
+    # without touching the evaluation path the paper depends on.
+    common = ["python", "-u", "-m", "src.evaluate",
+              "--checkpoint", best_ckpt,
+              "--data_dir", data_dir,
+              "--out_dir", eval_out_dir,
+              "--tta", EVAL_TTA]
+    splits = [("test_sys", 0), ("test_real", 1)]
+    procs = []
+    for split, gpu in splits:
+        print(f"  [gpu{gpu}] evaluating {split} ...")
+        env = dict(os.environ, CUDA_VISIBLE_DEVICES=str(gpu))
+        procs.append(subprocess.Popen(common + ["--dataset", split],
+                                      cwd=PROJECT_ROOT, env=env))
 
-    # Line-based, not byte-based: one write per line instead of per character.
-    for line in process.stdout:
-        sys.stdout.write(line)
-
-    retcode = process.wait()
-    if retcode != 0:
-        raise subprocess.CalledProcessError(retcode, process.args)
+    codes = [p.wait() for p in procs]
+    if any(c != 0 for c in codes):
+        raise subprocess.CalledProcessError(codes[0], common)
 
     print("\n--- Files in eval_out_dir ---")
     for f in os.listdir(eval_out_dir):
