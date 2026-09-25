@@ -26,6 +26,7 @@ GENERATORS = [
         "moe-of-sod__v_e8_repro_best_seed44.ipynb",
         "moe-of-sod__v_e4_repro_renorm.ipynb",
     ]),
+    ("generate_notebook_legacy_eval.py", ["moe-of-sod__legacy_eval.ipynb"]),
 ]
 
 
