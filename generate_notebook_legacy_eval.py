@@ -2,11 +2,14 @@
 
 Regenerates ``moe-of-sod__legacy_eval.ipynb`` and is the editable source of truth for it.
 
-This notebook does one job the run notebooks cannot: it evaluates a checkpoint that is not
-tied to an experiment ID — the legacy 8-expert model behind the 0.0168 result. The run
-notebooks resolve their checkpoint from the active config's experiment ID, so a legacy file
-has to be supplied out of band. It arrives from Google Drive by file ID, using the same
-gdown pattern the dataset cell uses.
+One job the run notebooks cannot do: evaluate a checkpoint that is not tied to an experiment
+ID, specifically the legacy 8-expert model behind the 0.0168 result. The run notebooks resolve
+their checkpoint from the active config's experiment ID, so a legacy file has to arrive out of
+band - from Google Drive by file ID, using the same gdown pattern the dataset cell uses.
+
+Like the run notebooks it uses both T4s and uploads its results to the Hub. ``src.evaluate`` is
+single-process (there is no data-parallel evaluation), so the two GPUs are used by evaluating
+the two test splits concurrently, one per card.
 
 Usage:
     python generate_notebook_legacy_eval.py
@@ -15,6 +18,7 @@ import json
 
 OUTPUT_NOTEBOOK = "moe-of-sod__legacy_eval.ipynb"
 
+LEGACY_DRIVE_ID = "1GblynkVLciAy2OATB00naeEEgWnDOH9P"
 DATA_FILE_ID = "1SSELvRYI-cwd9mzA8dWLbv4o1IffjkoW"
 
 
@@ -32,19 +36,21 @@ def create_notebook() -> None:
         cells.append({"cell_type": "code", "execution_count": None, "metadata": {},
                       "outputs": [], "source": text.splitlines(keepends=True)})
 
-    add_markdown(r"""# Legacy checkpoint evaluation
+    add_markdown(f"""# Legacy checkpoint evaluation
 
-Evaluates the legacy 8-expert checkpoint — the model behind the 0.0168 / 0.9151 result — with
-the **current** evaluation code. This is a diagnostic, not a result:
+Evaluates the legacy 8-expert checkpoint - the model behind the 0.0168 / 0.9151 result - with the
+**current** evaluation code. This is a diagnostic, not a result:
 
-- reads **~0.0168** → the current pipeline reproduces the old number, so the gap to the new
+- reads **~0.0168** -> the current pipeline reproduces the old number, so the gap to the new
   runs' ~0.0195 is a training-side difference;
-- reads **~0.019** → the evaluation protocol changed, and the current numbers are the
+- reads **~0.019** -> the evaluation protocol changed, and the current numbers are the
   consistent ones.
 
-**Before running:** the checkpoint's Google Drive file ID is already set in the next cell
-(`1GblynkVLciAy2OATB00naeEEgWnDOH9P`). Edit it there if a different file is uploaded. The Drive file must be shared as
-"anyone with the link", or gdown cannot fetch it.
+The checkpoint's Google Drive file ID is already set (`{LEGACY_DRIVE_ID}`). The file must be
+shared as "anyone with the link", or gdown cannot fetch it.
+
+Unlike the run notebooks there is no experiment ID to key on, so results are uploaded under
+`analysis_results/legacy_8expert_best/`.
 """)
 
     add_code(r'''import os
@@ -54,15 +60,15 @@ import shutil
 import subprocess
 import sys
 
-# ------------------------------------------------------------------------------
-# Paste the Google Drive file ID of the legacy checkpoint here.
-# For a link like  https://drive.google.com/file/d/1AbC...XyZ/view?usp=sharing
-# the ID is the part between /d/ and /view  ->  1AbC...XyZ
-# ------------------------------------------------------------------------------
+# The legacy checkpoint is not tied to an experiment ID, so it arrives from Drive.
+# For a link like  https://drive.google.com/file/d/<ID>/view?usp=sharing  this is <ID>.
 LEGACY_DRIVE_ID = "1GblynkVLciAy2OATB00naeEEgWnDOH9P"
 
-# Evaluate under both test-time settings so the comparison is unambiguous.
-LEGACY_TTA = ["none", "hflip"]
+# Uploaded under this label: there is no config-derived experiment ID for a legacy file.
+LEGACY_LABEL = "legacy_8expert_best"
+
+# Both TTA settings, evaluated concurrently across the two GPUs.
+TTA_MODES = ["none", "hflip"]
 
 from kaggle_secrets import UserSecretsClient
 HF_TOKEN = UserSecretsClient().get_secret("HF_TOKEN")
@@ -73,23 +79,40 @@ os.environ["HF_REPO_ID"] = HF_REPO_ID
 PROJECT_ROOT = "/kaggle/working/spatial_moe_sod"
 CHECKPOINT_ROOT = "/kaggle/working/WXSOD_Checkpoints"
 LEGACY_PATH = os.path.join(CHECKPOINT_ROOT, "legacy_best.pth")
-LEGACY_OUT = "/kaggle/working/WXSOD_LegacyEval"
+LEGACY_OUT = os.path.join("/kaggle/working/legacy_eval", LEGACY_LABEL)
 DATA_FILE_ID = "1SSELvRYI-cwd9mzA8dWLbv4o1IffjkoW"
 EXTRACT_PATH = "/kaggle/working/WXSDO_data"
 
+NUM_GPUS = 2
 os.environ["CHECKPOINT_ROOT"] = CHECKPOINT_ROOT
 os.makedirs(CHECKPOINT_ROOT, exist_ok=True)
 
 assert LEGACY_DRIVE_ID != "PASTE_THE_GOOGLE_DRIVE_FILE_ID_HERE", (
     "Paste the Google Drive file ID of the legacy checkpoint into LEGACY_DRIVE_ID."
 )
+
 print("Configuration")
 print("  legacy checkpoint ->", LEGACY_PATH)
-print("  evaluation output ->", LEGACY_OUT)
-print("  TTA settings      ->", LEGACY_TTA)
+print("  upload label      ->", LEGACY_LABEL)
+print("  output root       ->", LEGACY_OUT)
+print("  TTA settings      ->", TTA_MODES)
 ''')
 
-    add_markdown(r"""## 02_dataset_acquire
+    add_markdown(r"""## 02_environment
+
+Two GPUs are required: the two test splits are evaluated concurrently, one per card.
+""")
+
+    add_code(r'''import torch
+
+num_gpus = torch.cuda.device_count()
+print("GPU count:", num_gpus)
+for i in range(num_gpus):
+    print(f"  GPU {i}: {torch.cuda.get_device_name(i)}")
+assert num_gpus >= NUM_GPUS, f"Expected {NUM_GPUS} GPUs, found {num_gpus}"
+''')
+
+    add_markdown(r"""## 03_dataset_acquire
 
 Same acquisition path as the run notebooks: a Google Drive archive extracted locally, then the
 real WXSOD root resolved by structure rather than by a hard-coded path.
@@ -124,10 +147,10 @@ assert valid_root is not None, "Dataset extraction completed but no valid WXSOD 
 print("Dataset root:", valid_root)
 ''')
 
-    add_markdown(r"""## 03_project_deploy
+    add_markdown(r"""## 04_project_deploy
 
-The code comes from the Hub as a verified archive — the same route the run notebooks use, so
-this evaluation runs the current implementation rather than whatever is already on the box.
+The code comes from the Hub as a verified archive - the same route the run notebooks use, so
+this evaluates the current implementation rather than whatever is already on the box.
 """)
 
     add_code(r'''from huggingface_hub import hf_hub_download
@@ -166,7 +189,7 @@ sys.path.insert(0, PROJECT_ROOT)
 print("Project source deployed to:", PROJECT_ROOT)
 ''')
 
-    add_markdown(r"""## 04_dependencies
+    add_markdown(r"""## 05_dependencies
 
 `src/evaluate.py` needs torch, torchvision, timm, albumentations, OpenCV, numpy and
 `py_sod_metrics`. Missing ones are installed rather than assumed.
@@ -193,7 +216,7 @@ for pip_name, mod_name in deps.items():
 print("Dependencies resolved.")
 ''')
 
-    add_markdown(r"""## 05_legacy_checkpoint
+    add_markdown(r"""## 06_legacy_checkpoint
 
 The legacy checkpoint is not tied to an experiment ID, so the run notebooks cannot resolve it.
 It comes from Drive and is checked before use.
@@ -224,11 +247,11 @@ else:
     print("  sha256 matches the value recorded on the Hub.")
 ''')
 
-    add_markdown(r"""## 06_identity
+    add_markdown(r"""## 07_identity
 
 Prints the parameter-name fingerprint of the architecture this checkpoint creates. The 0.0168
 evaluation recorded `2cd252ad3a3581e1c65961b828857d70`, so a different value means the file is
-not provably that save — worth knowing when reading the metrics below.
+not provably that save - worth knowing when reading the metrics below.
 """)
 
     add_code(r'''import torch
@@ -257,34 +280,43 @@ probe = SpatialMoESODNet(
 )
 fingerprint = verify_parameter_consistency(probe)
 print(f"  parameter-name fingerprint: {fingerprint}")
-print(f"  recorded for the 0.0168 model: 2cd252ad3a3581e1c65961b828857d70")
+print("  recorded for the 0.0168 model: 2cd252ad3a3581e1c65961b828857d70")
 print(f"  identical: {fingerprint == '2cd252ad3a3581e1c65961b828857d70'}")
 del probe
 ''')
 
-    add_markdown(r"""## 07_evaluation
+    add_markdown(r"""## 08_evaluation
 
-Both test-time settings, scored in original image coordinates. `none` is what the legacy
-numbers were produced with; `hflip` is what the new runs use, so this run gives both sides of
-the comparison.
+Both test splits are evaluated concurrently, one per GPU, under each TTA setting. `none` is what
+the legacy numbers were produced with; `hflip` is what the new runs use, so this run gives both
+sides of the comparison.
 """)
 
-    add_code(r'''for tta in LEGACY_TTA:
-    out_dir = os.path.join(LEGACY_OUT, tta)
-    print("\n" + "=" * 70)
-    print(f"Evaluating the legacy checkpoint with --tta {tta}")
-    print("=" * 70)
-    subprocess.run([
+    add_code(r'''def run_eval(split: str, tta: str, gpu: int):
+    """Launch one evaluation on one GPU, as a separate process."""
+    env = dict(os.environ, CUDA_VISIBLE_DEVICES=str(gpu))
+    print(f"  [gpu{gpu}] split={split} tta={tta}")
+    return subprocess.Popen([
         "python", "-u", "-m", "src.evaluate",
         "--checkpoint", LEGACY_PATH,
-        "--dataset", "both",
+        "--dataset", split,
         "--data_dir", valid_root,
-        "--out_dir", out_dir,
+        "--out_dir", os.path.join(LEGACY_OUT, tta),
         "--tta", tta,
-    ], cwd=PROJECT_ROOT, check=True)
+    ], cwd=PROJECT_ROOT, env=env)
+
+
+for tta in TTA_MODES:
+    print("\n" + "=" * 70)
+    print(f"TTA={tta}: both splits, one per GPU")
+    print("=" * 70)
+    procs = [run_eval("test_real", tta, 0), run_eval("test_sys", tta, 1)]
+    codes = [p.wait() for p in procs]
+    assert all(c == 0 for c in codes), f"evaluation failed: exit codes {codes}"
+print("\nAll evaluations finished.")
 ''')
 
-    add_markdown(r"""## 08_results
+    add_markdown(r"""## 09_results
 
 Prints every metric produced, and restates the reference numbers so the diagnostic is readable
 from the output alone.
@@ -313,6 +345,34 @@ print("\nComparison values (hflip TTA, new runs, test_real):")
 print("  REPRO 0.0195 | REPRO_SEED43 0.0199 | REPRO_SEED44 0.0191 | REPRODENSE 0.0199")
 print("\nIf the plain-TTA row lands near 0.0168 the pipeline reproduces the legacy number;")
 print("if it lands near 0.019 the evaluation protocol has changed since that measurement.")
+''')
+
+    add_markdown(r"""## 10_upload_results
+
+Uploads the evaluation to `analysis_results/legacy_8expert_best/` on the Hub, the same way the
+run notebooks upload under their experiment ID.
+""")
+
+    add_code(r'''from huggingface_hub import login, HfApi, create_repo
+
+print(f"Uploading results for {LEGACY_LABEL} ...")
+login(token=HF_TOKEN)
+REPO_ID = os.environ.get("HF_REPO_ID", "Avi2006/spatial-moe-results")
+create_repo(REPO_ID, repo_type="dataset", exist_ok=True, private=True)
+
+api = HfApi()
+uploaded_url = api.upload_folder(
+    folder_path=LEGACY_OUT,
+    repo_id=REPO_ID,
+    repo_type="dataset",
+    path_in_repo=f"analysis_results/{LEGACY_LABEL}",
+)
+print("Upload successful")
+print("Destination:", uploaded_url)
+print("Files uploaded:")
+for root, _, files in os.walk(LEGACY_OUT):
+    for f in files:
+        print("  ", os.path.relpath(os.path.join(root, f), LEGACY_OUT))
 ''')
 
     notebook = {
