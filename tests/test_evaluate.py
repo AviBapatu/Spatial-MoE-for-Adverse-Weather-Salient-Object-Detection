@@ -172,3 +172,43 @@ def test_verify_parameter_consistency_detects_drift():
 
     h3 = verify_parameter_consistency(_StubSODModelWithExtraParam())
     assert h3 != h1, "different parameter names must yield a different hash"
+
+
+def test_legacy_router_noise_keys_are_restored() -> None:
+    """Checkpoints from before the RouterNoise refactor must load strictly.
+
+    The learned router noise moved from ``moe_4.noise_linear`` to
+    ``moe_4.router_noise.noise_linear``. Renaming restores the same weights under the
+    current layout; keys already in the current layout pass through untouched.
+    """
+    from src.evaluate import _restore_legacy_parameter_names
+
+    legacy = {
+        "moe_4.noise_linear.weight": 1,
+        "moe_4.noise_linear.bias": 2,
+        "moe_8.noise_linear.weight": 3,
+        "moe_16.noise_linear.bias": 4,
+        "backbone.x": 5,
+        "moe_4.router.weight": 6,
+    }
+    out = _restore_legacy_parameter_names(legacy)
+
+    assert out["moe_4.router_noise.noise_linear.weight"] == 1
+    assert out["moe_4.router_noise.noise_linear.bias"] == 2
+    assert out["moe_8.router_noise.noise_linear.weight"] == 3
+    assert out["moe_16.router_noise.noise_linear.bias"] == 4
+    assert out["backbone.x"] == 5
+    assert out["moe_4.router.weight"] == 6
+    assert len(out) == len(legacy)
+
+
+def test_current_layout_keys_are_not_renamed() -> None:
+    """The remap is a no-op for checkpoints written by the current code."""
+    from src.evaluate import _restore_legacy_parameter_names
+
+    current = {
+        "moe_4.router_noise.noise_linear.weight": 1,
+        "moe_8.router_noise.noise_linear.bias": 2,
+    }
+    assert _restore_legacy_parameter_names(current) == current
+

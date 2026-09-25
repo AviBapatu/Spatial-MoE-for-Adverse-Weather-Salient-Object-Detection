@@ -29,6 +29,36 @@ from src.model import SpatialMoESODNet
 log = get_logger(__name__)
 
 
+def _restore_legacy_parameter_names(state_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """Rename pre-refactor router-noise keys onto the current module layout.
+
+    The learned router noise used to be a direct attribute of ``SpatialMoELayer``
+    (``moe_4.noise_linear.weight``); it now lives inside a ``RouterNoise`` submodule
+    (``moe_4.router_noise.noise_linear.weight``). Same ``nn.Linear``, same shape, same
+    values -- only the nesting changed -- so checkpoints saved before that refactor
+    fail a strict ``load_state_dict``. Renaming restores the exact weights instead of
+    silently dropping them, which also keeps the strict load able to catch a genuine
+    mismatch. Keys that already use the current layout pass through untouched.
+
+    Parameters
+    ----------
+    state_dict:
+        Raw ``model_state_dict`` read from a checkpoint.
+
+    Returns
+    -------
+    Dict[str, Any]:
+        The same mapping with legacy keys renamed.
+    """
+    restored: Dict[str, Any] = {}
+    for key, value in state_dict.items():
+        parts = key.split(".")
+        if len(parts) == 3 and parts[1] == "noise_linear" and parts[0].startswith("moe_"):
+            key = f"{parts[0]}.router_noise.noise_linear.{parts[2]}"
+        restored[key] = value
+    return restored
+
+
 def verify_parameter_consistency(model: Any) -> str:
     """Return an MD5 over the sorted parameter names of ``model``.
 
@@ -273,7 +303,15 @@ def main() -> None:
     ).to(device)
 
     model_hash = verify_parameter_consistency(model)
-    model.load_state_dict(checkpoint["model_state_dict"])
+    state_dict = _restore_legacy_parameter_names(checkpoint["model_state_dict"])
+    # a rename keeps the key count constant, so count keys that actually changed
+    restored = sum(1 for k in checkpoint["model_state_dict"] if k not in state_dict)
+    if restored:
+        log.info(
+            "Restored %d legacy router-noise parameter names from before the RouterNoise "
+            "refactor (same weights, re-nested).", restored,
+        )
+    model.load_state_dict(state_dict)
 
     ckpt_name = os.path.splitext(os.path.basename(args.checkpoint))[0]
     eval_dir = os.path.join(args.out_dir, ckpt_name)
