@@ -27,6 +27,11 @@ VARIANTS = [
     # expert count or top-k. Cloned from the S32 baseline so only the axis changes.
     ("moe-of-sod__v_e2_k2_s32.ipynb", "experiments/v_e2_k2_s32.json", "TRAIN"),
     ("moe-of-sod__v_e4_k1_s32.ipynb", "experiments/v_e4_k1_s32.json", "TRAIN"),
+    # Load-balance ablation: the loss term that forces uniform expert usage is removed
+    # entirely.  If experts still do not specialise with no balancing pressure at all,
+    # the cause is the saliency objective, not the regulariser - which is the mechanistic
+    # question this project's routing diagnostics raise.
+    ("moe-of-sod__v_e4_repro_nolb.ipynb", "experiments/v_e4_repro_nolb.json", "TRAIN"),
     ("moe-of-sod__v_e4_repro_renorm.ipynb", "experiments/v_e4_repro_renorm.json", "TRAIN"),
     ("moe-of-sod__v_e4_repro_densectrl.ipynb", "experiments/v_e4_repro_densectrl.json", "TRAIN"),
     ("moe-of-sod__v_e4_repro_nonectrl.ipynb", "experiments/v_e4_repro_nonectrl.json", "TRAIN"),
