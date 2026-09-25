@@ -44,6 +44,7 @@ def assert_model_matches_config(model: nn.Module, config: Any) -> None:
         "sparse": SpatialMoELayer,
         "dense": DenseMoE16Adapter,
         "none": PassthroughMoELayer,
+        "sparse_fine": SpatialMoELayer,
     }.get(cfg.moe_type)
     if expected_cls is None:
         raise ValueError(f"Unknown moe_type in config: {cfg.moe_type!r}")
@@ -51,8 +52,12 @@ def assert_model_matches_config(model: nn.Module, config: Any) -> None:
     mismatches = []
     for name in ("moe_4", "moe_8", "moe_16"):
         layer = getattr(model, name, None)
-        want = (DenseMoE16Adapter if (name == "moe_16" and cfg.moe_16_mode == "dense")
-                else expected_cls)
+        if name == "moe_16" and cfg.moe_16_mode == "dense":
+            want = DenseMoE16Adapter
+        elif cfg.moe_type == "sparse_fine" and name != "moe_4":
+            want = PassthroughMoELayer
+        else:
+            want = expected_cls
         if type(layer) is not want:
             mismatches.append(
                 f"{name}: model={type(layer).__name__} config={want.__name__}")
@@ -114,8 +119,10 @@ class SpatialMoESODNet(nn.Module):
             router_noise_min_std: Lower clamp on the noise std.
             gate_mode: ``"renormalized"`` or ``"dense"`` — how the top-k gates are
                 formed (see ``SpatialMoELayer``).
-            moe_type: ``"sparse"`` (routed experts), ``"dense"`` (one shared expert
-                on every token) or ``"none"`` (no MoE).
+            moe_type: ``"sparse"`` (routed experts at all three scales), ``"dense"``
+                (one shared expert on every token), ``"none"`` (no MoE), or
+                ``"sparse_fine"`` (routed experts at the finest scale only; the
+                coarser two pass through).
             pretrained_backbone: Whether the PVTv2 backbone loads pretrained
                 ImageNet weights from the HF Hub. Leave ``True`` for real
                 training runs; set ``False`` only for offline/CI smoke tests
@@ -136,8 +143,15 @@ class SpatialMoESODNet(nn.Module):
         #                 routing beat just applying an expert to everything?".
         #      "none"   — no MoE at all (features pass through); a lighter control
         #                 that also removes the expert parameters.
-        def _moe_layer() -> nn.Module:
+        #      "sparse_fine" — routed experts at 1/4 only, pass-through at 1/8 and
+        #                 1/16: the multi-scale-routing ablation.  Answers "would
+        #                 one scale do?", which the three-scale novelty claim needs.
+        def _moe_layer(scale: str) -> nn.Module:
             if moe_type == "none":
+                return PassthroughMoELayer(dim=dim)
+            if moe_type == "sparse_fine" and scale != "moe_4":
+                # Multi-scale-routing ablation: keep the routed path at the finest
+                # scale only and pass the coarser two through untouched.
                 return PassthroughMoELayer(dim=dim)
             if moe_type == "dense":
                 return DenseMoE16Adapter(dim=dim)
@@ -151,10 +165,11 @@ class SpatialMoESODNet(nn.Module):
                 router_noise_min_std=router_noise_min_std,
             )
 
-        self.moe_4 = _moe_layer()
-        self.moe_8 = _moe_layer()
+        self.moe_4 = _moe_layer("moe_4")
+        self.moe_8 = _moe_layer("moe_8")
         # moe_16_mode="dense" keeps its own single-expert 16-scale arm.
-        self.moe_16 = DenseMoE16Adapter(dim=dim) if moe_16_mode == "dense" else _moe_layer()
+        self.moe_16 = (DenseMoE16Adapter(dim=dim) if moe_16_mode == "dense"
+                       else _moe_layer("moe_16"))
 
         # 3. Spatial MoE decoder for feature fusion and prediction.
         self.decoder = SpatialMoEDecoder(

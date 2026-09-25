@@ -19,6 +19,9 @@ VARIANTS = [
     # the difference between mid-table and second place.  Nothing else changes, so the pair
     # is a clean single-variable comparison of training budget.
     ("moe-of-sod__v_e8_repro_best_14ep.ipynb", "experiments/v_e8_repro_best_14ep.json", "TRAIN"),
+    # Multi-scale-routing ablation: routed experts at 1/4 only, pass-through at 1/8
+    # and 1/16.  Without it the three-scale routing claim has no arm behind it.
+    ("moe-of-sod__v_e8_repro_scale1.ipynb", "experiments/v_e8_repro_scale1.json", "TRAIN"),
     ("moe-of-sod__v_e4_repro_renorm.ipynb", "experiments/v_e4_repro_renorm.json", "TRAIN"),
     ("moe-of-sod__v_e4_repro_densectrl.ipynb", "experiments/v_e4_repro_densectrl.json", "TRAIN"),
     ("moe-of-sod__v_e4_repro_nonectrl.ipynb", "experiments/v_e4_repro_nonectrl.json", "TRAIN"),

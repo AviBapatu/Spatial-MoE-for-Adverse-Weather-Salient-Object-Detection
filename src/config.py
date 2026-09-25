@@ -315,9 +315,10 @@ class ExperimentConfig:
                 f"model.top_k ({self.model.top_k}) must be <= "
                 f"model.num_experts ({self.model.num_experts})"
             )
-        if self.model.moe_type not in {"none", "dense", "sparse"}:
+        if self.model.moe_type not in {'none', 'dense', 'sparse', 'sparse_fine'}:
             errors.append(
-                f"model.moe_type must be one of {{'none','dense','sparse'}}, "
+                f"model.moe_type must be one of "
+                f"{{'none','dense','sparse','sparse_fine'}}, "
                 f"got '{self.model.moe_type}'"
             )
         if self.model.moe_16_mode not in {"sparse", "dense"}:

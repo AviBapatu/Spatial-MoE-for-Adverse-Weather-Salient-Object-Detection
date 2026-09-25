@@ -2,7 +2,8 @@
 
 It used to be a dead config field: "sparse", "dense" and "none" all produced the
 identical 62.9M-parameter MoE model, so the "no MoE" ablation row was a duplicate
-of the sparse one.  These tests pin the three arms apart.
+of the sparse one.  These tests pin the arms apart, including ``"sparse_fine"``
+(route at 1/4 only), which backs the multi-scale-routing claim.
 """
 from __future__ import annotations
 
@@ -11,7 +12,8 @@ import torch
 
 from src.config import LossConfig
 from src.loss import CombinedLoss
-from src.model import SpatialMoESODNet
+from src.model import SpatialMoESODNet, assert_model_matches_config
+from src.moe_layer import PassthroughMoELayer, SpatialMoELayer
 
 ARMS = ("sparse", "dense", "none")
 E, K, DIM = 4, 2, 64
@@ -127,3 +129,54 @@ def test_entropy_confidence_term_is_the_normalised_routing_entropy() -> None:
     # and the weight actually moves the total
     assert float(comp_on["L_total"]) > float(comp_off["L_total"]) - 1e-9
     assert float(comp_on["L_total"]) >= float(comp_on["L_routing_conf"]) - 1e-6
+
+
+def test_sparse_fine_routes_only_at_the_finest_scale() -> None:
+    """1/4 routes; 1/8 and 1/16 pass through.  This is the multi-scale ablation."""
+    model = _model("sparse_fine")
+    assert isinstance(model.moe_4, SpatialMoELayer)
+    assert isinstance(model.moe_8, PassthroughMoELayer)
+    assert isinstance(model.moe_16, PassthroughMoELayer)
+
+    counts = {t: sum(p.numel() for p in _model(t).parameters()) for t in ARMS}
+    fine = sum(p.numel() for p in model.parameters())
+    assert counts["none"] < fine < counts["sparse"], (counts["none"], fine, counts["sparse"])
+
+
+def test_sparse_fine_forward_backward_is_finite() -> None:
+    """Two of three scales have no router: the loss must cope with the mixture."""
+    model = _model("sparse_fine")
+    images, target, edge = _batch()
+    out, moe_outputs = model(images)
+    loss, components = _criterion()(
+        saliency_logits=out.saliency_logits, edge_logits=out.boundary_logits,
+        moe_outputs=moe_outputs, target=target, gt_boundary=edge,
+        aux_logits_16=out.aux_logits_16, aux_logits_8=out.aux_logits_8,
+        aux_logits_4=out.aux_logits_4,
+    )
+    loss.backward()
+    assert torch.isfinite(loss), "sparse_fine: loss not finite"
+    for name, value in components.items():
+        assert torch.isfinite(torch.as_tensor(value)), f"sparse_fine: {name} not finite"
+
+
+def test_sparse_fine_advertises_exactly_one_routed_scale() -> None:
+    images, _, _ = _batch()
+    with torch.no_grad():
+        _, outs = _model("sparse_fine")(images)
+    assert sum(bool(o.has_router) for o in outs) == 1
+    assert len(outs) == 3
+
+
+def test_the_config_assertion_understands_sparse_fine() -> None:
+    """The preflight must accept the new arm and still reject a wrong claim."""
+    from types import SimpleNamespace
+
+    cfg = SimpleNamespace(model=SimpleNamespace(
+        num_experts=E, top_k=K, gate_mode="dense",
+        moe_type="sparse_fine", moe_16_mode="sparse"))
+    assert_model_matches_config(_model("sparse_fine"), cfg)
+
+    cfg.model.moe_type = "sparse"  # claims three routed scales; the model has one
+    with pytest.raises(ValueError):
+        assert_model_matches_config(_model("sparse_fine"), cfg)
