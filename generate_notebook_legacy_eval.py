@@ -5,7 +5,8 @@ Regenerates ``moe-of-sod__legacy_eval.ipynb`` and is the editable source of trut
 One job the run notebooks cannot do: evaluate a checkpoint that is not tied to an experiment
 ID, specifically the legacy 8-expert model behind the 0.0168 result. The run notebooks resolve
 their checkpoint from the active config's experiment ID, so a legacy file has to arrive out of
-band - from Google Drive by file ID, using the same gdown pattern the dataset cell uses.
+band - from the Hub at a pinned revision, because the name it was pushed under has
+been overwritten since.
 
 Like the run notebooks it uses both T4s and uploads its results to the Hub. ``src.evaluate`` is
 single-process (there is no data-parallel evaluation), so the two GPUs are used by evaluating
@@ -18,7 +19,8 @@ import json
 
 OUTPUT_NOTEBOOK = "moe-of-sod__legacy_eval.ipynb"
 
-LEGACY_DRIVE_ID = "1GblynkVLciAy2OATB00naeEEgWnDOH9P"
+LEGACY_REVISION = "f395682f3f1dfa49fecff5d32a412be8fbc8abfd"
+LEGACY_SHA256 = "0571f320db8a7f4455310cbe85faff1e7b8c22a1f4af83770fd64672ddaf4576"
 DATA_FILE_ID = "1SSELvRYI-cwd9mzA8dWLbv4o1IffjkoW"
 
 
@@ -46,8 +48,9 @@ Evaluates the legacy 8-expert checkpoint - the model behind the 0.0168 / 0.9151 
 - reads **~0.019** -> the evaluation protocol changed, and the current numbers are the
   consistent ones.
 
-The checkpoint's Google Drive file ID is already set (`{LEGACY_DRIVE_ID}`). The file must be
-shared as "anyone with the link", or gdown cannot fetch it.
+The checkpoint is pulled from the Hub at the exact revision that was live when the 0.0168
+result was produced (`{LEGACY_REVISION[:12]}`). `checkpoints/best.pth` has been overwritten
+since, so the file at that name today is a different, later save - and a worse one.
 
 Unlike the run notebooks there is no experiment ID to key on, so results are uploaded under
 `analysis_results/legacy_8expert_best/`.
@@ -62,7 +65,8 @@ import sys
 
 # The legacy checkpoint is not tied to an experiment ID, so it arrives from Drive.
 # For a link like  https://drive.google.com/file/d/<ID>/view?usp=sharing  this is <ID>.
-LEGACY_DRIVE_ID = "1GblynkVLciAy2OATB00naeEEgWnDOH9P"
+LEGACY_REVISION = "f395682f3f1dfa49fecff5d32a412be8fbc8abfd"
+LEGACY_SHA256 = "0571f320db8a7f4455310cbe85faff1e7b8c22a1f4af83770fd64672ddaf4576"
 
 # Uploaded under this label: there is no config-derived experiment ID for a legacy file.
 LEGACY_LABEL = "legacy_8expert_best"
@@ -87,8 +91,9 @@ NUM_GPUS = 2
 os.environ["CHECKPOINT_ROOT"] = CHECKPOINT_ROOT
 os.makedirs(CHECKPOINT_ROOT, exist_ok=True)
 
-assert LEGACY_DRIVE_ID != "PASTE_THE_GOOGLE_DRIVE_FILE_ID_HERE", (
-    "Paste the Google Drive file ID of the legacy checkpoint into LEGACY_DRIVE_ID."
+assert LEGACY_REVISION and LEGACY_SHA256, (
+    "Set LEGACY_REVISION and LEGACY_SHA256: the Hub revision holding this checkpoint, and "
+    "its sha256."
 )
 
 print("Configuration")
@@ -222,12 +227,16 @@ The legacy checkpoint is not tied to an experiment ID, so the run notebooks cann
 It comes from Drive and is checked before use.
 """)
 
-    add_code(r'''EXPECTED_SHA256 = "8b7cac641afb1ff409c6e3db7caf2b826455bd1077158fd227b822e50d934ce0"
+    add_code(r'''EXPECTED_SHA256 = LEGACY_SHA256
 
 if not os.path.exists(LEGACY_PATH):
-    print("Downloading the legacy checkpoint from Google Drive ...")
-    subprocess.run(["pip", "install", "-q", "gdown"], check=True)
-    subprocess.run(["gdown", LEGACY_DRIVE_ID, "-O", LEGACY_PATH], check=True)
+    print("Downloading the legacy checkpoint at its original revision ...")
+    from huggingface_hub import hf_hub_download
+    fetched = hf_hub_download(
+        os.environ["HF_REPO_ID"], "checkpoints/best.pth", repo_type="dataset",
+        revision=LEGACY_REVISION, token=os.environ["HF_TOKEN"],
+    )
+    shutil.copy2(fetched, LEGACY_PATH)
 
 assert os.path.exists(LEGACY_PATH), f"Legacy checkpoint missing: {LEGACY_PATH}"
 
@@ -241,7 +250,7 @@ print(f"  {LEGACY_PATH}  ({size_mb:.0f} MB)")
 print(f"  sha256 {actual}")
 if actual != EXPECTED_SHA256:
     print("  WARNING: sha256 does not match the value recorded on the Hub.")
-    print("           Expected 8b7cac641afb1ff409c6e3db7caf2b826455bd1077158fd227b822e50d934ce0")
+    print(f"           Expected {EXPECTED_SHA256}")
     print("           Continuing, but record which file was actually scored.")
 else:
     print("  sha256 matches the value recorded on the Hub.")
