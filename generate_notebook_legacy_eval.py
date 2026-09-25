@@ -15,7 +15,6 @@ import json
 
 OUTPUT_NOTEBOOK = "moe-of-sod__legacy_eval.ipynb"
 
-LEGACY_DRIVE_ID = "PASTE_THE_GOOGLE_DRIVE_FILE_ID_HERE"
 DATA_FILE_ID = "1SSELvRYI-cwd9mzA8dWLbv4o1IffjkoW"
 
 
@@ -43,8 +42,9 @@ the **current** evaluation code. This is a diagnostic, not a result:
 - reads **~0.019** → the evaluation protocol changed, and the current numbers are the
   consistent ones.
 
-**Before running:** upload the checkpoint to Google Drive, copy its file ID, and paste it into
-`LEGACY_DRIVE_ID` in the next cell. Nothing else needs editing.
+**Before running:** the checkpoint's Google Drive file ID is already set in the next cell
+(`1GblynkVLciAy2OATB00naeEEgWnDOH9P`). Edit it there if a different file is uploaded. The Drive file must be shared as
+"anyone with the link", or gdown cannot fetch it.
 """)
 
     add_code(r'''import os
@@ -59,7 +59,7 @@ import sys
 # For a link like  https://drive.google.com/file/d/1AbC...XyZ/view?usp=sharing
 # the ID is the part between /d/ and /view  ->  1AbC...XyZ
 # ------------------------------------------------------------------------------
-LEGACY_DRIVE_ID = "PASTE_THE_GOOGLE_DRIVE_FILE_ID_HERE"
+LEGACY_DRIVE_ID = "1GblynkVLciAy2OATB00naeEEgWnDOH9P"
 
 # Evaluate under both test-time settings so the comparison is unambiguous.
 LEGACY_TTA = ["none", "hflip"]
