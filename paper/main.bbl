@@ -10,6 +10,25 @@ Y.~Luo, R.~Zhao, X.~Wei, J.~Chen, Y.~Lu, S.~Xie, T.~Wang, R.~Xiong, M.~Lu, and
   S.~Zhang, ``{WM-MoE}: Weather-aware multi-scale mixture-of-experts for blind
   adverse weather removal,'' {\em arXiv preprint arXiv:2303.13739}, 2023.
 
+\bibitem{moespnet}
+Z.~Zhao, X.~Qi, Y.~Xu, {\em et~al.}, ``{MoE-SPNet}: A mixture-of-experts scene
+  parsing network,'' {\em arXiv preprint arXiv:1806.07049}, 2018.
+
+\bibitem{segmote}
+Y.~Lu, J.~Li, S.~Ju, {\em et~al.}, ``{SegMoTE}: Token-level mixture of experts
+  for medical image segmentation,'' in {\em Proceedings of the IEEE/CVF
+  Conference on Computer Vision and Pattern Recognition (CVPR)}, 2026.
+
+\bibitem{sparsemoecnn}
+S.~Pavlitska, H.~Fan, K.~Ditschuneit, and J.~M. Z{\"o}llner, ``Design and
+  behavior of sparse mixture-of-experts layers in {CNN}-based semantic
+  segmentation,'' in {\em CVPR Workshop on Safe Artificial Intelligence for
+  Automated Driving (SAIAD)}, 2026.
+
+\bibitem{smoe}
+N.~E. Roberts, M.~Khrennikov, {\em et~al.}, ``Spatial mixture-of-experts,'' in
+  {\em Advances in Neural Information Processing Systems (NeurIPS)}, 2022.
+
 \bibitem{artifact2026}
 B.~A. Reddy, ``{SpatialMoE-SOD}: Source code, configurations and per-run
   evaluation artifacts.''

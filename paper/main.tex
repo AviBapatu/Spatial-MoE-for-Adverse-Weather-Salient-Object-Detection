@@ -174,8 +174,11 @@ Two strategies address this: (1)~weather-label-conditioned models---NIFM~\cite{n
 To our knowledge, existing MoE-SOD methods primarily explore modality-, scale-, or task-level routing for multi-modal inputs rather than per-token routing for single-RGB SOD.
 To our knowledge no prior work combines spatial token-level routing, independent routers at
 several pyramid scales, and routing-informed decoding for single-RGB SOD without weather
-supervision; token-level MoE has been applied to medical image segmentation and spatial MoE to
-dense prediction, but neither addresses adverse-weather SOD.
+supervision. Sparse MoE has been studied in dense prediction -- MoE-SPNet routes at the scene
+level~\cite{moespnet}, token-level routing has been applied to medical segmentation
+(SegMoTE~\cite{segmote}), and Pavlitska et al.\ examine the behaviour of sparse MoE layers in
+CNN segmentation~\cite{sparsemoecnn} -- and spatial MoE has been applied in a classification
+setting~\cite{smoe}. None of these addresses adverse-weather SOD with a single RGB input.
 This paper's central finding is a null result: the spatial MoE we designed does not measurably
 affect predictions (Sections~IV-F, IV-G). We report the architecture and its numbers together
 with the evidence that they are not attributable to routing.
