@@ -54,7 +54,7 @@ never share one. That is what `variant` is for.
 | Learning rate | `backbone_lr` and `new_module_lr`, both 1e-4 in the current configs |
 | Weight decay | 1e-4 on decay groups |
 | Schedule | linear warmup then cosine decay to 1% of peak (`WarmupCosineScheduler`) |
-| Warmup | `warmup_ratio` of total steps — 0.04 in the current configs |
+| Warmup | `warmup_ratio` of total steps — 0.04 in the 2026-09 arm configs, 0.01 in the legacy-era config (`results/legacy/preflight/final_config.json`) |
 | Gradient clipping | max norm 1.0, applied before the optimizer step |
 | Precision | AMP fp16 with a `GradScaler`; the scaler adapts on overflow |
 | Gradient accumulation | `grad_accum_steps`, with `no_sync` on non-final microsteps |
@@ -75,9 +75,17 @@ you suspect the learning rate.
 - `latest.pth` is written every `train.checkpoint_every_n_steps` optimizer steps (200), and
   **only** when a step falls on that boundary. A very short run writes nothing.
 - `best.pth` is selected by validation MAE.
-- Checkpoints carry the config hash, and resuming validates it. The hash deliberately
-  excludes `experiment_id`, `run_id`, `batch_equivalence`, `variant`, `data.dataset_root`,
-  `train.num_workers` and `train.checkpoint_every_n_steps`.
+- Checkpoints carry a config hash, and resuming validates it. That hash is `get_config_hash`
+  (`src/train_ddp.py`): an MD5 over the checkpoint-format version, the second argument, and
+  the sorted config dict with `experiment_id`, `run_id`, `batch_equivalence`, `variant` and
+  `data.dataset_root` removed. The training path passes the literal string
+  `"model_config_hash"` as that second argument, so no per-run model fingerprint actually
+  enters it. A second, distinct hash is the canonical SHA-256
+  (`ExperimentConfig.get_canonical_hash`, written to the run's `config_hash.txt` and the
+  registry); it additionally removes `train.num_workers`,
+  `train.checkpoint_every_n_steps` and `data.split_manifest_path`, which the checkpoint hash
+  keeps because they sit inside the `data`/`train` sub-dicts and only top-level keys are
+  filtered.
 - **The hash does include `train.epochs`**, and `--max_epochs` is applied before hashing, so
   resuming with a different epoch budget is refused by design — the budget changes the LR
   schedule.

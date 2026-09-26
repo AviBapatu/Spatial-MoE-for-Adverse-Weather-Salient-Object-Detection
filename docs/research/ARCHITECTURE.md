@@ -40,7 +40,7 @@ Each scale has its own `SpatialMoELayer` with its own router and expert pool.
 
 | Element | Implementation |
 |---|---|
-| Router input | local depthwise-conv context concatenated with a pooled global context |
+| Router input | the token's own features concatenated with a local depthwise-conv context: `cat([x_tokens, dwconv(x)])` is `2C` wide (`x_tokens` is `C`) |
 | Gating | noisy top-k, Shazeer-style, with a learned softplus noise scale (training only) |
 | `gate_mode="renormalized"` | softmax over the selected top-k values |
 | `gate_mode="dense"` | softmax over all experts, gathered at the top-k indices — every expert receives gradient |
@@ -49,17 +49,18 @@ Each scale has its own `SpatialMoELayer` with its own router and expert pool.
 | Expert | token-wise MLP: LayerNorm -> 4C -> C, with a residual |
 | Entropy | computed over the full expert distribution, per token, per scale |
 
-Three ablation arms are selectable through `moe_type` and are asserted to match the config
+Four ablation arms are selectable through `moe_type` and are asserted to match the config
 at construction (`assert_model_matches_config` in `src/model.py`):
 
 | `moe_type` | Behaviour |
 |---|---|
 | `sparse` | routed top-k experts — the model under study |
 | `dense` | one shared expert applied to every token: the capacity-matched control |
-| `none` | no MoE; features pass through |
+| `none` | no MoE; features pass through (also removes the expert parameters) |
+| `sparse_fine` | routed experts at the 1/4 scale only; 1/8 and 1/16 pass through — the routing-scope ablation, not capacity-matched |
 
-**None of these arms has been run.** `results/` contains zero `M_DENSE` or `M_NONE` runs.
-See `RESULTS.md` §5 and `RESEARCH_TRUTH.md` §3.
+**None of these arms has been run.** `results/` contains zero `M_DENSE`, `M_NONE` or
+`SCALE1` runs. See `RESULTS.md` §5 and `RESEARCH_TRUTH.md` §3.
 
 `moe_16_mode="dense"` replaces only the 1/16-scale layer with a single-expert adapter.
 
@@ -104,14 +105,17 @@ to one expert, `random_routing` to replace learned gates with random logits, and
 
 ## Measured behaviour
 
-Routing is close to uniform: per-token entropy sits at the maximum of its range
-(normalized 0.9995–0.9998 at every scale), the router's logit spread is ~0.03–0.07, and
+Routing is close to uniform: per-token entropy sits at the ceiling of its range
+(normalized 0.997-1.000 at every scale, i.e. 2.074-2.079 nats against `ln 8 = 2.0794`), the
+router's logit spread is 0.001-0.10 (top1-top2 margin 0.002-0.07), and
 per-expert weather distributions barely deviate from the dataset prior. Dead experts
 persist under the renormalized gate. Numbers and sources: `RESULTS.md` §4 and
 `RESEARCH_TRUTH.md` §2.1.
 
 ## Size
 
-69,213,120 parameters for the E8 k=2 configuration, as reported by `build_model` and in
-training logs. A legacy `compute_cost.json` reports 66.27M; the two have not been
-reconciled — see `RESEARCH_TRUTH.md`.
+69,213,120 parameters for the E8 k=2 configuration with window 7 and deep supervision on —
+what `build_model` and the training logs report. Enumeration over `parameters()` gives
+69,212,349 for the same configuration with deep supervision off, and 69,212,797 / 69,213,568
+at window 8 (supervision off / on). The two legacy `compute_cost.json` files report 68.9M,
+which no configuration reproduces; report the enumerated 69.21M. See `RESEARCH_TRUTH.md`.

@@ -4,8 +4,9 @@
 
 Every run is defined by one JSON file under `experiments/`, loaded into
 `ExperimentConfig` (`src/config.py`). The config is the single source of truth: the model is
-asserted to match it at construction, and its canonical hash is written into every
-checkpoint so a resume can prove it is the same experiment.
+asserted to match it at construction, and a config hash is written into every checkpoint so
+a resume can prove it is the same experiment (checkpoints carry `get_config_hash`, an MD5;
+the canonical SHA-256 is a separate value written to the run directory — see `TRAINING.md`).
 
 Fields that carry weight: `data` (root, `max_samples`), `model` (backbone — see the caveat
 below — `num_experts`, `top_k`, `gate_mode`, `moe_type`, `moe_16_mode`, router noise),
@@ -35,7 +36,8 @@ derived on every rank.
 
 **Rule: a different recipe needs a different `variant`.** Six configs previously derived one
 identical ID, which would have made any two of them overwrite each other's checkpoints.
-All 20 configs in `experiments/` now derive unique IDs, verified.
+All 28 configs in `experiments/` now derive unique IDs, verified with
+`src.experiment.generate_experiment_id`.
 
 **Do not confuse `S` with the seed.** `S` is the effective global batch
 (`batch_per_gpu x grad_accum_steps x world_size`). Seed repeats are distinguished by
@@ -54,6 +56,16 @@ renormalized gate, router noise on, load-balance weights 0.08/0.15/0.1, effectiv
 | seed 43 | `v_e8_repro_best_seed43.json` | `..._REPRO_SEED43` | variance estimate |
 | seed 44 | `v_e8_repro_best_seed44.json` | `..._REPRO_SEED44` | variance estimate |
 | E4 | `v_e4_repro_renorm.json` | `EXP_B4_E4_K2_S32_...` | does 4 experts reach 8, all else fixed? |
+
+Later single-variable arms at the same E4/E8 S32 recipe add: a 14-epoch budget
+(`v_e8_repro_best_14ep.json`, `REPRO_E14`), routing restricted to the finest scale
+(`v_e8_repro_scale1.json`, `SCALE1`, `moe_type: sparse_fine`), the mixture-vs-shared-MLP
+control (`v_e4_repro_nonectrl.json`, `E4_NONECTRL`), a dense-gate control at E4
+(`v_e4_repro_densectrl.json`, `E4_DENSECTRL`), a zero-load-balance arm
+(`v_e4_repro_nolb.json`, `NOLB`), the expert-count and top-k axes
+(`v_e2_k2_s32.json`, `v_e4_k1_s32.json`) and an entropy-confidence-weight arm
+(`v_4expert_entropyconf.json`, `ENTROPYCONF`, which sets
+`loss.entropy_confidence_weight: 0.2`).
 
 Three seeds of A give the noise floor; without it, no difference between arms is
 interpretable. B tests the mechanism behind dead experts: the renormalized gate gives
@@ -93,7 +105,7 @@ Numbers for every evaluated run: `RESULTS.md`.
 
 | Gap | Why it matters |
 |---|---|
-| Mixture-vs-dense control (`v_4expert_densecontrol.json`, `v_4expert_nonecontrol.json`) | zero runs; without it the mixture's contribution is unmeasured |
+| Mixture-vs-dense control (`v_e4_repro_nonectrl.json`, `v_e4_repro_densectrl.json`, and the older `v_4expert_nonecontrol.json`, `v_4expert_densecontrol.json`) | no `M_DENSE`/`M_NONE` run has been evaluated under `results/`; without it the mixture's contribution is unmeasured |
 | External baselines | no comparison to prior methods exists |
 | Seed repeats beyond arm A | every other number is a single run |
 | Backbone comparison | `config.model.backbone` does not reach the model, so backbone arms train identical architectures |

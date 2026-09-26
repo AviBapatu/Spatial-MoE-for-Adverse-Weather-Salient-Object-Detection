@@ -6,7 +6,9 @@
 
 The ablation system generates experiment config variants from a baseline, designed to be run through `train_ddp.py` with the experiment registry tracking results.
 
-**Current status:** Ablation matrices are defined but no `registry.csv` exists, indicating no formal ablation runs have been completed through this system.
+**Current status:** `experiments/registry.csv` exists (four rows written 2026-09-06, one of
+them `COMPLETED`), but no cell of these generated matrices has been run to completion and
+evaluated — `results/` contains no run produced by this system.
 
 ## Architecture Matrix (`ablations.py:20-68`)
 
@@ -44,8 +46,8 @@ Compare against non-MoE baselines:
 
 | Variant | MoE Type | Description |
 |---------|----------|-------------|
-| none | `"none"` | Shared block (no expert routing) |
-| dense | `"dense"` | Dense MoE (all experts evaluated) |
+| none | `"none"` | Shared block (no expert routing, expert parameters removed) |
+| dense | `"dense"` | One shared expert applied to every token |
 | sparse | `"sparse"` | Sparse MoE (top-k routing) |
 
 **Status:** `moe_type` *is* consumed — it selects the arm in `SpatialMoESODNet.__init__`
@@ -124,7 +126,7 @@ out_4 = self.moe_4(res_4, force_expert_id=force_4, random_routing=random_routing
 **RoutingTracker** (`src/diagnostics/`):
 - Hard assignment counts per expert
 - Soft gate mass per expert
-- Mean entropy (normalized by log(K))
+- Mean entropy over the full E-way gate distribution (normalized by `ln E`)
 - Dead expert detection (hard fraction < 0.01)
 
 **WeatherAnalyzer** (`src/diagnostics/`):
