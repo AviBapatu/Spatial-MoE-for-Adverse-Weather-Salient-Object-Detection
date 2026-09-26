@@ -1160,27 +1160,22 @@ Fifth, the forced-expert analysis suggests that expert specialization may be lim
 \section{Conclusion}
 
 We presented and rigorously ablated SpatialMoE-SOD. The full model is competitive with
-weather-supervised baselines on WXSOD, but a complete ablation and intervention study shows the
-mixture-of-experts is not responsible for that performance: it can be removed, reduced to one
-scale, or replaced with a dense expert with no measurable effect -- generalising to dense
-prediction a caution already familiar in the MoE literature.
-Per-token routing entropy is normalized and injected as an explicit decoder feature via learnable additive fusion.
-On WXSOD, the model achieves MAE $0.0192$ (synthetic, 1,500 images) and $0.0168$ (real-world, 554 images), with weather-wise MAE ranging from $0.0094$ (snow) to $0.0243$ (low-light).
+weather-supervised baselines on WXSOD -- MAE $0.0168$ on the 554 real test images and $0.0192$ on
+the 1{,}500 synthetic ones -- but a complete ablation and inference-time intervention study shows
+that the mixture-of-experts is not responsible for that performance: it can be removed, reduced to
+one pyramid scale, or replaced with a single dense expert with no measurable effect. This
+generalises to dense prediction a caution already familiar in the MoE literature, that sparse
+routing does not guarantee learned specialisation.
 
-Several limitations warrant future investigation.
-The model was trained once without replicate runs, so variance estimates are unavailable.
-Against the benchmark's published results the model leads the synthesized split and places second of nineteen on the real split, behind the weather-supervised WFANet~\cite{wxsod2025}, while using no weather labels.
-The forced-expert analysis suggests limited differentiation among experts at scale $1/4$, and the contribution of the entropy fusion mechanism relative to a baseline without it has not been ablated.
-Routing entropy sits at 99.8--100\% of the maximum attainable over the eight experts, so routing is close to uniform and the entropy channel carries little signal.
-The ablation matrix is otherwise complete: removing the mixture-of-experts, reducing
-routing to one pyramid scale, replacing routed experts with a dense expert and removing the
-load-balancing loss all leave real-test MAE within 0.0004 of the reference, while routing to
-a single expert costs 0.0017.
-The mixture is therefore not earning its parameters on this task, and the useful direction is
-not more routing capacity but the training budget.
-Future work should determine whether a routing objective that is actually supervised --
-rather than one optimised only through the saliency loss -- can induce specialisation, and
-should re-run the benchmark's baselines under a single unified protocol.
+The ablation matrix is otherwise complete: removing the mixture-of-experts, reducing routing to one
+scale, replacing routed experts with a dense expert and removing the load-balancing loss all leave
+real-test MAE within $0.0004$ of the reference, while routing to a single expert costs $0.0017$.
+The mixture is therefore not earning its parameters on this task, and the useful direction is not
+more routing capacity but the training budget.
+
+Future work should determine whether a routing objective that is actually supervised -- rather than
+one optimised only through the saliency loss -- can induce specialisation, and should re-run the
+benchmark's baselines under a single unified protocol.
 
 % Flush every pending float so nothing follows the reference list.
 \clearpage
