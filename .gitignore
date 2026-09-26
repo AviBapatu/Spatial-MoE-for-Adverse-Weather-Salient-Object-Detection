@@ -85,3 +85,15 @@ HANDOFF.md
 # ...but the qualitative grids ARE the evidence: keep them, they are one file per arm.
 !results/**/qualitative/
 !results/**/qualitative/*.png
+
+# AI assistant tooling: kept locally, not part of the project
+AGENTS.md
+CLAUDE.md
+.commandcode/
+.agents/
+.claude/
+.cursor/
+.cursorrules
+.aider*
+.windsurf/
+opencode*
