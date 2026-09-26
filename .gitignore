@@ -97,3 +97,6 @@ CLAUDE.md
 .aider*
 .windsurf/
 opencode*
+
+# build output; the distributable is paper/SpatialMoE-SOD.pdf
+paper/main.pdf
