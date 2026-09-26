@@ -90,7 +90,6 @@ expert specialisation by weather, and no causal claim about any design choice.
 | `paper/CLAIM_AUDIT.md`, `paper/MANUSCRIPT_AUDIT.md`, `docs/research/PAPER_CORRECTIONS.md` | Audits of an earlier manuscript revision. Their banners list the findings that are settled; their bodies still carry superseded numbers (66.27M, top-2 entropy, `log 2`). Take no number or fact from them. |
 | `docs/research/BLUEPRINT_CODE_AUDIT.md` | Audit of the original blueprint against the code; same caveat. |
 | `spatial-moe-adverse-weather-sod-blueprint.md` (repo root) | The original research blueprint. Aspirational, and wrong in the places `RELATED_WORK.md` lists. |
-| `HANDOFF.md` (repo root) | Scratch session handoff, marked for deletion. |
 
 ## Working rules
 
