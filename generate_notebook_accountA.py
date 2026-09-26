@@ -772,6 +772,12 @@ def load_model_from_checkpoint(ckpt_path, device):
         k=model_cfg.get('top_k', 2),
         gate_mode=model_cfg.get('gate_mode', 'renormalized'),
         window_size=model_cfg.get('window_size', 7),
+        # moe_type and moe_16_mode decide WHICH MODULES EXIST. Omitting them built a
+        # default-sparse model, which loaded the sparse arms but raised Missing/Unexpected
+        # keys for every dense / none / sparse_fine checkpoint -- crashing the notebook
+        # before its upload step and losing that run's evaluation entirely.
+        moe_type=model_cfg.get('moe_type', 'sparse'),
+        moe_16_mode=model_cfg.get('moe_16_mode', 'sparse'),
         use_deep_supervision=model_cfg.get('deep_supervision', False)
     ).to(device)
     model.load_state_dict(checkpoint['model_state_dict'])
