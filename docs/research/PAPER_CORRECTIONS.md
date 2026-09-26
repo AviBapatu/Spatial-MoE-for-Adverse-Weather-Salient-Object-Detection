@@ -1,5 +1,33 @@
 # PAPER_CORRECTIONS.md — Audit of paper/main.tex Against Code and Results
 
+> **RESOLVED 2026-09-25 — read before acting on anything below.**
+>
+> This audit is a dated record of a manuscript revision and its findings are kept as
+> written. Two of its items are now settled, and one cited file has been renamed:
+>
+> - **Parameter count.** The audit records 66.27M. That figure is not present in any file
+>   under `results/`; the correct value is **69.21M**, measured directly (69,212,349 at
+>   window 7 with deep supervision off, 69,213,120 with it on; the legacy `compute_cost.json`
+>   reports 68.9M). See `RESEARCH_TRUTH.md`.
+> - **Routing entropy.** `SpatialMoELayer` takes the entropy of the **full E-way softmax**
+>   over the router logits, so its ceiling is `ln E` — `ln 8 = 2.0794` for the 8-expert
+>   model — and `EntropyFusionBlock` normalises by `ln 8`. For the reported E8 model the
+>   measured mean is 2.076–2.079 nats, i.e. **99.8–100% of `ln 8`**: the router is close to
+>   uniform over all eight experts. The "0.9309" and "0.6931" figures below are both
+>   pre-fix top-2 measurements. See `RESEARCH_TRUTH.md`.
+> - `LITERATURE_NOTES.md` no longer exists; it is `docs/research/LITERATURE_DATABASE.md`.
+> - `docs/research/PAPER_CORRECTIONS.md` repeats the 66.27M figure for the same reason.
+> - **Loss terms.** The reported recipe activates SSIM, boundary, auxiliary-boundary and deep
+>   supervision (`ssim_weight`/`boundary_weight` 1.0, `aux_boundary_weight` 0.5,
+>   `deep_supervision_weight` 0.4). The "inactive / λ=0" loss findings below were checked
+>   against `experiments/baseline_v1.json`, which is a template, not the recipe. See
+>   `RESEARCH_TRUTH.md`.
+>
+> **Take no number or fact from the body of this file.** It is a historical record; the
+> authoritative sources are `RESEARCH_TRUTH.md`, `docs/research/ARCHITECTURE.md`,
+> `docs/research/TRAINING.md` and `docs/research/RESULTS.md`.
+
+
 > **Status of these findings (updated).**
 >
 > - *Resolved.* `src/decoder.py` is now the `src/decoder/` package, so the file citations
@@ -8,8 +36,10 @@
 >   by `ln(8)`, with a comment in `EntropyFusionBlock` naming the old value as a measurement
 >   bug. Note the constant is still hard-coded for 8 experts, which changes the scale of the
 >   entropy channel for a four-expert configuration.
-> - *Open.* The parameter count. This audit records 66.27M from the manuscript; training logs
->   and `build_model` report 69,213,120. Unreconciled, and flagged in `RESEARCH_TRUTH.md`.
+> - *Resolved.* The parameter count. This audit records 66.27M from the manuscript. No file
+>   under `results/` contains that value; the legacy `compute_cost.json` reports 68.9M and
+>   direct enumeration gives 69,212,349 / 69,213,120 for the E8 k=2 configuration at window 7
+>   (deep supervision off / on). Report **69.21M** and see `RESEARCH_TRUTH.md`.
 > - *Open.* Claims that were unsupported at the time of this audit (routing causality,
 >   specialisation, SOTA comparison) remain unsupported. `RESEARCH_TRUTH.md` section 3 is the
 >   current forbidden-claim list.
@@ -266,10 +296,10 @@ PROBLEM:
 The paper reports these numbers without specifying the hardware, batch size, or measurement conditions for the MAC count. The MAC count from `compute_cost.json` (278.2G) was computed for a single 384×384 image, but this is not stated. The FPS value (3.83) is also reported in the file but omitted from the paper, which is appropriate given the unspecified hardware.
 
 ACTUAL FACT:
-`results/legacy/legacy_8expert/evaluation_results/compute_cost.json` — `{"params_M": 66.27, "macs_G": 278.2, "fps": 3.83}`. No hardware specification is recorded.
+`results/legacy/legacy_8expert/evaluation_results/compute_cost.json` — `{"params_M": 68.9, "macs_G": 278.2, "fps": 4.37}` (the `params_M` field disagrees with direct enumeration; see the banner above). No hardware specification is recorded.
 
 WHAT PAPER SHOULD SAY:
-"The model has 66.27M parameters and 278.2G MACs per $384{\times}384$ image."
+"The model has 69.21M parameters and 278.2G MACs per $384{\times}384$ image."
 
 SOURCE:
 `results/legacy/legacy_8expert/evaluation_results/compute_cost.json`
@@ -294,7 +324,7 @@ WHAT PAPER SHOULD SAY:
 Verify the WM-MoE paper's test-time requirements before making this claim. If WM-MoE does require weather labels at test time, the claim should be "WM-MoE~\cite{wmmoe2023} performs token-level routing via a weather-aware router that conditions on weather labels at both train and test time." If it truly does not require them at test time, the current wording is fine but should cite the specific section of the WM-MoE paper.
 
 SOURCE:
-`docs/research/LITERATURE_NOTES.md`, `spatial-moe-adverse-weather-sod-blueprint.md`
+`docs/research/LITERATURE_DATABASE.md`, `spatial-moe-adverse-weather-sod-blueprint.md`
 
 SEVERITY:
 MAJOR — A factual claim about a cited paper that has not been verified against the primary source.
@@ -376,13 +406,13 @@ PROBLEM:
 This claim is stated as fact but has not been exhaustively verified. The paper cites V-MoE (classification, not SOD) and mentions MoE-SOD methods implicitly, but does not cite a specific survey or systematic review that confirms no MoE-SOD method performs per-token routing for single-RGB inputs. The claim may be true, but the evidence base is the literature notes in this repository, not a comprehensive survey.
 
 ACTUAL FACT:
-`docs/research/LITERATURE_NOTES.md` — documents V-MoE (classification), Soft MoE (classification), M³ViT (multi-task), and Mod-Squad (multi-task). None are specifically MoE-SOD for single-RGB. The claim is plausible but not rigorously established.
+`docs/research/LITERATURE_DATABASE.md` — documents V-MoE (classification), Soft MoE (classification), M³ViT (multi-task), and Mod-Squad (multi-task). None are specifically MoE-SOD for single-RGB. The claim is plausible but not rigorously established.
 
 WHAT PAPER SHOULD SAY:
 "To our knowledge, no existing MoE-SOD method performs per-token routing for single-RGB inputs." Adding "to our knowledge" properly scopes the claim.
 
 SOURCE:
-`docs/research/LITERATURE_NOTES.md`
+`docs/research/LITERATURE_DATABASE.md`
 
 SEVERITY:
 MINOR — Standard academic hedging is missing.
@@ -679,4 +709,4 @@ MINOR — "First benchmark" claim should be verified or softened.
 
 # Final Accurate Paper Position
 
-Based on the implementation and experimental evidence that actually exists, this paper can honestly claim the following: We present SpatialMoE-SOD, an architecture that routes individual spatial tokens to separate expert networks at three independent pyramid scales (1/4, 1/8, 1/16) via depthwise-convolutional routers with Shazeer-style noisy top-2 gating and true sparse dispatch, without any weather-specific supervision at train or test time. Per-token routing entropy is injected as a feature channel into the cross-attention decoder via learnable additive fusion. On the WXSOD benchmark, a single trained model (66.27M parameters, 278.2G MACs) achieves MAE 0.0192 on 1,500 synthetic test images and 0.0168 on 554 real-world test images, with weather-wise MAE ranging from 0.0094 (snow) to 0.0243 (low-light) on real-world data. The model was trained once without replicate runs, and no controlled comparison against existing methods (e.g., NIFM) has been performed. A forced-expert ablation at scale 1/4 shows only marginal degradation (+0.0002 MAE), suggesting that the 8-expert pool may be over-parameterized or that experts have learned similar representations — but this test covers only one of three scales and cannot establish or refute the utility of routing. No ablation has been run to isolate the contribution of any individual design choice (entropy fusion, multi-scale routing, MoE vs. shared MLP, number of experts, top-k value). The architectural contribution — token-level spatial MoE routing for single-RGB SOD without weather labels, with independent routers at three pyramid scales and entropy-informed decoding — is novel in its combination, though its practical benefit over simpler alternatives has not been demonstrated.
+Based on the implementation and experimental evidence that actually exists, this paper can honestly claim the following: We present SpatialMoE-SOD, an architecture that routes individual spatial tokens to separate expert networks at three independent pyramid scales (1/4, 1/8, 1/16) via depthwise-convolutional routers with Shazeer-style noisy top-2 gating and true sparse dispatch, without any weather-specific supervision at train or test time. Per-token routing entropy is injected as a feature channel into the cross-attention decoder via learnable additive fusion. On the WXSOD benchmark, a single trained model (69.21M parameters, 278.2G MACs) achieves MAE 0.0192 on 1,500 synthetic test images and 0.0168 on 554 real-world test images, with weather-wise MAE ranging from 0.0094 (snow) to 0.0243 (low-light) on real-world data. The model was trained once without replicate runs, and no controlled comparison against existing methods (e.g., NIFM) has been performed. A forced-expert ablation at scale 1/4 shows only marginal degradation (+0.0002 MAE), suggesting that the 8-expert pool may be over-parameterized or that experts have learned similar representations — but this test covers only one of three scales and cannot establish or refute the utility of routing. No ablation has been run to isolate the contribution of any individual design choice (entropy fusion, multi-scale routing, MoE vs. shared MLP, number of experts, top-k value). The architectural contribution — token-level spatial MoE routing for single-RGB SOD without weather labels, with independent routers at three pyramid scales and entropy-informed decoding — is novel in its combination, though its practical benefit over simpler alternatives has not been demonstrated.

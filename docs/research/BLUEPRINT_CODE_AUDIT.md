@@ -12,6 +12,13 @@
 >   computes entropy over the full expert distribution, which is why the measured per-token
 >   entropy reaches ln(8) for an eight-expert run (`RESULTS.md` section 4). This finding is
 >   resolved in the code's favour.
+> - The loss tables below pair the implementation with `baseline_v1.json`, which is a
+>   template (`ssim_weight`/`boundary_weight` 0.0, `deep_supervision` false). The reported
+>   recipe sets both weights to 1.0 and enables deep supervision, so every "OFF" loss value
+>   below describes the preset, not a trained run.
+>
+> **Take no number or fact from the body of this file.** It is a historical record; the
+> authoritative sources are `RESEARCH_TRUTH.md` and `docs/research/`.
 
 Full audit of the blueprint document against the actual repository implementation.
 
