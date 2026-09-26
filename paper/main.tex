@@ -171,6 +171,9 @@ Our contributions:
   \item Routing entropy over the full expert distribution, normalized by $\log 8$ for $E{=}8$, is injected as an explicit decoder feature via learnable additive fusion.
 \end{enumerate}
 
+Code, configurations and the per-run evaluation artifacts are available at
+\url{https://github.com/AviBapatu/Spatial-MoE-for-Adverse-Weather-Salient-Object-Detection}.
+
 The rest of the paper is organised as follows.
 Section~II positions the work against adverse-weather SOD and mixture-of-experts methods.
 Section~III describes the architecture: the multi-scale backbone, the spatial router, sparse
@@ -543,7 +546,7 @@ $\mathcal{L}_{\text{DS}}$ is the mean binary cross-entropy of the three per-scal
 \section{Experiments}
 
 \subsection{Setup}
-We evaluate on WXSOD~\cite{wxsod2025}, which provides 12,891 training images (scene-aware 80/20 split), 1,500 synthetic test images across 9 weather categories, and 554 real-world test images across 5 categories (fog, rain, snow, dark, low-light).
+We evaluate on WXSOD~\cite{wxsod2025} (\url{https://github.com/C-water/WXSOD}), which provides 12,891 training images (scene-aware 80/20 split), 1,500 synthetic test images across 9 weather categories, and 554 real-world test images across 5 categories (fog, rain, snow, dark, low-light).
 Images are aspect-preserving resized to $384{\times}384$; augmentations include horizontal flip ($p{=}0.5$), color jitter ($p{=}0.5$), and ImageNet normalization.
 Training uses DDP on 2 GPUs, AMP (FP16), AdamW optimizer (lr $10^{-4}$ for both newly introduced modules and the backbone, weight decay $10^{-4}$), WarmupCosine schedule (1\% warmup, 50 epochs), gradient clipping at 1.0, effective batch size 32. The backbone is frozen during the first epoch and unfrozen from epoch 1 onward.
 Metrics: MAE, $S_\phi$~\cite{struct-measure}, $E_\phi^{\text{adp}}$~\cite{enhanced-measure}, $F_\beta^{\max}$~\cite{f-measure}.
