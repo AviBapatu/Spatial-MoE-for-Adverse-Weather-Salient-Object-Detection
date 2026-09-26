@@ -1,0 +1,13 @@
+{
+    "checkpoint": "/kaggle/working/WXSOD_Checkpoints/EXP_B4_E4_K2_S32_R1_L3_M_DENSE_E4_DENSECTRL/best.pth",
+    "output_files": [
+        "/kaggle/working/analysis_results/diagnostics/diagnostics_test_real/routing_stats_contentonly.csv",
+        "/kaggle/working/analysis_results/diagnostics/diagnostics_test_real/routing_stats_contentonly.json",
+        "/kaggle/working/analysis_results/diagnostics/diagnostics_test_real/routing_stats_padded_baseline.csv",
+        "/kaggle/working/analysis_results/diagnostics/diagnostics_test_real/routing_stats_padded_baseline.json",
+        "/kaggle/working/analysis_results/diagnostics/diagnostics_test_sys/routing_stats_contentonly.csv",
+        "/kaggle/working/analysis_results/diagnostics/diagnostics_test_sys/routing_stats_contentonly.json",
+        "/kaggle/working/analysis_results/diagnostics/diagnostics_test_sys/routing_stats_padded_baseline.csv",
+        "/kaggle/working/analysis_results/diagnostics/diagnostics_test_sys/routing_stats_padded_baseline.json"
+    ]
+}

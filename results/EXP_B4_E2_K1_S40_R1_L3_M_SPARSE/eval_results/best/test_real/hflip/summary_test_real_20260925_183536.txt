@@ -1,0 +1,68 @@
+--- TEST_REAL RESULTS ---
+Global Sample Count: 554
+MAE: 0.0546
+S_measure: 0.7714
+E_adaptive: 0.7905
+E_mean: 0.8181
+E_max: 0.8684
+F_adaptive: 0.6040
+F_mean: 0.6375
+F_max: 0.7090
+boundary_F1: 0.0656
+
+--- WEATHER-WISE RESULTS ---
+
+Weather: dark (Count: 125)
+  MAE: 0.0588
+  S_measure: 0.7669
+  E_adaptive: 0.7847
+  E_mean: 0.8115
+  E_max: 0.8880
+  F_adaptive: 0.6036
+  F_mean: 0.6344
+  F_max: 0.7315
+  boundary_F1: 0.0587
+
+Weather: fog (Count: 126)
+  MAE: 0.0419
+  S_measure: 0.7741
+  E_adaptive: 0.7918
+  E_mean: 0.8244
+  E_max: 0.8713
+  F_adaptive: 0.5846
+  F_mean: 0.6281
+  F_max: 0.7038
+  boundary_F1: 0.0778
+
+Weather: light (Count: 93)
+  MAE: 0.0793
+  S_measure: 0.7200
+  E_adaptive: 0.7033
+  E_mean: 0.7393
+  E_max: 0.8017
+  F_adaptive: 0.5378
+  F_mean: 0.5687
+  F_max: 0.6361
+  boundary_F1: 0.0407
+
+Weather: rain (Count: 120)
+  MAE: 0.0563
+  S_measure: 0.7775
+  E_adaptive: 0.8234
+  E_mean: 0.8386
+  E_max: 0.8748
+  F_adaptive: 0.6334
+  F_mean: 0.6556
+  F_max: 0.7105
+  boundary_F1: 0.0646
+
+Weather: snow (Count: 90)
+  MAE: 0.0389
+  S_measure: 0.8186
+  E_adaptive: 0.8431
+  E_mean: 0.8723
+  E_max: 0.9119
+  F_adaptive: 0.6610
+  F_mean: 0.7016
+  F_max: 0.7722
+  boundary_F1: 0.1005

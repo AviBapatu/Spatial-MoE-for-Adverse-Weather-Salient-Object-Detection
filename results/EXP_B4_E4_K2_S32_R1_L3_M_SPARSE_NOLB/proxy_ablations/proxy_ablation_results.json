@@ -1,0 +1,43 @@
+{
+  "checkpoint": "/kaggle/working/WXSOD_Checkpoints/EXP_B4_E4_K2_S32_R1_L3_M_SPARSE_NOLB/best.pth",
+  "dataset": "test_real",
+  "timestamp": "2026-09-25T23:44:31.087295+00:00",
+  "ablations": {
+    "full_model": {
+      "MAE": 0.01977184729005846,
+      "S_measure": 0.9034804921936083
+    },
+    "no_entropy_fusion": {
+      "MAE": 0.019519505322284195,
+      "S_measure": 0.9054043272990422
+    },
+    "forced_expert_scale4": {
+      "MAE": 0.019768606812671702,
+      "S_measure": 0.9033893032522008
+    },
+    "random_routing": {
+      "random_routing_seeds": [
+        {
+          "seed": 42,
+          "MAE": 0.019528756693495603,
+          "S_measure": 0.9051139378958214
+        },
+        {
+          "seed": 1,
+          "MAE": 0.01948568700127918,
+          "S_measure": 0.9052503883968739
+        },
+        {
+          "seed": 7,
+          "MAE": 0.01950198690298218,
+          "S_measure": 0.9052646842835891
+        },
+        {
+          "seed": 123,
+          "MAE": 0.019477376570917065,
+          "S_measure": 0.9054481005674281
+        }
+      ]
+    }
+  }
+}

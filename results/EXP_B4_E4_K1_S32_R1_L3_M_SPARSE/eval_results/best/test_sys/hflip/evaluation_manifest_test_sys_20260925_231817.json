@@ -1,0 +1,10 @@
+{
+    "checkpoint": "/kaggle/working/WXSOD_Checkpoints/EXP_B4_E4_K1_S32_R1_L3_M_SPARSE/best.pth",
+    "dataset": "test_sys",
+    "tta": "hflip",
+    "num_images": 1500,
+    "prediction_resolution": "original",
+    "boundary_kernel": 5,
+    "boundary_shape": "ellipse",
+    "model_hash": "4a3b8ba773a11f9526d9e8b426888bb6"
+}

@@ -1,0 +1,236 @@
+{
+    "moe_4": {
+        "hard_counts": [
+            6876480,
+            0,
+            0,
+            0
+        ],
+        "hard_fractions": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "soft_mass": [
+            3438240.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "soft_fractions": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "total_tokens": 3438240,
+        "mean_entropy": 0.0,
+        "mean_normalized_entropy": 0.0,
+        "max_entropy": 0.0,
+        "mean_logit_std": NaN,
+        "mean_top1_top2_margin": 0.0,
+        "warnings": [
+            "DEAD_EXPERT: [1, 2, 3]",
+            "ROUTER COLLAPSE WARNING"
+        ],
+        "masked_token_fraction": 0.32658318291215405,
+        "weather_enrichment": {
+            "status": "success",
+            "global_weather_prior": {
+                "dark": 0.22563176895306858,
+                "fog": 0.22743682310469315,
+                "light": 0.16787003610108303,
+                "rain": 0.21660649819494585,
+                "snow": 0.1624548736462094
+            },
+            "expert_enrichment": [
+                {
+                    "expert": 0,
+                    "status": "valid",
+                    "token_count": 6876480.0,
+                    "kl_div": 0.0,
+                    "js_div": 0.0,
+                    "p_weather_given_expert": {
+                        "dark": 0.22540250447227192,
+                        "fog": 0.22719141323792486,
+                        "light": 0.16815742397137745,
+                        "rain": 0.21645796064400716,
+                        "snow": 0.16279069767441862
+                    }
+                },
+                {
+                    "expert": 1,
+                    "status": "insufficient_tokens",
+                    "token_count": 0.0
+                },
+                {
+                    "expert": 2,
+                    "status": "insufficient_tokens",
+                    "token_count": 0.0
+                },
+                {
+                    "expert": 3,
+                    "status": "insufficient_tokens",
+                    "token_count": 0.0
+                }
+            ]
+        }
+    },
+    "moe_8": {
+        "hard_counts": [
+            1710048,
+            0,
+            0,
+            0
+        ],
+        "hard_fractions": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "soft_mass": [
+            855024.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "soft_fractions": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "total_tokens": 855024,
+        "mean_entropy": 0.0,
+        "mean_normalized_entropy": 0.0,
+        "max_entropy": 0.0,
+        "mean_logit_std": NaN,
+        "mean_top1_top2_margin": 0.0,
+        "warnings": [
+            "DEAD_EXPERT: [1, 2, 3]",
+            "ROUTER COLLAPSE WARNING"
+        ],
+        "masked_token_fraction": 0.33013688327316487,
+        "weather_enrichment": {
+            "status": "success",
+            "global_weather_prior": {
+                "dark": 0.22563176895306858,
+                "fog": 0.22743682310469315,
+                "light": 0.16787003610108303,
+                "rain": 0.21660649819494585,
+                "snow": 0.1624548736462094
+            },
+            "expert_enrichment": [
+                {
+                    "expert": 0,
+                    "status": "valid",
+                    "token_count": 1710048.0,
+                    "kl_div": 0.0,
+                    "js_div": 0.0,
+                    "p_weather_given_expert": {
+                        "dark": 0.22540250447227192,
+                        "fog": 0.22719141323792486,
+                        "light": 0.16815742397137745,
+                        "rain": 0.21645796064400716,
+                        "snow": 0.16279069767441862
+                    }
+                },
+                {
+                    "expert": 1,
+                    "status": "insufficient_tokens",
+                    "token_count": 0.0
+                },
+                {
+                    "expert": 2,
+                    "status": "insufficient_tokens",
+                    "token_count": 0.0
+                },
+                {
+                    "expert": 3,
+                    "status": "insufficient_tokens",
+                    "token_count": 0.0
+                }
+            ]
+        }
+    },
+    "moe_16": {
+        "hard_counts": [
+            432096,
+            0,
+            0,
+            0
+        ],
+        "hard_fractions": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "soft_mass": [
+            216048.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "soft_fractions": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "total_tokens": 216048,
+        "mean_entropy": 0.0,
+        "mean_normalized_entropy": 0.0,
+        "max_entropy": 0.0,
+        "mean_logit_std": NaN,
+        "mean_top1_top2_margin": 0.0,
+        "warnings": [
+            "DEAD_EXPERT: [1, 2, 3]",
+            "ROUTER COLLAPSE WARNING"
+        ],
+        "masked_token_fraction": 0.3229542719614922,
+        "weather_enrichment": {
+            "status": "success",
+            "global_weather_prior": {
+                "dark": 0.22563176895306858,
+                "fog": 0.22743682310469315,
+                "light": 0.16787003610108303,
+                "rain": 0.21660649819494585,
+                "snow": 0.1624548736462094
+            },
+            "expert_enrichment": [
+                {
+                    "expert": 0,
+                    "status": "valid",
+                    "token_count": 432096.0,
+                    "kl_div": 0.0,
+                    "js_div": 0.0,
+                    "p_weather_given_expert": {
+                        "dark": 0.22540250447227192,
+                        "fog": 0.22719141323792486,
+                        "light": 0.16815742397137745,
+                        "rain": 0.21645796064400716,
+                        "snow": 0.16279069767441862
+                    }
+                },
+                {
+                    "expert": 1,
+                    "status": "insufficient_tokens",
+                    "token_count": 0.0
+                },
+                {
+                    "expert": 2,
+                    "status": "insufficient_tokens",
+                    "token_count": 0.0
+                },
+                {
+                    "expert": 3,
+                    "status": "insufficient_tokens",
+                    "token_count": 0.0
+                }
+            ]
+        }
+    }
+}

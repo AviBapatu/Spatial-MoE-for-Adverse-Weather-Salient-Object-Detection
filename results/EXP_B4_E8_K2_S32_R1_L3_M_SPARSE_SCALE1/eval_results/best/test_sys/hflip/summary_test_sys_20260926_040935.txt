@@ -1,0 +1,112 @@
+--- TEST_SYS RESULTS ---
+Global Sample Count: 1500
+MAE: 0.0212
+S_measure: 0.9078
+E_adaptive: 0.9496
+E_mean: 0.9503
+E_max: 0.9588
+F_adaptive: 0.8564
+F_mean: 0.8705
+F_max: 0.8889
+boundary_F1: 0.4929
+
+--- WEATHER-WISE RESULTS ---
+
+Weather: clean (Count: 167)
+  MAE: 0.0176
+  S_measure: 0.9223
+  E_adaptive: 0.9535
+  E_mean: 0.9596
+  E_max: 0.9676
+  F_adaptive: 0.8629
+  F_mean: 0.8832
+  F_max: 0.9027
+  boundary_F1: 0.5402
+
+Weather: dark (Count: 156)
+  MAE: 0.0210
+  S_measure: 0.9029
+  E_adaptive: 0.9486
+  E_mean: 0.9447
+  E_max: 0.9538
+  F_adaptive: 0.8482
+  F_mean: 0.8601
+  F_max: 0.8801
+  boundary_F1: 0.4773
+
+Weather: fog (Count: 166)
+  MAE: 0.0192
+  S_measure: 0.9269
+  E_adaptive: 0.9617
+  E_mean: 0.9657
+  E_max: 0.9746
+  F_adaptive: 0.8867
+  F_mean: 0.8979
+  F_max: 0.9165
+  boundary_F1: 0.5404
+
+Weather: light (Count: 166)
+  MAE: 0.0227
+  S_measure: 0.9048
+  E_adaptive: 0.9541
+  E_mean: 0.9495
+  E_max: 0.9588
+  F_adaptive: 0.8658
+  F_mean: 0.8741
+  F_max: 0.8939
+  boundary_F1: 0.4879
+
+Weather: rain (Count: 179)
+  MAE: 0.0211
+  S_measure: 0.9127
+  E_adaptive: 0.9492
+  E_mean: 0.9479
+  E_max: 0.9555
+  F_adaptive: 0.8631
+  F_mean: 0.8777
+  F_max: 0.8969
+  boundary_F1: 0.5042
+
+Weather: rainafog (Count: 172)
+  MAE: 0.0253
+  S_measure: 0.8868
+  E_adaptive: 0.9292
+  E_mean: 0.9366
+  E_max: 0.9466
+  F_adaptive: 0.8213
+  F_mean: 0.8409
+  F_max: 0.8610
+  boundary_F1: 0.4447
+
+Weather: rainasnow (Count: 166)
+  MAE: 0.0210
+  S_measure: 0.9069
+  E_adaptive: 0.9568
+  E_mean: 0.9540
+  E_max: 0.9633
+  F_adaptive: 0.8560
+  F_mean: 0.8708
+  F_max: 0.8899
+  boundary_F1: 0.4923
+
+Weather: snow (Count: 172)
+  MAE: 0.0204
+  S_measure: 0.9111
+  E_adaptive: 0.9555
+  E_mean: 0.9548
+  E_max: 0.9649
+  F_adaptive: 0.8600
+  F_mean: 0.8723
+  F_max: 0.8895
+  boundary_F1: 0.4884
+
+Weather: snowafog (Count: 156)
+  MAE: 0.0224
+  S_measure: 0.8944
+  E_adaptive: 0.9375
+  E_mean: 0.9389
+  E_max: 0.9492
+  F_adaptive: 0.8434
+  F_mean: 0.8567
+  F_max: 0.8734
+  boundary_F1: 0.4549
