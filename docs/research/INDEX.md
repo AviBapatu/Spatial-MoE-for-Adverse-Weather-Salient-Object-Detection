@@ -42,7 +42,7 @@ is the current manuscript and builds with `latexmk -pdf` to 6 pages.
   active terms, not four. See `RESEARCH_TRUTH.md` §1.1.
 - **Routing entropy is over the full $E$-way distribution**, ceiling `ln E = 2.0794` nats for
   `E = 8`, normalised by `log 8` — not the top-$k$ gate entropy. The older
-  `legacy_8expert/eval_results/entropy_comparison.json` files (~0.69 nats) are a pre-fix
+  `results/legacy/legacy_8expert/eval_results/entropy_comparison.json` files (~0.69 nats) are a pre-fix
   measurement.
 
 **Forbidden claims** are listed in `RESEARCH_TRUTH.md` §3; do not write them. In particular:
