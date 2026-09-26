@@ -147,7 +147,7 @@ Weather-Label-Free Salient Object Detection: A Strong Baseline and a\\ Null Resu
     \noindent\textbf{\textit{Abstract}\textemdash}
     Salient object detection degrades under adverse weather.
     We ask whether spatial token-level mixture-of-experts (MoE) routing, used without weather
-    labels, helps. On WXSOD our model reaches MAE $0.0192$ on 1{,}500 synthetic and $0.0168$ on
+    labels, helps. The answer is that it does not: on WXSOD the model reaches MAE $0.0192$ on 1{,}500 synthetic and $0.0168$ on
     554 real test images, competitive with weather-supervised methods. A full ablation, however,
     shows the mixture contributes nothing measurable: removing it, routing at one scale instead
     of three, or replacing routed experts with a dense expert all leave real-test MAE within
@@ -172,7 +172,10 @@ Weather-Label-Free Salient Object Detection: A Strong Baseline and a\\ Null Resu
 SOD identifies visually prominent regions as pixel-wise masks, but performance degrades under adverse weather.
 Two strategies address this: (1)~weather-label-conditioned models---NIFM~\cite{nifm2025}---require metadata at inference; (2)~MoE for weather restoration---WM-MoE~\cite{wmmoe2023}---targets pixel regression, not segmentation.
 To our knowledge, existing MoE-SOD methods primarily explore modality-, scale-, or task-level routing for multi-modal inputs rather than per-token routing for single-RGB SOD.
-To our knowledge, no existing method combines (a)~spatial token-level routing, (b)~independent routing at multiple pyramid scales, and (c)~an SOD decoder informed by routing confidence, all without weather-specific supervision.
+To our knowledge no prior work combines spatial token-level routing, independent routers at
+several pyramid scales, and routing-informed decoding for single-RGB SOD without weather
+supervision; token-level MoE has been applied to medical image segmentation and spatial MoE to
+dense prediction, but neither addresses adverse-weather SOD.
 This paper's central finding is a null result: the spatial MoE we designed does not measurably
 affect predictions (Sections~IV-F, IV-G). We report the architecture and its numbers together
 with the evidence that they are not attributable to routing.
@@ -698,6 +701,10 @@ $\pm0.0004$ measured across seeds 42--44.
 (The A2, A4 and A5 deltas of $0.0002$, $0.0001$ and $0.0004$ sit inside that band and are not
 meaningful; only the top-$k$ result at $0.0017$ and the epoch count at $0.0021$ exceed it.)
 
+That floor is measured on the reference configuration, and the remaining arms are single-seed,
+so their deltas are compared against a floor estimated elsewhere. A paired test over per-image
+errors would settle this directly and is not reported here.
+
 \textbf{Training budget is the only variable that matters more than any architectural choice}: the
 same recipe and seed trained for 14 epochs instead of 8 improves real-test MAE from 0.0195
 to 0.0174, a larger effect than every design-choice difference we measured combined.
@@ -1140,7 +1147,10 @@ Seed & MAE & $S_\phi$ & $E^{\text{adp}}$ & MAE & $S_\phi$ & $E^{\text{adp}}$ \\
 The model demonstrates that spatial token-level routing is feasible for single-RGB SOD without weather-specific supervision.
 However, several important limitations must be noted.
 First, the comparison against prior methods uses the benchmark's published numbers rather than our own re-implementations, so it is a comparison as reported; WFANet still attains the best real-split MAE, so we do not claim state-of-the-art performance.
-Second, the model was trained once without replicate runs, so variance estimates are unavailable.
+Second, the reported model attains boundary F1 of only $0.3601$ on real test. That follows from
+training with the boundary term inactive, and it is a limitation of the reported model rather
+than of the ablation.
+Third, the model was trained once without replicate runs, so variance estimates are unavailable.
 Third, the forced-expert analysis suggests that expert specialization may be limited, and the benefit of multi-expert routing over a single larger expert remains unclear.
 First and most centrally, the spatial MoE is shown across eleven trained arms and four
 inference-time interventions to have no measurable effect on output quality; we treat that as
