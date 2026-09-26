@@ -1,7 +1,7 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
 
 \bibitem{nifm2025}
-Q.~Chen, X.~Yang, T.~Wang, R.~Lu, X.~Sheng, Y.~Sun, {\em et~al.}, ``Salient
+Q.~Chen, X.~Yang, T.~Wang, R.~Lu, X.~Sheng, Y.~Sun, and B.~Zheng, ``Salient
   object detection in complex weather conditions via noise indicators,'' {\em
   arXiv preprint arXiv:2512.10592}, 2025.
 
@@ -19,27 +19,84 @@ Q.~Chen, X.~Yang, R.~Lu, Q.~Zhang, Y.~Liu, X.~Zhou, and B.~Zheng, ``{WXSOD}: A
 C.~Riquelme, J.~Puigcerver, B.~Mustafa, M.~Neumann, R.~Jenatton,
   A.~Susano~Pinto, D.~Keysers, and N.~Houlsby, ``Scaling vision with sparse
   mixture of experts,'' in {\em Advances in Neural Information Processing
-  Systems (NeurIPS)}, vol.~34, 2021.
+  Systems (NeurIPS)}, vol.~34, pp.~8583--8595, 2021.
 
 \bibitem{pvtv2}
 W.~Wang, E.~Xie, X.~Li, D.-P. Fan, K.~Song, D.~Liang, T.~Lu, P.~Luo, and
-  L.~Shao, ``Pvt v2: Improved baselines with pyramid vision transformer,'' {\em
-  Computational Visual Media}, vol.~8, no.~3, pp.~415--424, 2022.
+  L.~Shao, ``{PVT} v2: Improved baselines with pyramid vision transformer,''
+  {\em Computational Visual Media}, vol.~8, no.~3, pp.~415--424, 2022.
 
 \bibitem{struct-measure}
-D.-P. Cheng, D.-P. Fan, G.~Shi, H.~Peng, J.~Yang, L.~Shao, and L.~Van~Gool,
-  ``Structure-measure: A new way to evaluate foreground maps,'' in {\em
-  Proceedings of the IEEE International Conference on Computer Vision (ICCV)},
-  pp.~4548--4557, 2017.
+D.-P. Fan, M.-M. Cheng, Y.~Liu, T.~Li, and A.~Borji, ``Structure-measure: A new
+  way to evaluate foreground maps,'' in {\em Proceedings of the IEEE
+  International Conference on Computer Vision (ICCV)}, pp.~4548--4557, 2017.
 
 \bibitem{enhanced-measure}
-D.-P. Fan, M.-M. Cheng, Y.~Liu, T.~Li, and A.~Borji, ``Enhanced-alignment
-  measure for binary foreground map evaluation,'' in {\em Proceedings of the
-  International Joint Conference on Artificial Intelligence (IJCAI)},
-  pp.~694--700, 2016.
+D.-P. Fan, C.~Gong, Y.~Cao, B.~Ren, M.-M. Cheng, and A.~Borji,
+  ``Enhanced-alignment measure for binary foreground map evaluation,'' in {\em
+  Proceedings of the International Joint Conference on Artificial Intelligence
+  (IJCAI)}, pp.~698--704, 2018.
 
 \bibitem{f-measure}
-R.~Margolin, L.~Zelnik-Manor, and A.~Tal, ``A new approach to evaluate saliency
-  methods,'' {\em arXiv preprint arXiv:1407.0494}, 2014.
+R.~Margolin, L.~Zelnik-Manor, and A.~Tal, ``How to evaluate foreground maps?,''
+  in {\em Proceedings of the IEEE Conference on Computer Vision and Pattern
+  Recognition (CVPR)}, pp.~248--255, 2014.
+
+\bibitem{minet}
+K.~Shen, X.~Zhou, and Z.~Liu, ``{MINet}: Multiscale interactive network for
+  real-time salient object detection of strip steel surface defects,'' {\em
+  IEEE Transactions on Industrial Informatics}, 2024.
+
+\bibitem{admnet}
+X.~Zhou, K.~Shen, and Z.~Liu, ``{ADMNet}: Attention-guided densely multi-scale
+  network for lightweight salient object detection,'' {\em IEEE Transactions on
+  Multimedia}, 2024.
+
+\bibitem{tracer}
+M.~S. Lee, W.~Shin, and S.~W. Han, ``{TRACER}: Extreme attention guided salient
+  object tracing network,'' in {\em Proceedings of the AAAI Conference on
+  Artificial Intelligence}, vol.~36, pp.~12993--12994, 2022.
+
+\bibitem{seanet}
+G.~Li, Z.~Liu, X.~Zhang, and W.~Lin, ``Lightweight salient object detection in
+  optical remote-sensing images via semantic matching and edge alignment,''
+  {\em IEEE Transactions on Geoscience and Remote Sensing}, vol.~61, pp.~1--11,
+  2023.
+
+\bibitem{a3net}
+W.~Cui, K.~Song, H.~Feng, X.~Jia, S.~Liu, and Y.~Yan, ``Autocorrelation-aware
+  aggregation network for salient object detection of strip steel surface
+  defects,'' {\em IEEE Transactions on Instrumentation and Measurement},
+  vol.~72, pp.~1--12, 2023.
+
+\bibitem{dcnet}
+J.~Zhu, X.~Qin, and A.~El-Saddik, ``{DC-Net}: Divide-and-conquer for salient
+  object detection,'' {\em Pattern Recognition}, vol.~157, p.~110903, 2025.
+
+\bibitem{msrmnet}
+X.~Liu and L.~Wang, ``{MSRMNet}: Multi-scale skip residual and multi-mixed
+  features network for salient object detection,'' {\em Neural Networks},
+  vol.~173, p.~106144, 2024.
+
+\bibitem{safinet}
+H.~Luo, J.~Wang, and B.~Liang, ``Spatial attention feedback iteration for
+  lightweight salient object detection in optical remote sensing images,'' {\em
+  IEEE Journal of Selected Topics in Applied Earth Observations and Remote
+  Sensing}, 2024.
+
+\bibitem{tcgnet}
+Y.~Liu, L.~Zhou, G.~Wu, S.~Xu, and J.~Han, ``{TCGNet}: Type-correlation
+  guidance for salient object detection,'' {\em IEEE Transactions on
+  Intelligent Transportation Systems}, vol.~25, no.~7, pp.~6633--6644, 2023.
+
+\bibitem{gelenet}
+G.~Li, Z.~Bai, Z.~Liu, X.~Zhang, and H.~Ling, ``Salient object detection in
+  optical remote sensing images driven by transformer,'' {\em IEEE Transactions
+  on Image Processing}, vol.~32, pp.~5257--5269, 2023.
+
+\bibitem{gponet}
+Y.~Yi, N.~Zhang, W.~Zhou, Y.~Shi, G.~Xie, and J.~Wang, ``{GPONet}: A two-stream
+  gated progressive optimization network for salient object detection,'' {\em
+  Pattern Recognition}, vol.~150, p.~110330, 2024.
 
 \end{thebibliography}
