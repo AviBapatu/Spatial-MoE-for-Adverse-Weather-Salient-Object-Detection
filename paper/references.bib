@@ -1,66 +1,186 @@
-% references.bib — 8 essential citations
+% ---------------------------------------------------------------------------
+% references.bib
+%
+% Every entry checked against the published record (ICCV/IJCAI/CVPR open
+% access, IEEE Xplore, arXiv, publisher DOI pages).
+%
+% Corrected from an earlier revision:
+%   struct-measure    author list was garbled
+%   enhanced-measure  author list belonged to struct-measure; year was 2016, actually 2018
+%   f-measure         title was wrong ("A New Approach to Evaluate Saliency Methods");
+%                     the paper is "How to Evaluate Foreground Maps?" (CVPR 2014)
+% ---------------------------------------------------------------------------
 
 @article{wxsod2025,
-  title={{WXSOD}: A Benchmark for Robust Salient Object Detection in Adverse Weather Conditions},
-  author={Chen, Quan and Yang, Xiong and Lu, Rongfeng and Zhang, Qianyu and Liu, Yu and Zhou, Xiaofei and Zheng, Bolun},
-  journal={Pattern Recognition},
-  volume={170},
-  pages={114003},
-  year={2026},
-  doi={10.1016/j.patcog.2026.114003}
+  title   = {{WXSOD}: A Benchmark for Robust Salient Object Detection in Adverse Weather Conditions},
+  author  = {Chen, Quan and Yang, Xiong and Lu, Rongfeng and Zhang, Qianyu and Liu, Yu and Zhou, Xiaofei and Zheng, Bolun},
+  journal = {Pattern Recognition},
+  volume  = {170},
+  pages   = {114003},
+  year    = {2026},
+  doi     = {10.1016/j.patcog.2026.114003}
 }
 
 @article{nifm2025,
-  title={Salient Object Detection in Complex Weather Conditions via Noise Indicators},
-  author={Chen, Quan and Yang, Xiaokai and Wang, Tingyu and Lu, Rongfeng and Sheng, Xichun and Sun, Yaoqi and others},
-  journal={arXiv preprint arXiv:2512.10592},
-  year={2025}
+  title   = {Salient Object Detection in Complex Weather Conditions via Noise Indicators},
+  author  = {Chen, Quan and Yang, Xiaokai and Wang, Tingyu and Lu, Rongfeng and Sheng, Xichun and Sun, Yaoqi and Zheng, Bolun},
+  journal = {arXiv preprint arXiv:2512.10592},
+  year    = {2025}
 }
 
 @article{wmmoe2023,
-  title={{WM-MoE}: Weather-aware Multi-scale Mixture-of-Experts for Blind Adverse Weather Removal},
-  author={Luo, Yulin and Zhao, Rui and Wei, Xiaobao and Chen, Jinwei and Lu, Yijie and Xie, Shenghao and Wang, Tianyu and Xiong, Ruiqin and Lu, Ming and Zhang, Shanghang},
-  journal={arXiv preprint arXiv:2303.13739},
-  year={2023}
+  title   = {{WM-MoE}: Weather-aware Multi-scale Mixture-of-Experts for Blind Adverse Weather Removal},
+  author  = {Luo, Yulin and Zhao, Rui and Wei, Xiaobao and Chen, Jinwei and Lu, Yijie and Xie, Shenghao and Wang, Tianyu and Xiong, Ruiqin and Lu, Ming and Zhang, Shanghang},
+  journal = {arXiv preprint arXiv:2303.13739},
+  year    = {2023}
 }
 
 @inproceedings{v-moe2021,
-  title={Scaling Vision with Sparse Mixture of Experts},
-  author={Riquelme, Carlos and Puigcerver, Joan and Mustafa, Basil and Neumann, Maxim and Jenatton, Rodolphe and Susano Pinto, Andre and Keysers, Daniel and Houlsby, Neil},
-  booktitle={Advances in Neural Information Processing Systems (NeurIPS)},
-  volume={34},
-  year={2021}
+  title     = {Scaling Vision with Sparse Mixture of Experts},
+  author    = {Riquelme, Carlos and Puigcerver, Joan and Mustafa, Basil and Neumann, Maxim and Jenatton, Rodolphe and Susano Pinto, Andre and Keysers, Daniel and Houlsby, Neil},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {34},
+  pages     = {8583--8595},
+  year      = {2021}
 }
 
 @article{pvtv2,
-  title={PVT v2: Improved Baselines with Pyramid Vision Transformer},
-  author={Wang, Wenhai and Xie, Enze and Li, Xiang and Fan, Deng-Ping and Song, Kaitao and Liang, Ding and Lu, Tong and Luo, Ping and Shao, Ling},
-  journal={Computational Visual Media},
-  volume={8},
-  number={3},
-  pages={415--424},
-  year={2022}
+  title   = {{PVT} v2: Improved Baselines with Pyramid Vision Transformer},
+  author  = {Wang, Wenhai and Xie, Enze and Li, Xiang and Fan, Deng-Ping and Song, Kaitao and Liang, Ding and Lu, Tong and Luo, Ping and Shao, Ling},
+  journal = {Computational Visual Media},
+  volume  = {8},
+  number  = {3},
+  pages   = {415--424},
+  year    = {2022},
+  doi     = {10.1007/s41095-022-0274-8}
 }
 
 @inproceedings{struct-measure,
-  title={Structure-measure: A New Way to Evaluate Foreground Maps},
-  author={Cheng, Deng-Ping and Fan, Deng-Ping and Shi, Guoli and Peng, Huazhu and Yang, Jia and Shao, Ling and Van Gool, Luc},
-  booktitle={Proceedings of the IEEE International Conference on Computer Vision (ICCV)},
-  pages={4548--4557},
-  year={2017}
+  title     = {Structure-Measure: A New Way to Evaluate Foreground Maps},
+  author    = {Fan, Deng-Ping and Cheng, Ming-Ming and Liu, Yun and Li, Tao and Borji, Ali},
+  booktitle = {Proceedings of the IEEE International Conference on Computer Vision (ICCV)},
+  pages     = {4548--4557},
+  year      = {2017}
 }
 
 @inproceedings{enhanced-measure,
-  title={Enhanced-alignment Measure for Binary Foreground Map Evaluation},
-  author={Fan, Deng-Ping and Cheng, Ming-Ming and Liu, Yun and Li, Tao and Borji, Ali},
-  booktitle={Proceedings of the International Joint Conference on Artificial Intelligence (IJCAI)},
-  pages={694--700},
-  year={2016}
+  title     = {Enhanced-alignment Measure for Binary Foreground Map Evaluation},
+  author    = {Fan, Deng-Ping and Gong, Cheng and Cao, Yang and Ren, Bo and Cheng, Ming-Ming and Borji, Ali},
+  booktitle = {Proceedings of the International Joint Conference on Artificial Intelligence (IJCAI)},
+  pages     = {698--704},
+  year      = {2018}
 }
 
-@article{f-measure,
-  title={A New Approach to Evaluate Saliency Methods},
-  author={Margolin, Ran and Zelnik-Manor, Lihi and Tal, Ayellet},
-  journal={arXiv preprint arXiv:1407.0494},
-  year={2014}
+@inproceedings{f-measure,
+  title     = {How to Evaluate Foreground Maps?},
+  author    = {Margolin, Ran and Zelnik-Manor, Lihi and Tal, Ayellet},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {248--255},
+  year      = {2014}
+}
+
+% ---------------------------------------------------------------------------
+% Comparison methods in Table 4. Entries transcribed from the WXSOD
+% benchmark's own reference list, so the names and venues match the table.
+% ---------------------------------------------------------------------------
+
+@article{minet,
+  title   = {{MINet}: Multiscale Interactive Network for Real-Time Salient Object Detection of Strip Steel Surface Defects},
+  author  = {Shen, Keyan and Zhou, Xiaofei and Liu, Zhen},
+  journal = {IEEE Transactions on Industrial Informatics},
+  year    = {2024}
+}
+
+
+@article{admnet,
+  title   = {{ADMNet}: Attention-Guided Densely Multi-Scale Network for Lightweight Salient Object Detection},
+  author  = {Zhou, Xiaofei and Shen, Keyan and Liu, Zhen},
+  journal = {IEEE Transactions on Multimedia},
+  year    = {2024}
+}
+
+@inproceedings{tracer,
+  title     = {{TRACER}: Extreme Attention Guided Salient Object Tracing Network},
+  author    = {Lee, Min Seok and Shin, Woojae and Han, Sung Won},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
+  volume    = {36},
+  number    = {11},
+  pages     = {12993--12994},
+  year      = {2022}
+}
+
+@article{seanet,
+  title   = {Lightweight Salient Object Detection in Optical Remote-Sensing Images via Semantic Matching and Edge Alignment},
+  author  = {Li, Gongyang and Liu, Zhen and Zhang, Xinpeng and Lin, Weisi},
+  journal = {IEEE Transactions on Geoscience and Remote Sensing},
+  volume  = {61},
+  pages   = {1--11},
+  year    = {2023}
+}
+
+
+@article{a3net,
+  title   = {Autocorrelation-Aware Aggregation Network for Salient Object Detection of Strip Steel Surface Defects},
+  author  = {Cui, Wenqi and Song, Kechen and Feng, Hao and Jia, Xin and Liu, Shuang and Yan, Yunhui},
+  journal = {IEEE Transactions on Instrumentation and Measurement},
+  volume  = {72},
+  pages   = {1--12},
+  year    = {2023}
+}
+
+
+
+
+@article{dcnet,
+  title   = {{DC-Net}: Divide-and-Conquer for Salient Object Detection},
+  author  = {Zhu, Jiawei and Qin, Xuebin and El-Saddik, Abdulmotaleb},
+  journal = {Pattern Recognition},
+  volume  = {157},
+  pages   = {110903},
+  year    = {2025}
+}
+
+
+@article{safinet,
+  title   = {Spatial Attention Feedback Iteration for Lightweight Salient Object Detection in Optical Remote Sensing Images},
+  author  = {Luo, Haobo and Wang, Jie and Liang, Bin},
+  journal = {IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing},
+  year    = {2024}
+}
+
+@article{msrmnet,
+  title   = {{MSRMNet}: Multi-Scale Skip Residual and Multi-Mixed Features Network for Salient Object Detection},
+  author  = {Liu, Xingyu and Wang, Liguo},
+  journal = {Neural Networks},
+  volume  = {173},
+  pages   = {106144},
+  year    = {2024}
+}
+
+@article{tcgnet,
+  title   = {{TCGNet}: Type-Correlation Guidance for Salient Object Detection},
+  author  = {Liu, Yi and Zhou, Ling and Wu, Gang and Xu, Shoukun and Han, Jungong},
+  journal = {IEEE Transactions on Intelligent Transportation Systems},
+  volume  = {25},
+  number  = {7},
+  pages   = {6633--6644},
+  year    = {2023}
+}
+
+@article{gelenet,
+  title   = {Salient Object Detection in Optical Remote Sensing Images Driven by Transformer},
+  author  = {Li, Gongyang and Bai, Zhen and Liu, Zhen and Zhang, Xinpeng and Ling, Haibin},
+  journal = {IEEE Transactions on Image Processing},
+  volume  = {32},
+  pages   = {5257--5269},
+  year    = {2023}
+}
+
+@article{gponet,
+  title   = {{GPONet}: A Two-Stream Gated Progressive Optimization Network for Salient Object Detection},
+  author  = {Yi, Yun and Zhang, Nian and Zhou, Wei and Shi, Yu and Xie, Guoyang and Wang, Jing},
+  journal = {Pattern Recognition},
+  volume  = {150},
+  pages   = {110330},
+  year    = {2024}
 }
