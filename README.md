@@ -75,8 +75,8 @@ uv run torchrun --nproc_per_node=2 -m src.train_ddp --config experiments/baselin
 The notebooks pull the code zip from Hugging Face and verify its hash, so repackage with
 `python package_project.py` after changing anything under `src/` or `experiments/`.
 
-Open one of the generated notebooks: `moe-of-sod__accountA__v_e8_repro_best.ipynb` or
-`moe-of-sod__accountB__v_e8_repro_gatedense.ipynb`, and the `moe-of-sod__v_*.ipynb`
+Open one of the generated notebooks: `notebooks/train/moe-of-sod__accountA__v_e8_repro_best.ipynb` or
+`notebooks/train/moe-of-sod__accountB__v_e8_repro_gatedense.ipynb`, and the `moe-of-sod__v_*.ipynb`
 variants behind them. They are generated from the `generate_notebook_*.py` scripts, which
 are the editable source. Each notebook uses `RUN_MODE` to control behaviour:
 

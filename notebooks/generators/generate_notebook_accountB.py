@@ -1,23 +1,22 @@
-"""account A — 2-expert, top_k=1 run.
+"""account B — 4-expert, top_k=2 run.
 
-Regenerates ``moe-of-sod__accountA__v_e8_repro_best.ipynb`` and is the editable source of truth for it — change a
-cell here and re-run this script to rebuild the notebook. The generate_notebook_accountB.py
+Regenerates ``moe-of-sod__accountB__v_e8_repro_gatedense.ipynb`` and is the editable source of truth for it — change a
+cell here and re-run this script to rebuild the notebook. The generate_notebook_accountA.py
 generator holds the same cells for the other account (the two differ only in
 ACTIVE_CONFIG_PATH), so a shared cell change has to be applied to
 both files.
 
 Usage:
-    python generate_notebook_accountA.py
+    python generate_notebook_accountB.py
 """
 import json
 
-DEFAULT_CONFIG_PATH = "experiments/v_e8_repro_best.json"
-OUTPUT_NOTEBOOK = "moe-of-sod__accountA__v_e8_repro_best.ipynb"
+DEFAULT_CONFIG_PATH = "experiments/v_e8_repro_gatedense.json"
+OUTPUT_NOTEBOOK = "notebooks/train/moe-of-sod__accountB__v_e8_repro_gatedense.ipynb"
 
 
 def create_notebook(output_notebook: str = OUTPUT_NOTEBOOK,
-                    config_path: str = DEFAULT_CONFIG_PATH,
-                    run_mode: str = "TRAIN") -> None:
+                    config_path: str = DEFAULT_CONFIG_PATH) -> None:
     """Build the notebook cell list and write it to ``OUTPUT_NOTEBOOK``."""
     cells = []
 
@@ -63,7 +62,7 @@ ALLOW_OVERWRITE = False
 # is in-distribution. Every model in a comparison table must use the same setting;
 # hflip results land under their own subfolder, so both can coexist.
 EVAL_TTA = "hflip"
-ACTIVE_CONFIG_PATH = "experiments/v_e8_repro_best.json"
+ACTIVE_CONFIG_PATH = "experiments/v_e8_repro_gatedense.json"
 # Analysis results are uploaded under the experiment ID derived from
 # ACTIVE_CONFIG_PATH (see the upload cell), so there is no separate label here
 # that could drift out of sync with the checkpoints.
@@ -772,12 +771,6 @@ def load_model_from_checkpoint(ckpt_path, device):
         k=model_cfg.get('top_k', 2),
         gate_mode=model_cfg.get('gate_mode', 'renormalized'),
         window_size=model_cfg.get('window_size', 7),
-        # moe_type and moe_16_mode decide WHICH MODULES EXIST. Omitting them built a
-        # default-sparse model, which loaded the sparse arms but raised Missing/Unexpected
-        # keys for every dense / none / sparse_fine checkpoint -- crashing the notebook
-        # before its upload step and losing that run's evaluation entirely.
-        moe_type=model_cfg.get('moe_type', 'sparse'),
-        moe_16_mode=model_cfg.get('moe_16_mode', 'sparse'),
         use_deep_supervision=model_cfg.get('deep_supervision', False)
     ).to(device)
     model.load_state_dict(checkpoint['model_state_dict'])
@@ -1119,20 +1112,6 @@ python -m src.hf_sync push-checkpoint <file> --name <remote-name>
                 DEFAULT_CONFIG_PATH, config_path).splitlines(keepends=True)
             _swapped += 1
     assert _swapped == 1, f"config path appears in {_swapped} cells, expected 1"
-
-    # An evaluation-only notebook differs from a training notebook in exactly one more
-    # line: the run mode.  Swap it here rather than keeping a second copy of every cell.
-    if run_mode != "TRAIN":
-        _mode_swapped = 0
-        for _cell in cells:
-            _joined = "".join(_cell["source"])
-            if 'RUN_MODE = "TRAIN"' in _joined:
-                _cell["source"] = _joined.replace(
-                    'RUN_MODE = "TRAIN"', f'RUN_MODE = "{run_mode}"'
-                ).splitlines(keepends=True)
-                _mode_swapped += 1
-        assert _mode_swapped == 1, (
-            f"run mode line appears in {_mode_swapped} cells, expected 1")
 
     notebook = {
         "cells": cells,

@@ -17,7 +17,7 @@ Usage:
 """
 import json
 
-OUTPUT_NOTEBOOK = "moe-of-sod__legacy_eval.ipynb"
+OUTPUT_NOTEBOOK = "notebooks/evaluate/moe-of-sod__legacy_eval.ipynb"
 
 LEGACY_REVISION = "f395682f3f1dfa49fecff5d32a412be8fbc8abfd"
 LEGACY_SHA256 = "0571f320db8a7f4455310cbe85faff1e7b8c22a1f4af83770fd64672ddaf4576"

@@ -19,20 +19,20 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 GENERATORS = [
-    ("generate_notebook_accountA.py", ["moe-of-sod__accountA__v_e8_repro_best.ipynb"]),
-    ("generate_notebook_accountB.py", ["moe-of-sod__accountB__v_e8_repro_gatedense.ipynb"]),
+    ("generate_notebook_accountA.py", ["notebooks/train/moe-of-sod__accountA__v_e8_repro_best.ipynb"]),
+    ("generate_notebook_accountB.py", ["notebooks/train/moe-of-sod__accountB__v_e8_repro_gatedense.ipynb"]),
     ("generate_notebook_variants.py", [
-        "moe-of-sod__v_e8_repro_best_seed43.ipynb",
-        "moe-of-sod__v_e8_repro_best_seed44.ipynb",
-        "moe-of-sod__v_e4_repro_renorm.ipynb",
-        "moe-of-sod__v_e4_repro_densectrl.ipynb",
-        "moe-of-sod__v_e4_repro_nonectrl.ipynb",
-        "moe-of-sod__v_e2_loadbal.ipynb",
-        "moe-of-sod__v_e4_loadbal.ipynb",
-        "moe-of-sod__v_e2_gatedense.ipynb",
-        "moe-of-sod__v_e4_gatedense.ipynb",
+        "notebooks/train/moe-of-sod__v_e8_repro_best_seed43.ipynb",
+        "notebooks/train/moe-of-sod__v_e8_repro_best_seed44.ipynb",
+        "notebooks/train/moe-of-sod__v_e4_repro_renorm.ipynb",
+        "notebooks/evaluate/moe-of-sod__v_e4_repro_densectrl.ipynb",
+        "notebooks/evaluate/moe-of-sod__v_e4_repro_nonectrl.ipynb",
+        "notebooks/evaluate/moe-of-sod__v_e2_loadbal.ipynb",
+        "notebooks/evaluate/moe-of-sod__v_e4_loadbal.ipynb",
+        "notebooks/evaluate/moe-of-sod__v_e2_gatedense.ipynb",
+        "notebooks/evaluate/moe-of-sod__v_e4_gatedense.ipynb",
     ]),
-    ("generate_notebook_legacy_eval.py", ["moe-of-sod__legacy_eval.ipynb"]),
+    ("generate_notebook_legacy_eval.py", ["notebooks/evaluate/moe-of-sod__legacy_eval.ipynb"]),
 ]
 
 
