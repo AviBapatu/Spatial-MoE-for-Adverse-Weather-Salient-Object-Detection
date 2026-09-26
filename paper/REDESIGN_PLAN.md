@@ -1,7 +1,8 @@
-# REDESIGN_PLAN.md — 4-Page SCOVA Conference Paper Redesign
+# REDESIGN_PLAN.md — SCOVA Conference Paper Redesign (6-page budget)
 
 **Date:** 2026-09-02
-**Target:** 4 pages MAXIMUM including references, two-column, English
+**Status:** Applied — `paper/main.tex` is the redesigned 6-page manuscript; this file is the record of the plan behind it.
+**Target:** 6 pages MAXIMUM including references, two-column, English
 **Style:** Physics-like scientific exposition, mathematically rigorous, visually sophisticated
 
 ---
@@ -10,28 +11,28 @@
 
 | # | Issue | Severity | Fix |
 |---|-------|----------|-----|
-| 1 | Current paper says "four active terms" in loss — correct, but doesn't clarify deep supervision is OFF | LOW | Add one sentence: "Deep supervision, boundary, and SSIM losses are defined but inactive (λ=0) in the reported configuration." Already present in current paper §3. No change needed. |
-| 2 | Current paper cites 15 references — too many for a 4-page paper | HIGH | Trim to ~6–8 essential references. See §8. |
-| 3 | Current paper has 3 tables — too many, wastes space | HIGH | Reduce to 1 main table + 1 weather-wise table. Remove entropy table (fold into text). Remove forced-expert table (make text callout). |
+| 1 | The loss description was checked against the `baseline_v1` template and is wrong: the reported recipe activates SSIM, boundary, auxiliary-boundary and deep supervision (weights 1.0 / 1.0 / 0.5 / 0.4), with only the Z-loss and router-confidence term off | HIGH | State the eight active terms and their weights. `paper/main.tex` §III-G now does this. |
+| 2 | Current paper cites 15 references — more than a 6-page paper needs | HIGH | Trim to the 8 entries in `paper/references.bib`. See §5. |
+| 3 | The pre-redesign paper had 3 tables | — | The manuscript keeps main, weather-wise and entropy tables (3 total); the forced-expert table is folded into text |
 | 4 | Current paper has only 1 figure (architecture) — weak visual communication | HIGH | Add 2–3 more figures: routing mechanism zoom, qualitative predictions, weather-wise chart. |
 | 5 | Architecture figure is TikZ but too simple — doesn't show data flow clearly | MEDIUM | Redesign with proper tensor dimensions, data flow arrows, and scale labels. |
-| 6 | Current paper discusses limitations in main body — wastes space | MEDIUM | Move limitations to a compact "Limitations" paragraph at end of §5 or §6. Don't dedicate separate paragraphs. |
-| 7 | Current paper repeats MAE values in abstract, §4, §5.1, and §6 | LOW | State once in abstract, reference table elsewhere. |
-| 8 | No qualitative figure showing actual predictions | HIGH | Add Fig. 3 with actual evaluation PNG outputs. |
+| 6 | Pre-redesign paper discussed limitations in the main body — wasted space | MEDIUM | Fold limitations into §IV-F Discussion as a compact paragraph. |
+| 7 | Pre-redesign paper repeats MAE values in abstract, results and conclusion | LOW | State once in the abstract, reference the table elsewhere. |
+| 8 | No qualitative figure showing actual predictions | HIGH | Add Fig. 4 with actual evaluation PNG outputs. |
 
 ---
 
-## 2. Current Layout Problems
+## 2. Layout Problems in the Pre-Redesign Manuscript
+
+**Status:** these describe the 4-page v1 manuscript this plan replaced; `paper/main.tex` is the post-redesign version.
 
 | Problem | Impact | Solution |
 |---------|--------|----------|
-| References dominate page 4 (~0.5 page of bib) | Wastes 25% of last page | Trim to 6–8 references |
-| Only 1 figure in entire paper | Visually weak, doesn't communicate architecture effectively | Add 3 figures (routing zoom, qualitative, weather chart) |
-| 3 tables (main, weather, entropy) | Redundant; entropy table adds little | Merge into 2 tables max |
-| Discussion section is verbose (~0.3 page) | Could be compressed | Compress to 1 paragraph |
+| References dominate the last page (~0.5 page of bib) | Wastes 25% of the last page | Trim to 8 references |
+| Only 1 figure in entire paper | Visually weak, doesn't communicate architecture effectively | Add 3 figures (routing mechanism, weather chart, qualitative) |
+| Discussion section is verbose (~0.3 page) | Could be compressed | Compress to 1 paragraph (the manuscript keeps it as §IV-F) |
 | Conclusion is ~0.2 page with repeated content | Redundant | Compress to 3–4 sentences |
-| No actual prediction visualizations | No visual evidence of model output | Add qualitative figure using evaluation PNGs |
-| Entropy table is standalone | Low information density | Fold key numbers into text or small inset |
+| No actual prediction visualizations | No visual evidence of model output | Add qualitative figure using evaluation PNGs (Fig. 4) |
 
 ---
 
@@ -92,25 +93,7 @@ Output y_i + entropy H_i
 
 **Style:** Compact flow diagram with math annotations. Include the entropy formula as an inset equation.
 
-### FIGURE 3 — Qualitative Predictions (Page 3, full width)
-
-**Purpose:** Visual evidence of model output across weather conditions.
-**Content:** 2–3 rows from test_real, columns:
-1. Input image
-2. Ground truth
-3. Model prediction
-4. Entropy map (scale 1/8, upsampled)
-
-**Rows selected from actual evaluation outputs:**
-- Row 1: Snow (best MAE=0.0094) — `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/` PNG
-- Row 2: Fog (mid MAE=0.0148)
-- Row 3: Low-light (worst MAE=0.0243)
-
-**Source:** Use actual PNG files from `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/*.png` matched to input images.
-
-**Note:** If entropy maps are not saved as separate files, this can be replaced with a simple 2-column (input vs prediction) qualitative grid. The key is showing actual model outputs, not synthetic illustrations.
-
-### FIGURE 4 — Weather-Wise Quantitative Visualization (Page 3, half width)
+### FIGURE 3 — Weather-Wise Quantitative Visualization (Page 4, half width)
 
 **Purpose:** Compact visual summary of performance across weather conditions.
 **Content:** Horizontal bar chart showing MAE for 5 real-world weather categories (test_real):
@@ -124,11 +107,29 @@ Output y_i + entropy H_i
 
 **Alternative (if bar chart doesn't fit):** A compact table replacement — but the bar chart is preferred for visual impact.
 
+### FIGURE 4 — Qualitative Predictions (Page 6, full width)
+
+**Purpose:** Visual evidence of model output across weather conditions.
+**Content:** 2–3 rows from test_real, columns:
+1. Input image
+2. Ground truth
+3. Model prediction
+4. Absolute-error map (red-tinted)
+
+**Rows selected from actual evaluation outputs:**
+- Row 1: Snow (best MAE=0.0094) — `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/` PNG
+- Row 2: Fog (mid MAE=0.0148)
+- Row 3: Low-light (worst MAE=0.0243)
+
+**Source:** Use actual PNG files from `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/*.png` matched to input images.
+
+**Note:** This full-width figure is placed after the reference list, so it lands on the last page.
+
 ### FIGURES NOT INCLUDED (and why)
 
 | Candidate | Reason for exclusion |
 |-----------|---------------------|
-| Forced-expert ablation chart | Marginal result (ΔMAE=+1.2%); better as text callout than a full figure |
+| Forced-expert ablation chart | Marginal result (ΔMAE=+0.9%); better as text callout than a full figure |
 | Routing entropy visualization | Low information density; numbers can be stated in 1 sentence |
 | Training curves | Not available in repository |
 | t-SNE of expert embeddings | Not computed |
@@ -146,7 +147,7 @@ Output y_i + entropy H_i
 
 **Caption:** Global performance on WXSOD test splits.
 
-### TABLE 2 — Weather-Wise Results (Page 3, half width, beside Fig. 4)
+### TABLE 2 — Weather-Wise Results (Page 4, half width, beside Fig. 3)
 
 | Weather | N | MAE ↓ | S_ϕ ↑ | F_β^max ↑ |
 |---------|---|-------|-------|-----------|
@@ -158,39 +159,34 @@ Output y_i + entropy H_i
 
 **Caption:** Weather-wise results on real-world test (554 images).
 
-### TABLES REMOVED
+### TABLES KEPT / NOT PRESENT
 
-| Removed Table | Reason |
-|---------------|--------|
-| Entropy table (Table 3 in current paper) | Fold into text: "Mean normalized entropy ranges from 0.68–0.69 across scales, with scale 1/16 slightly more confident (0.68)." One sentence. |
-| Forced-expert table | Replace with text callout: "Forcing all tokens at scale 1/4 to expert 0 increased MAE by +0.0002 (+1.2%)." No table needed. |
+| Table | Decision |
+|-------|----------|
+| Entropy table (Table 3) | **Kept** in `paper/main.tex`: "Mean routing entropy per scale. Entropy is over the full distribution over all $E{=}8$ experts, so the maximum is $\log 8 = 2.0794$ nats." |
+| Forced-expert table | Not present; a text callout instead: "Forcing all tokens at scale 1/4 to expert 0 increased MAE by +0.0002 (+0.9%)." |
 
 ---
 
-## 5. Final Reference Shortlist (6–8 essential)
+## 5. Final Reference List (8 entries)
 
 | # | Key | Citation | Why Essential |
 |---|-----|----------|---------------|
 | 1 | `wxsod2025` | Chen et al., Pattern Recognition 2026 | The benchmark. Must cite. |
 | 2 | `nifm2025` | Chen et al., arXiv 2025 | Direct competitor (weather-label SOD) |
-| 3 | `wfynet2025` | Chen et al., 2025 | Direct competitor (weather-label SOD) |
+| 3 | `wmmoe2023` | Luo et al., arXiv 2023 (WM-MoE) | Closest MoE weather-restoration work. Must distinguish from. |
 | 4 | `v-moe2021` | Riquelme et al., NeurIPS 2021 | Foundational token-level MoE routing |
 | 5 | `pvtv2` | Wang et al., CVM 2022 | Backbone architecture |
 | 6 | `struct-measure` | Cheng et al., ICCV 2017 | S_ϕ metric definition |
 | 7 | `enhanced-measure` | Fan et al., IJCAI 2016 | E_ϕ metric definition |
 | 8 | `f-measure` | Margolin et al., arXiv 2014 | F_β metric definition |
 
-**Optional (if space permits):**
-- `wmmoe2023` (WM-MoE) — closest MoE weather restoration work
-- `complexity2025` (Complexity Experts) — recent SOTA MoE restoration
+These eight are exactly the keys in `paper/references.bib`, and all eight are cited in `paper/main.tex`.
 
-**Removed from current 15:**
-- `mmsod2025` (MMSOD) — multi-modal SOD, less relevant
-- `cmfnet2026` (CMFNet) — RGB-D SOD, less relevant
-- `cmoe2026` (CMoE) — modality-missing SOD, less relevant
-- `psod2025` (PSOD) — pluralistic SOD, less relevant
-- `soft-moe2024` (Soft MoE) — interesting but not cited in main claims
-- `mofme2024` (MoFME) — less directly relevant
+**Absent from `paper/references.bib`** — do not cite without adding the entry:
+- `wfynet2025` (WFANet)
+- `complexity2025` (Complexity Experts)
+- `mmsod2025`, `cmfnet2026`, `cmoe2026`, `psod2025`, `soft-moe2024`, `mofme2024` (considered and dropped)
 
 ---
 
@@ -224,27 +220,42 @@ Output y_i + entropy H_i
 
 | Section | Content | Approx. Lines |
 |---------|---------|---------------|
-| §5 Results §5.1 cont. | Brief observation on synthetic vs real. | 3 |
-| §5 Results §5.2 | Weather-wise analysis text + Table 2. | 10 |
-| **FIGURE 4** | Weather-wise bar chart (half width). | ~8 |
-| **FIGURE 3** | Qualitative predictions grid (full width). | ~12 (including caption) |
-| §5 Results §5.3 | Routing entropy (text only, 2–3 sentences). | 4 |
-| §5 Results §5.4 | Forced-expert analysis (text callout, no table). | 6 |
-| §5 Results §5.5 | Limitations (compact paragraph). | 5 |
-| §6 Conclusion | 3–4 sentences. | 5 |
+| §IV-B cont. | Brief observation on synthetic vs real. | 3 |
+| §IV-C | Weather-wise analysis text + Table 2. | 10 |
+| §IV-D | Routing entropy (text + Table 3). | 4 |
+| §IV-E | Forced-expert analysis (text callout, no table). | 6 |
 
-**Page 3 total:** ~53 lines. Two figures + one table.
+**Page 3 total:** ~23 lines plus Table 2 and the surrounding floats.
 
 ### PAGE 4 (~55 lines)
 
 | Section | Content | Approx. Lines |
 |---------|---------|---------------|
-| References | 6–8 entries. | ~20 |
-| (Remaining space) | Blank or minimal. | ~35 |
+| §IV-F | Discussion (compact paragraph, includes limitations). | 5 |
+| §V | Conclusion, 3–4 sentences. | 5 |
+| **FIGURE 3** | Weather-wise bar chart (half width). | ~8 |
+| (Remaining space) | Float slack for the figures still drifting above. | ~35 |
 
-**Page 4 total:** ~20 lines of references, rest is whitespace. This is acceptable for a 4-page paper — references naturally fall on the last page.
+**Page 4 total:** the discussion, the conclusion and the weather-wise figure.
 
-**Alternatively:** If references fit on page 3 (with compression), page 4 can be entirely blank, which is also acceptable. The key constraint is MAXIMUM 4 pages, not EXACTLY 4 pages of content.
+### PAGE 5 (~55 lines)
+
+| Section | Content | Approx. Lines |
+|---------|---------|---------------|
+| References | 8 entries. | ~20 |
+| (Remaining space) | Blank or minimal. | ~30 |
+
+**Page 5 total:** ~20 lines of references.
+
+### PAGE 6 (~55 lines)
+
+| Section | Content | Approx. Lines |
+|---------|---------|---------------|
+| **FIGURE 4** | Qualitative predictions grid (full width), placed after the reference list. | ~12 (including caption) |
+
+**Page 6 total:** the trailing full-width figure.
+
+**The key constraint is MAXIMUM 6 pages, not EXACTLY 6 pages of content.** References naturally fall on the penultimate page and the trailing full-width figure on the last.
 
 ---
 
@@ -256,7 +267,7 @@ Output y_i + entropy H_i
 | 2 | Routing logits | h_i = W₂·GELU(W₁r_i + b₁) + b₂ ∈ ℝ^E |
 | 3 | Noisy routing + top-K | T_i = topk(h_i + ε_i, K=2), g_{i,k} = softmax over T_i |
 | 4 | Sparse dispatch | y_i = Σ_{k∈T_i} g_{i,k} · E_k(x_i) |
-| 5 | Routing entropy | H_i = −Σ_{k∈T_i} g_{i,k} log g_{i,k}, Ĥ_i = H_i / log 2 |
+| 5 | Routing entropy | H_i = −Σ_{j=1}^{E} p_{i,j} log p_{i,j}, Ĥ_i = H_i / log 8 |
 | 6 | Entropy fusion | F_s = Proj_Y(Y_s) + λ_s · Proj_H(Ĥ_s) |
 | 7 | Total loss | L = L_BCE + λ_IoU·L_IoU + λ_LB·L_LB + λ_IMP·L_IMP |
 
@@ -298,7 +309,7 @@ All variables defined before first use. No undefined symbols.
 - Use `\documentclass[10pt,twocolumn]{article}` (already in place)
 - Use `\usepackage[margin=0.6in]{geometry}` (already in place)
 - Ensure total page count via `pdflatex` → `pdflatex` → `bibtex` → `pdflatex` × 2
-- Verify page count is ≤ 4 before submission
+- Verify page count is ≤ 6 before submission
 - Include `\usepackage{hyperref}` for clickable references (already present)
 
 ---

@@ -1,10 +1,10 @@
-# FINAL_PAPER_PLAN.md — SCOVA 4-Page Conference Paper
+# FINAL_PAPER_PLAN.md — SCOVA Conference Paper (6-page budget)
 
 **Title:** Spatially Dynamic Mixture-of-Experts for Adverse-Weather Salient Object Detection
 **Date:** 2026-09-02
-**Venue:** SCOVA (maximum 4 pages including references)
+**Venue:** SCOVA (maximum 6 pages including references)
 **Style:** Physics-like scientific exposition, mathematically rigorous, visually sophisticated
-**Status:** PLAN ONLY — not yet written
+**Status:** The manuscript `paper/main.tex` exists and follows the structure and float plan in §2–§7; this file is the brief it was written from and the reference for any rewrite.
 
 ---
 
@@ -14,26 +14,21 @@ This plan is derived exclusively from the research corpus below. No outside assu
 
 | Document | Role in this plan |
 |----------|-------------------|
-| `RESEARCH_TRUTH.md` | Authoritative scientific claims; evidence hierarchy |
-| `RESEARCH_TRUTH.md` | Which claims are supported/unsupported |
+| `RESEARCH_TRUTH.md` | Authoritative scientific claims; supported/unsupported claims; evidence hierarchy |
 | `docs/research/RESULTS.md` | All experimental data with sources |
-| `docs/research/FINAL_RESEARCH_POSITION.md` | Defensible novelty claims, corrections to prior work |
-| `RESEARCH_TRUTH.md` | Verified architecture, tensor dims, results |
-| `docs/research/ARCHITECTURE.md` | Component-level architecture details |
-| `docs/research/EXPERIMENTS.md` | Config, weather-wise breakdown, key observations |
+| `docs/research/RELATED_WORK.md` | Defensible novelty claims, positioning, corrections to prior work |
+| `docs/research/ARCHITECTURE.md` | Component-level architecture details, tensor dims |
+| `docs/research/EXPERIMENTS.md` | Config system, the current experiment set, protocols |
 | `docs/research/RESULTS_NARRATIVE.md` | Honest scientific interpretation of results |
 | `docs/research/ABLATIONS.md` | What ablations exist vs. what was run |
-| `docs/research/NOVELTY_MATRIX.md` | Comparative analysis vs. prior work |
-| `docs/research/LITERATURE_DATABASE.md` | Verified paper registry (63 papers) |
-| `docs/research/LITERATURE_CLAIMS.md` | Externally verified literature claims |
+| `docs/research/LITERATURE_DATABASE.md` | Verified paper registry |
 | `docs/research/DATASETS.md` | WXSOD dataset structure and splits |
 | `docs/research/TRAINING.md` | Training pipeline, loss, optimization |
 | `paper/REDESIGN_PLAN.md` | Layout redesign guidance |
-| `RESEARCH_TRUTH.md` | Paper-level verified claims |
 
 ---
 
-## 1. Scientific Position (from FINAL_RESEARCH_POSITION.md + FINAL_CLAIM_EVIDENCE_MATRIX.md)
+## 1. Scientific Position (from RESEARCH_TRUTH.md + RELATED_WORK.md)
 
 ### 1.1 What the experiments support
 
@@ -50,7 +45,7 @@ This plan is derived exclusively from the research corpus below. No outside assu
 - Cannot claim efficiency
 - Cannot claim SOTA performance
 
-### 1.3 Defensible novelty claims (from FINAL_RESEARCH_POSITION.md §4-5)
+### 1.3 Defensible novelty claims (from RELATED_WORK.md)
 
 | Claim | Status | Recommended wording |
 |-------|--------|-------------------|
@@ -68,12 +63,14 @@ This plan is derived exclusively from the research corpus below. No outside assu
 
 | Page | Content | Approx. Lines |
 |------|---------|---------------|
-| **Page 1** | Title, Abstract, §1 Introduction, §2 Method (§2.1–§2.3) | ~55 |
-| **Page 2** | §2 Method (§2.4–§2.6), **FIGURE 1** (hero architecture, full width) | ~55 |
-| **Page 3** | §3 Experimental Setup, §4 Results (Table 1 + Table 2), **FIGURE 2** (routing mechanism zoom), **FIGURE 3** (qualitative predictions, full width) | ~55 |
-| **Page 4** | §4 Results (§4.3 routing entropy, §4.4 forced-expert), §5 Limitations, §6 Conclusion, **FIGURE 4** (weather-wise bar chart), compact References | ~55 |
+| **Page 1** | Title, Abstract, §I Introduction, §II Related Work, §III Method (A–B) | ~55 |
+| **Page 2** | §III Method (C–G), **FIGURE 1** (hero architecture, full width), **FIGURE 2** (routing mechanism, full width) | ~55 |
+| **Page 3** | §III Method end, §IV-A Setup, §IV-B Main Results text | ~55 |
+| **Page 4** | **TABLE 1**, §IV-C Weather-Wise Analysis with **TABLE 2** + **FIGURE 3** (weather-wise bar chart), §IV-D Routing Entropy with **TABLE 3**, §IV-E Forced-Expert Analysis, §IV-F Discussion | ~55 |
+| **Page 5** | References (8 entries) | ~20 |
+| **Page 6** | **FIGURE 4** (qualitative predictions, full width), placed after the reference list | ~12 |
 
-**Key constraint:** Total must be ≤ 4 pages including references. This plan assumes references fall on page 4 (approximately 20 lines for 6–8 entries).
+**Key constraint:** Total must be ≤ 6 pages including references. The full-width qualitative figure sits on the last page, after the reference list, which is what takes the paper to six pages rather than five.
 
 ---
 
@@ -119,7 +116,7 @@ SpatialMoELayer    SpatialMoELayer   SpatialMoELayer
 
 **LaTeX:** Full-width `figure*` environment with TikZ. Keep arrow labels in `\scriptsize`.
 
-### FIGURE 2 — Spatial-MoE Routing Mechanism (Page 3, half width)
+### FIGURE 2 — Spatial-MoE Routing Mechanism (Page 2, full two-column width)
 
 **Purpose:** Show how a single spatial token gets routed to experts.
 
@@ -144,35 +141,12 @@ Output y_i  +  Entropy H_i
 
 **Style:**
 - Compact flow diagram with math annotations
-- Include the entropy formula as an inset equation: $\mathcal{H}_i = -\sum_k g_{i,k} \log g_{i,k}$
+- Include the entropy formula as an inset equation: $\mathcal{H}_i = -\sum_{j=1}^{E} p_{i,j} \log p_{i,j}$, normalized by $\log 8$
 - Color-coding consistent with Fig. 1
 
 **LaTeX:** Half-width `figure` environment. TikZ flow diagram.
 
-### FIGURE 3 — Qualitative Predictions (Page 3, full two-column width)
-
-**Purpose:** Visual evidence of model output across weather conditions.
-
-**Content:** 3 rows, columns:
-1. Input image (from `data/WXSDO_data/test_real/input/`)
-2. Ground truth (from `data/WXSDO_data/test_real/gt/`)
-3. Model prediction (from `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/`)
-
-**Rows (selected from actual evaluation outputs):**
-- **Row 1:** Snow (best MAE=0.0094) — select a representative snow image
-- **Row 2:** Fog (mid MAE=0.0148) — select a representative fog image
-- **Row 3:** Low-light (worst MAE=0.0243) — select a representative low-light image
-
-**Source:** Use actual PNG files from `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/*.png` matched to input images by filename.
-
-**Style:**
-- Compact, high-resolution crops
-- Each row labeled with weather type and sample count
-- Caption states: "Qualitative examples on WXSOD real-world test. Rows: snow ($N{=}90$, MAE 0.0094), fog ($N{=}126$, MAE 0.0148), low-light ($N{=}93$, MAE 0.0243)."
-
-**LaTeX:** Full-width `figure*` environment. Use `\includegraphics` with `width=\linewidth` for each subfigure column.
-
-### FIGURE 4 — Weather-Wise Quantitative Visualization (Page 4, half width)
+### FIGURE 3 — Weather-Wise Quantitative Visualization (Page 4, half width)
 
 **Purpose:** Compact visual summary of performance across weather conditions.
 
@@ -192,11 +166,35 @@ Output y_i  +  Entropy H_i
 
 **LaTeX:** Half-width `figure` environment. Generate with `pgfplots` or `matplotlib` (save as PDF).
 
+### FIGURE 4 — Qualitative Predictions (Page 6, full two-column width)
+
+**Purpose:** Visual evidence of model output across weather conditions.
+
+**Content:** 3 rows, columns:
+1. Input image (from `data/WXSDO_data/test_real/input/`)
+2. Ground truth (from `data/WXSDO_data/test_real/gt/`)
+3. Model prediction (from `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/`)
+4. Absolute-error map (red-tinted)
+
+**Rows (selected from actual evaluation outputs):**
+- **Row 1:** Snow (best MAE=0.0094) — select a representative snow image
+- **Row 2:** Fog (mid MAE=0.0148) — select a representative fog image
+- **Row 3:** Low-light (worst MAE=0.0243) — select a representative low-light image
+
+**Source:** Use actual PNG files from `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/*.png` matched to input images by filename.
+
+**Style:**
+- Compact, high-resolution crops
+- Each row labeled with weather type and sample count
+- Caption states: "Qualitative examples on WXSOD real-world test. Rows: snow ($N{=}90$, MAE 0.0094), fog ($N{=}126$, MAE 0.0148), low-light ($N{=}93$, MAE 0.0243)."
+
+**LaTeX:** Full-width `figure*` environment, placed after the reference list so it lands on the last page. Use `\includegraphics` with `width=\linewidth` for each subfigure column.
+
 ### Figures NOT included (and why)
 
 | Candidate | Reason for exclusion |
 |-----------|---------------------|
-| Forced-expert ablation chart | Marginal result (ΔMAE=+1.2%); better as text callout |
+| Forced-expert ablation chart | Marginal result (ΔMAE=+0.9%); better as text callout |
 | Routing entropy visualization | Low information density; numbers stated in 1 sentence |
 | Training curves | Not available in repository |
 | t-SNE of expert embeddings | Not computed |
@@ -217,7 +215,7 @@ Output y_i  +  Entropy H_i
 
 **Source:** `results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/metrics.json`, `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json`
 
-### TABLE 2 — Weather-Wise Results (Page 3, half width, beside Fig. 4)
+### TABLE 2 — Weather-Wise Results (Page 4, half width, beside Fig. 3)
 
 | Weather | $N$ | MAE ↓ | $S_\phi$ ↑ | $F_\beta^{\max}$ ↑ |
 |---------|-----|-------|------------|---------------------|
@@ -231,18 +229,29 @@ Output y_i  +  Entropy H_i
 
 **Source:** `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/metrics.json`
 
-### Tables REMOVED from current manuscript
+### TABLE 3 — Mean Routing Entropy (Page 4, half width)
 
-| Removed Table | Replacement |
-|---------------|-------------|
-| Table 3 (entropy, 3 rows × 3 cols) | Fold key numbers into text: "Mean normalized entropy ranges from 0.68–0.69 across scales, with scale 1/16 slightly more confident (0.68)." One sentence. |
-| Forced-expert table (Table 4 in earlier draft) | Replace with text callout: "Forcing all tokens at scale 1/4 to expert 0 increased MAE by +0.0002 (+1.2%)." No table needed. |
+| Scale | Synthetic (nats) | % of max | Real (nats) | % of max |
+|-------|------------------|----------|-------------|----------|
+| $1/4$  | 2.0786 | 99.96 | 2.0788 | 99.97 |
+| $1/8$  | 2.0788 | 99.97 | 2.0789 | 99.97 |
+| $1/16$ | 2.0755 | 99.81 | 2.0756 | 99.82 |
+
+**Caption:** Mean routing entropy per scale. Entropy is over the full distribution over all $E{=}8$ experts, so the maximum is $\log 8 = 2.0794$ nats.
+
+**Source:** `results/legacy/legacy_8expert/routing_entropy/entropy_comparison.json`
+
+### Tables NOT present
+
+| Table | Why |
+|-------|-----|
+| Forced-expert table | Folded into text: forcing all tokens at scale 1/4 to expert 0 changes MAE by +0.0002 (+0.9%). |
 
 ---
 
 ## 5. Equation Plan
 
-All equations compact, variables defined before first use. No undefined symbols.
+`paper/main.tex` numbers twelve equations in total; the table below lists the essential ones and their content.
 
 | Eq. | Content | Compact Form | Variables to define |
 |-----|---------|--------------|-------------------|
@@ -250,9 +259,9 @@ All equations compact, variables defined before first use. No undefined symbols.
 | 2 | Routing logits | $\bh_i = W_2 \cdot \text{GELU}(W_1 \br_i + b_1) + b_2 \in \reals^{E}$ | $W_1 \in \reals^{128 \times 2C}$, $W_2 \in \reals^{E \times 128}$, $E{=}8$ |
 | 3 | Noisy top-$K$ | $\mathcal{T}_i = \topk_j(\tilde{h}_{i,j}, K{=}2)$, $g_{i,k} = \text{softmax}(\tilde{h}_{i,k})_{k \in \mathcal{T}_i}$ | $K{=}2$, $\tilde{h}_{i,j} = h_{i,j} + \epsilon_{i,j}$, $\epsilon_{i,j} \sim \mathcal{N}(0, \sigma_j^2(\bx_i))$ |
 | 4 | Sparse dispatch | $\by_i = \sum_{k \in \mathcal{T}_i} g_{i,k} \cdot \E_k(\bx_i)$ | $\E_k$ (expert $k$) |
-| 5 | Routing entropy | $\mathcal{H}_i = -\sum_{k \in \mathcal{T}_i} g_{i,k} \log g_{i,k}$, $\Hs_i = \mathcal{H}_i / \log 2$ | $\Hs_i \in [0,1]$ (normalized entropy) |
+| 5 | Routing entropy | $\mathcal{H}_i = -\sum_{j=1}^{E} p_{i,j} \log p_{i,j}$, $\Hs_i = \mathcal{H}_i / \log 8$ | $\Hs_i \in [0,1]$ (normalized entropy over all $E$ experts), $E{=}8$ |
 | 6 | Entropy fusion | $\bF_s = \text{Proj}_Y(\bY_s) + \lambda_s \cdot \text{Proj}_\mathcal{H}(\Hs_s)$ | $\lambda_s$ (learnable, init 0.1) |
-| 7 | Total loss | $\mathcal{L} = \mathcal{L}_{\text{BCE}} + \lambda_{\text{IoU}}\mathcal{L}_{\text{IoU}} + \lambda_{\text{LB}}\mathcal{L}_{\text{LB}} + \lambda_{\text{IMP}}\mathcal{L}_{\text{IMP}}$ | $\lambda_{\text{IoU}}{=}1.0$, $\lambda_{\text{LB}}{=}\lambda_{\text{IMP}}{=}0.01$ |
+| 7 | Total loss | $\mathcal{L} = \lambda_{\text{BCE}}\mathcal{L}_{\text{BCE}} + \lambda_{\text{IoU}}\mathcal{L}_{\text{IoU}} + \lambda_{\text{SSIM}}\mathcal{L}_{\text{SSIM}} + \lambda_{\text{BND}}\mathcal{L}_{\text{BND}} + \lambda_{\text{LB}}\mathcal{L}_{\text{LB}} + \lambda_{\text{IMP}}\mathcal{L}_{\text{IMP}} + \lambda_{\text{auxBND}}\mathcal{L}_{\text{auxBND}} + \lambda_{\text{DS}}\mathcal{L}_{\text{DS}}$ | $\lambda_{\text{BCE}}{=}\lambda_{\text{IoU}}{=}\lambda_{\text{SSIM}}{=}\lambda_{\text{BND}}{=}1.0$, $\lambda_{\text{LB}}{=}\lambda_{\text{IMP}}{=}0.01$, $\lambda_{\text{auxBND}}{=}0.5$, $\lambda_{\text{DS}}{=}0.4$; Z-loss and router-confidence off |
 
 **Loss term definitions (compact):**
 - $\mathcal{L}_{\text{BCE}}$: Binary cross-entropy with logits.
@@ -260,11 +269,11 @@ All equations compact, variables defined before first use. No undefined symbols.
 - $\mathcal{L}_{\text{LB}}$: Load-balancing: $\frac{1}{|\mathcal{S}|}\sum_{s} E \sum_j f_j^{(s)} P_j^{(s)}$ (Shazeer form).
 - $\mathcal{L}_{\text{IMP}}$: Importance: $\frac{1}{|\mathcal{S}|}\sum_{s} (\text{std}(\bP^{(s)}) / \text{mean}(\bP^{(s)}))^2$.
 
-**Note:** Deep supervision, boundary, SSIM, and Z-loss losses are defined in the codebase but inactive ($\lambda{=}0$) in the reported configuration. State this in one sentence after Eq. 7.
+**Note:** the Z-loss and the router-confidence term are the only inactive terms ($\lambda{=}0$); deep supervision, boundary and SSIM are all active. State this in one sentence after the loss equation.
 
 ---
 
-## 6. Reference Shortlist (6–8 essential)
+## 6. Reference List (8 entries)
 
 | # | Key | Citation | Why Essential |
 |---|-----|----------|---------------|
@@ -277,19 +286,14 @@ All equations compact, variables defined before first use. No undefined symbols.
 | 7 | `enhanced-measure` | Fan et al., IJCAI 2016 | $E_\phi$ metric definition. |
 | 8 | `f-measure` | Margolin et al., arXiv 2014 | $F_\beta$ metric definition. |
 
-**Optional (if space permits):**
+These eight are exactly the keys in `paper/references.bib`, and all eight are cited in `paper/main.tex`.
+
+**Absent from `paper/references.bib`** — do not cite without adding the entry:
 - `wfynet2025` (WFANet) — second direct competitor
 - `complexity2025` (Complexity Experts, CVPR 2025) — recent SOTA MoE restoration
+- `mmsod2025`, `cmfnet2026`, `cmoe2026`, `psod2025`, `soft-moe2024`, `mofme2024` (considered and dropped)
 
-**Removed from current 15 references:**
-- `mmsod2025` (MMSOD) — multi-modal SOD, less relevant
-- `cmfnet2026` (CMFNet) — RGB-D SOD, less relevant
-- `cmoe2026` (CMoE) — modality-missing SOD, less relevant
-- `psod2025` (PSOD) — pluralistic SOD, less relevant
-- `soft-moe2024` (Soft MoE) — interesting but not cited in main claims
-- `mofme2024` (MoFME) — less directly relevant
-
-**Rationale:** For a 4-page paper, references must be highly targeted. Each reference must directly support a claim in the paper. Metric definitions are necessary for reproducibility. WM-MoE and NIFM are the two closest competitors and must be cited for differentiation.
+**Rationale:** For a 6-page paper, references must still each directly support a claim in the paper, but the list can run to the full shortlist above. Metric definitions are necessary for reproducibility. WM-MoE and NIFM are the two closest competitors and must be cited for differentiation.
 
 ---
 
@@ -309,117 +313,136 @@ All equations compact, variables defined before first use. No undefined symbols.
 
 **Tone:** Factual. "We propose..." not "We show that...". No causal claims.
 
-### §1 Introduction (~0.4 page, 12 lines)
+### §I Introduction (~0.4 page, 12 lines)
 
 **Paragraph 1 (6 lines):** Problem + prior work gap.
 - SOD identifies visually prominent regions but degrades under adverse weather
-- Two strategies exist: (a) weather-label-conditioned models [NIFM, WFANet] — require metadata at inference; (b) MoE for weather restoration [WM-MoE, Complexity Experts] — target pixel regression, not segmentation
-- Existing MoE-SOD methods [MMSOD, CMFNet, CMoE, PSOD] route at modality/scale/task level — not spatial token level for single-RGB SOD
+- Two strategies exist: (a) weather-label-conditioned models [NIFM] — require metadata at inference; (b) MoE for weather restoration [WM-MoE] — target pixel regression, not segmentation
+- Existing MoE-SOD methods route at modality/scale/task level — not spatial token level for single-RGB SOD
 - No existing method combines spatial token-level routing, independent multi-scale routing, and routing-informed decoding without weather-specific supervision
+- Scope every novelty sentence with "to our knowledge" (see §11.2)
 
 **Paragraph 2 (6 lines):** Our approach + 3 contributions.
-- We present SpatialMoE-SOD: token-level spatial mixture-of-experts that routes individual spatial tokens to specialized expert networks at three independent pyramid scales without weather labels
+- We present SpatialMoE-SOD: token-level spatial mixture-of-experts that routes individual spatial tokens to **separate** expert networks at three independent pyramid scales without weather labels
 - Contribution 1: Token-level spatial router (DWConv3x3 + MLP, noisy top-K=2, true sparse dispatch)
 - Contribution 2: Three independent routers at scales 1/4, 1/8, 1/16, each with separate expert pool
-- Contribution 3: Per-token routing entropy normalized by $\log K$ and injected as explicit decoder feature via learnable additive fusion
+- Contribution 3: Per-token routing entropy over the full expert distribution, normalized by $\log 8$ and injected as explicit decoder feature via learnable additive fusion
 
-### §2 Method (~1.2 pages, 36 lines)
+### §II Related Work (~0.2 page, 8 lines)
 
-#### §2.1 Overview (~0.1 page, 3 lines)
-Brief pipeline description. Reference Fig. 1.
+Three short subsections, matching `paper/main.tex` §II:
+- **A. Adverse-Weather SOD** — NIFM fuses noise indicators from explicit weather-type one-hot vectors; WXSOD provides the benchmark (per-image weather labels, synthetic and real test splits).
+- **B. MoE for Weather Restoration** — WM-MoE uses weather-aware routing for adverse-weather image restoration; our method performs spatial token-level routing for single-RGB SOD without weather-specific supervision; existing MoE weather methods target pixel regression, not segmentation.
+- **C. MoE for SOD** — to our knowledge existing MoE-SOD methods route at modality, scale or task level rather than per token for single-RGB input; V-MoE established token-level top-$K$ routing for classification; routing entropy has been used for uncertainty estimation in MoE classifiers but not, to our knowledge, as a dense-prediction decoder feature (and no ablation isolates it — say so).
 
-#### §2.2 Multi-Scale Features (~0.15 page, 5 lines)
-- PVTv2-B4 backbone extracts features at 1/4, 1/8, 1/16 scales
-- Each projected to $C{=}256$ via 1×1 conv
-- Eq. 1 (token flattening + projection)
+### §III Method (~1.4 pages, 42 lines)
 
-#### §2.3 Spatial Token-Level Router (~0.3 page, 9 lines)
-- DWConv3x3 captures local context, concatenated with token → MLP → logits
-- Noisy top-K selection during training, clean at inference
-- Eq. 2 (router input), Eq. 3 (noisy routing)
+**Intro (3 lines).** The full pipeline, referencing Fig. 1; a shared PVTv2-B4 backbone, three independent SpatialMoE layers, and a cross-attention decoder.
 
-#### §2.4 Sparse Expert Aggregation (~0.15 page, 5 lines)
-- True sparse dispatch: Python loop over experts, mask selection, gate-weighted sum
-- Expert architecture: LN → Linear($C$, $4C$) → GELU → Linear($4C$, $C$) → residual
+#### §III-A Multi-Scale Features (~0.15 page, 5 lines)
+- PVTv2-B4 backbone extracts features at 1/4, 1/8, 1/16 scales ($\texttt{out\_indices}=(0,1,2)$)
+- Each projected to $C{=}256$ via 1×1 conv; tokens $\bx_i \in \reals^C$
+- Token flattening + projection equation
+
+#### §III-B Router (~0.25 page, 8 lines)
+- Router input is the token itself concatenated with its local depthwise-conv context: $\br_i = [\bx_i \mid \text{DWConv}_{3\times3}(\bX_s)_i] \in \reals^{2C}$ (there is **no** global-context term in the router)
+- Two-layer MLP: $W_2 \cdot \text{GELU}(W_1 \br_i + b_1) + b_2 \in \reals^{E}$, $E{=}8$, hidden width 128
+- Router input and logit equations
+
+#### §III-C Noisy Top-$K$ Routing (~0.2 page, 6 lines)
+- Input-dependent Gaussian noise on the logits, training only: $\sigma_j(\bx_i) = \text{softplus}(w_j^\top \bx_i + b_j)$
+- Top-$K{=}2$ selection; gate weights are the softmax over the **selected** logits only
+- Noisy-gating and gate equations
+
+#### §III-D Sparse Expert Aggregation (~0.2 page, 6 lines)
+- True sparse dispatch: loop over experts, mask selection, gate-weighted scatter-add
+- Expert: $\E_k(\bx) = \bx + W_k^{(2)} \text{GELU}(W_k^{(1)} \text{LN}(\bx))$, $4C$ hidden
 - 8 experts per scale, 24 total, no weight sharing
-- Eq. 4 (sparse dispatch)
+- Dispatch and expert equations
 
-#### §2.5 Decoder with Entropy Fusion (~0.3 page, 9 lines)
-- Per-scale EntropyFusionBlock: $\bF_s = \text{Proj}_Y(\bY_s) + \lambda_s \cdot \text{Proj}_\mathcal{H}(\Hs_s)$
-- Top-down cross-attention: global (1/16→1/8), windowed (1/8→1/4)
+#### §III-E Routing Entropy (~0.2 page, 6 lines)
+- Entropy over the **full** $E$-way softmax of the router logits: $\mathcal{H}_i = -\sum_{j=1}^{E} p_{i,j} \log p_{i,j}$, normalized by $\log 8$ (hard-coded, matching $E{=}8$)
+- Entropy equation
+
+#### §III-F Decoder (~0.3 page, 9 lines)
+- Per-scale EntropyFusionBlock: $\bF_s = \text{Proj}_Y(\bY_s) + \lambda_s \cdot \text{Proj}_\mathcal{H}(\Hs_s)$, $\lambda_s$ learnable, init 0.1
+- Top-down cross-attention: global (1/16→1/8, 8 heads), windowed (1/8→1/4, 7×7 window)
 - Refinement blocks → dual heads (saliency + boundary)
-- Eq. 5 (entropy), Eq. 6 (entropy fusion)
+- Entropy-fusion and cross-attention equations
 
-#### §2.6 Training Objective (~0.2 page, 6 lines)
-- Eq. 7 (total loss): BCE + IoU + load-balance + importance
-- Active weights: $\lambda_{\text{IoU}}{=}1.0$, $\lambda_{\text{LB}}{=}\lambda_{\text{IMP}}{=}0.01$
-- One sentence: deep supervision, boundary, SSIM, Z-loss are inactive ($\lambda{=}0$)
+#### §III-G Training Objective (~0.2 page, 6 lines)
+- The eight active terms: BCE + IoU + SSIM + boundary + per-scale load-balance + importance + auxiliary boundary + deep supervision
+- Active weights: $\lambda_{\text{BCE}}{=}\lambda_{\text{IoU}}{=}\lambda_{\text{SSIM}}{=}\lambda_{\text{BND}}{=}1.0$, $\lambda_{\text{LB}}{=}\lambda_{\text{IMP}}{=}0.01$, $\lambda_{\text{auxBND}}{=}0.5$, $\lambda_{\text{DS}}{=}0.4$
+- One sentence: the Z-loss and the router-confidence term are the only inactive terms ($\lambda{=}0$); deep supervision is enabled, so the auxiliary heads exist
+- Loss equation
 
-### §3 Experimental Setup (~0.3 page, 9 lines)
+### §IV Experiments (~0.7 page)
+
+#### §IV-A Setup (~0.3 page, 9 lines)
 
 - **Dataset:** WXSOD [Chen et al.]. train_sys (12,891 images, scene-aware 80/20 split), test_sys (1,500 synthetic, 9 weather categories), test_real (554 real-world, 5 categories: fog, rain, snow, dark, low-light).
-- **Implementation:** PyTorch, DDP on 2 GPUs, AMP FP16, AdamW (lr $10^{-4}$, weight decay $10^{-4}$), WarmupCosine (1% warmup, 50 epochs), gradient accumulation (effective batch 32), gradient clipping (1.0). Backbone frozen epoch 0.
+- **Implementation:** PyTorch, DDP on 2 GPUs, AMP FP16, AdamW (lr $10^{-4}$, weight decay $10^{-4}$), WarmupCosine (1% warmup, 50-epoch budget), gradient accumulation (effective batch 32), gradient clipping (1.0). Backbone frozen epoch 0. Loss weights as in §III-G.
 - **Metrics:** MAE, $S_\phi$ [Cheng et al.], $E_\phi^{\text{adp}}$ [Fan et al.], $F_\beta^{\max}$ [Margolin et al.].
-- **Compute:** 69,213,120 parameters, 278.2G MACs.
+- **Compute:** 69.21M parameters (69,213,120 for the reported recipe, which has deep supervision on), 277.9G MACs.
 
-### §4 Results and Analysis (~0.7 page, 21 lines)
-
-#### §4.1 Main Results (~0.25 page, 7 lines)
+#### §IV-B Main Results (~0.25 page, 7 lines)
 - Table 1: Global results on test_sys and test_real
 - Observation: Real-world MAE (0.0168) comparable to or slightly better than synthetic (0.0192)
-- Qualification: observational comparison, not controlled domain-shift experiment; may reflect compound weather conditions in synthetic test set
+- Qualification: observational comparison, not a controlled domain-shift experiment; may reflect compound weather conditions in the synthetic test set
 
-#### §4.2 Weather-Wise Analysis (~0.25 page, 7 lines)
+#### §IV-C Weather-Wise Analysis (~0.25 page, 7 lines)
 - Table 2: Weather-wise breakdown on test_real
 - Snow easiest (MAE 0.0094), low-light hardest (MAE 0.0243), 2.6× range
-- Fig. 3: Qualitative predictions across weather conditions
-- Fig. 4: Weather-wise MAE bar chart
+- **Fig. 3**: Weather-wise MAE bar chart (half width)
+- **Fig. 4**: Qualitative predictions across weather conditions (full width, last page)
 
-#### §4.3 Routing Behavior (~0.1 page, 3 lines)
-- Mean normalized entropy 0.68–0.69 across scales; moderate uncertainty
-- Scale 1/16 slightly more confident (0.68) than finer scales (0.69)
-- Synthetic vs real entropy differs by <0.003 — routing generalizes across domains
+#### §IV-D Routing Entropy (~0.1 page, 3 lines)
+- Table 3: Mean routing entropy per scale
+- 2.076–2.079 nats, i.e. 99.8–100% of the $\log 8 = 2.0794$ ceiling; routing over the eight experts is close to uniform
+- Scale 1/16 is marginally less uniform (2.0755 nats) than the finer scales (2.0786–2.0789); synthetic vs real differ by <0.003
 
-#### §4.4 Forced-Expert Analysis (~0.1 page, 3 lines)
-- Text callout (no table): Forcing all tokens at scale 1/4 to expert 0 → MAE +0.0002 (+1.2%)
+#### §IV-E Forced-Expert Analysis (~0.1 page, 3 lines)
+- Text callout (no table): Forcing all tokens at scale 1/4 to expert 0 → MAE +0.0002 (+0.9%)
 - Two interpretations: (a) expert pool over-parameterized, or (b) experts learn similar functions
 - Only 1 of 3 scales forced; full effect unknown
 - This is a limited diagnostic, not evidence for or against routing utility
 
-#### §4.5 Limitations (~0.1 page, 3 lines)
+#### §IV-F Discussion (~0.1 page, 5 lines)
 - Single training run, no variance estimates
-- No controlled comparison against NIFM or WFANet
-- No ablation studies completed (routing entropy, expert count, K value, scale independence)
+- No controlled comparison against NIFM
+- No ablation studies completed (routing entropy, expert count, $K$ value, scale independence)
 - Forced-expert analysis suggests limited differentiation at scale 1/4
 - Boundary F1 is low (0.36 real, 0.55 synthetic) — weakest component
-- Low-light is a systematic weakness (MAE 0.0243, 44% worse than average)
+- Low-light is a systematic weakness (MAE 0.0243)
 
-### §5 Conclusion (~0.1 page, 3 lines)
+### §V Conclusion (~0.1 page, 3 lines)
 - We presented SpatialMoE-SOD: token-level spatial MoE for adverse-weather SOD
 - Routes tokens to 8 experts at 3 independent scales without weather labels
 - Routing entropy fused as explicit decoder feature
 - MAE 0.0192 (synthetic, 1,500 images) and 0.0168 (real-world, 554 images) on WXSOD
-- Future work: ablation studies, SOTA comparison, expert interpretability analysis
+- Future work: ablation studies, comparison with existing methods, expert interpretability analysis
 
 ### References (~0.3 page, 20 lines)
-6–8 entries. See §6 above.
+8 entries, all cited in the text. See §6 above.
 
 ---
 
 ## 8. Content to Remove from Current Manuscript
 
+**Status:** these compressions were considered for the earlier 4-page budget. Under the 6-page budget the manuscript keeps §II Related Work as three subsections, keeps Table 3, and keeps the Discussion subsection; treat this table as optional trimming, not as a description of `paper/main.tex`.
+
 | Current Content | Action | Rationale |
 |----------------|--------|-----------|
-| §2 Related Work (3 subsections, ~0.4 page) | Compress to 1 dense paragraph, ~8 lines | Save ~0.3 page. Integrate essential citations into Introduction. |
-| §5 Discussion paragraph (~0.3 page) | Merge into §4.5 Limitations | Save ~0.2 page |
-| §6 Conclusion (2 paragraphs, ~0.2 page) | Compress to 3–4 sentences, ~3 lines | Save ~0.15 page |
-| Table 3 (entropy, 3 rows × 3 cols) | Remove, fold 2 numbers into text | Save ~0.1 page |
-| Forced-expert table (if present) | Remove, replace with text callout | Save ~0.1 page |
-| Verbose loss explanation | Compact to Eq. 7 + 1 sentence | Save ~0.05 page |
+| §II Related Work (3 subsections, ~0.4 page) | Optional: compress to 1 dense paragraph, ~8 lines | Save ~0.3 page. Not applied — the manuscript keeps the three subsections. |
+| §IV-F Discussion paragraph (~0.3 page) | Already folded into the Discussion subsection | Save ~0.2 page |
+| §V Conclusion (2 paragraphs, ~0.2 page) | Compress to 3–4 sentences, ~3 lines | Save ~0.15 page |
+| Table 3 (entropy) | Keep (not applied) | The manuscript reports it; Table 3 is in `paper/main.tex` |
+| Forced-expert table | Already absent; text callout instead | Save ~0.1 page |
+| Verbose loss explanation | Compact to the loss equation + weights sentence | Save ~0.05 page |
 | Redundant MAE restatements | State once, reference table | Save ~0.05 page |
-| 15 references → 8 | Trim to essential 6–8 | Save ~0.2 page |
+| 15 references → 8 | Trimmed to 8 essential references | Save ~0.2 page |
 
-**Total space recovered:** ~1.0 page. This provides the room for 3 additional figures.
+**Total space recovered:** ~0.5 page of the earlier estimate. Under the 6-page budget this is available, not required.
 
 ---
 
@@ -427,10 +450,10 @@ Brief pipeline description. Reference Fig. 1.
 
 | Current Prose | Convert to | Figure |
 |---------------|-----------|--------|
-| Architecture description (§3.1–§3.5, ~0.6 page of text) | FIGURE 1: Full-width architecture diagram | Fig. 1 |
-| Router mechanism description (§3.3, ~0.15 page) | FIGURE 2: Zoomed routing mechanism | Fig. 2 |
-| Weather-wise analysis text (§4.2, ~0.25 page) | FIGURE 4: Weather-wise MAE bar chart | Fig. 4 |
-| Qualitative analysis (if any) | FIGURE 3: Actual prediction examples | Fig. 3 |
+| Architecture description (~0.6 page of text) | FIGURE 1: Full-width architecture diagram | Fig. 1 |
+| Router mechanism description (~0.15 page) | FIGURE 2: Routing mechanism | Fig. 2 |
+| Weather-wise analysis text (~0.25 page) | FIGURE 3: Weather-wise MAE bar chart | Fig. 3 |
+| Qualitative analysis | FIGURE 4: Actual prediction examples | Fig. 4 |
 
 **Net effect:** Prose decreases by ~1.0 page, figures increase by ~1.0 page. Net content is similar; visual communication improves dramatically.
 
@@ -473,7 +496,7 @@ Brief pipeline description. Reference Fig. 1.
 
 ---
 
-## 11. Scientific Positioning (from FINAL_RESEARCH_POSITION.md + FINAL_CLAIM_EVIDENCE_MATRIX.md)
+## 11. Scientific Positioning (from RESEARCH_TRUTH.md + RELATED_WORK.md)
 
 ### 11.1 Claims to make (architectural contribution, empirical characterization)
 
@@ -483,7 +506,7 @@ Brief pipeline description. Reference Fig. 1.
 4. The model has no weather-specific component — routing operates purely on spatial content features.
 5. The model achieves MAE 0.0192 on synthetic and 0.0168 on real-world weather conditions.
 
-### 11.2 Claims to AVOID (from FINAL_CLAIM_EVIDENCE_MATRIX.md)
+### 11.2 Claims to AVOID (from RESEARCH_TRUTH.md §3)
 
 | Forbidden Claim | Reason |
 |----------------|--------|
@@ -499,7 +522,7 @@ Brief pipeline description. Reference Fig. 1.
 
 ### 11.3 How to handle the forced-expert result
 
-The forced-expert ablation (MAE +1.2% when forcing scale 1/4 to expert 0) must be presented as:
+The forced-expert ablation (MAE +0.9% when forcing scale 1/4 to expert 0) must be presented as:
 - A limited diagnostic (only 1 of 3 scales forced)
 - Not evidence for or against routing utility
 - Two possible interpretations stated neutrally
@@ -509,7 +532,7 @@ The forced-expert ablation (MAE +1.2% when forcing scale 1/4 to expert 0) must b
 
 Present as:
 - A novel architectural design choice (routing entropy as decoder input)
-- No prior work does this (verified claim from LITERATURE_CLAIMS CLAIM-21)
+- No prior work does this to our knowledge (see `docs/research/RELATED_WORK.md`)
 - Explicitly note that ablation to validate its contribution was not performed
 
 ---
@@ -519,7 +542,7 @@ Present as:
 - Use `\documentclass[10pt,twocolumn]{article}` (already in `main.tex`)
 - Use `\usepackage[margin=0.6in]{geometry}` (already in `main.tex`)
 - Build: `pdflatex main && bibtex main && pdflatex main && pdflatex main`
-- Verify page count ≤ 4 before submission
+- Verify page count ≤ 6 before submission
 - Include `\usepackage{hyperref}` for clickable references
 - Use `\usepackage{pgfplots}` for Figure 4 (bar chart) if generating programmatically
 - Use `\usepackage{subcaption}` or manual spacing for Figure 3 subfigures
@@ -532,14 +555,14 @@ Before finalizing the manuscript, verify:
 
 | # | Item | Source |
 |---|------|--------|
-| 1 | All MAE/S/F/E values match `results/legacy/legacy_8expert/evaluation/best_new_1/*/none/metrics.json` | PAPER_SOURCE_OF_TRUTH.md §5 |
-| 2 | Weather-wise values match weather breakdown in metrics.json | PAPER_SOURCE_OF_TRUTH.md §5.2 |
-| 3 | Routing entropy values match `results/legacy/legacy_8expert/evaluation_results/entropy_comparison.json` | PAPER_SOURCE_OF_TRUTH.md §5.3 |
-| 4 | Forced-expert values match `results/legacy/legacy_8expert/evaluation_results/force_expert_ablation.json` | PAPER_SOURCE_OF_TRUTH.md §5.4 |
-| 5 | Tensor dimensions match `RESEARCH_TRUTH.md` §1.2 | RESEARCH_TRUTH.md |
-| 6 | No forbidden claims appear (§11.2 above) | FINAL_CLAIM_EVIDENCE_MATRIX.md |
+| 1 | All MAE/S/F/E values match `results/legacy/legacy_8expert/evaluation/best_new_1/*/none/metrics.json` | `docs/research/RESULTS.md` §1–2 |
+| 2 | Weather-wise values match weather breakdown in metrics.json | `docs/research/RESULTS.md` §2 |
+| 3 | Routing entropy values match `results/legacy/legacy_8expert/routing_entropy/entropy_comparison.json` (the pre-fix `eval_results/entropy_comparison.json` is top-2 only) | `docs/research/RESULTS.md` §4 |
+| 4 | Forced-expert values match `results/legacy/legacy_8expert/eval_results/proxy_ablation_results.json` | `docs/research/RESULTS.md` §3 |
+| 5 | Tensor dimensions match `RESEARCH_TRUTH.md` §1.1 | RESEARCH_TRUTH.md |
+| 6 | No forbidden claims appear (§11.2 above) | RESEARCH_TRUTH.md §3 |
 | 7 | All references are from §6 shortlist | This plan §6 |
-| 8 | Page count ≤ 4 via pdflatex build | Manual verification |
+| 8 | Page count ≤ 6 via pdflatex build | Manual verification |
 | 9 | All figures are self-contained (axis labels, legends, captions) | This plan §10 |
 | 10 | Every variable defined before first use | This plan §5 |
 
