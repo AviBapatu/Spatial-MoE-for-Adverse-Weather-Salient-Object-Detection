@@ -81,3 +81,7 @@ paper/*.synctex.gz
 TODO*.md
 HANDOFF.md
 *.repo-backup
+
+# ...but the qualitative grids ARE the evidence: keep them, they are one file per arm.
+!results/**/qualitative/
+!results/**/qualitative/*.png
