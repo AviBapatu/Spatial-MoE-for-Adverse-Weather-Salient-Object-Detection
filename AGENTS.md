@@ -20,7 +20,7 @@ The target output is a scientific paper. This file and `docs/research/` are the 
 | `src/` | All source code: model, training, evaluation, config, dataset, diagnostics |
 | `tests/` | Unit + integration tests (sparse dispatch, DDP, resume correctness) |
 | `experiments/` | Canonical experiment config JSONs (`baseline_v1.json`) |
-| `results/` | Evaluations, routing statistics and legacy artifacts per run (`metrics.json`, `summary.txt`) |
+| `results/` | Per-run evaluations, routing statistics and diagnostics (`results/<experiment_id>/`) |
 | `checkpoints/` | Model weight files (`.pth`) |
 | `data/WXSDO_data/` | WXSOD dataset (train_sys, test_sys, test_real splits) |
 | `docs/research/` | Persistent research knowledge base for paper writing |
@@ -84,41 +84,48 @@ uv run pytest tests/ -v
 | `results/legacy/legacy_8expert/evaluation/best_new_1/` | Evaluation results for `best_new_1.pth` checkpoint |
 | `results/legacy/legacy_8expert/evaluation/best_new_1/test_sys/none/` | Synthetic test metrics + predictions |
 | `results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none/` | Real-world test metrics + predictions |
-| `checkpoints/best.pth` | Best model weights (by val MAE) |
-| `checkpoints/best_new_1.pth` | Another best model (source of current evaluation) |
-| `experiments/registry.csv` | Run registry (not yet created — no formal ablation runs recorded) |
+| `checkpoints/best.pth` | Best model weights (by val MAE) — gitignored; pulled from the Hub |
+| `checkpoints/best_new_1.pth` | Another best model (source of current evaluation) — gitignored |
+| `experiments/registry.csv` | Run registry (exists; four rows written 2026-09-06, one `COMPLETED`) |
 
 **Result file format:**
-- `metrics.json` — Full metrics with weather-wise breakdown
-- `summary.txt` — Human-readable summary
-- `*.png` — Per-image prediction maps
+- `metrics_<split>_<timestamp>.json` — full metrics with weather-wise breakdown
+- `summary_<split>_<timestamp>.txt` — human-readable summary
+- `*.png` — per-image prediction maps
 
 ## 6. Where Research Documentation Is Stored
 
+Start with `docs/research/INDEX.md` — it is the map and the writing brief, including the
+reading order, the two canonical documents, and the files that are historical records only.
+
 | File | Purpose |
 |------|---------|
+| `RESEARCH_TRUTH.md` (root) | **Canonical.** What may be claimed, what is forbidden |
+| `docs/research/RESULTS.md` | **Canonical.** Every measured number with its source file |
+| `docs/research/INDEX.md` | The map and the writing brief |
 | `docs/research/PROJECT_OVERVIEW.md` | Title, novelty claims, system summary |
 | `docs/research/ARCHITECTURE.md` | Model architecture with verified tensor dims |
 | `docs/research/TRAINING.md` | Training pipeline, loss, optimization, checkpointing |
 | `docs/research/DATASETS.md` | WXSOD dataset structure, splitting, augmentation |
-| `docs/research/EXPERIMENTS.md` | Config system, baseline, existing results |
+| `docs/research/EXPERIMENTS.md` | Config system, experiment IDs, the run set, gaps |
 | `docs/research/ABLATIONS.md` | Ablation matrices, counterfactual studies |
-| `docs/research/INDEX.md` | Which document to read for what |
-| `paper/FINAL_PAPER_PLAN.md` | Suggested paper structure, figures, open questions |
-| `docs/research/LITERATURE_NOTES.md` | Key papers, differentiators, benchmarks |
+| `docs/research/RESULTS_NARRATIVE.md` | Interpretation of the results |
+| `docs/research/RELATED_WORK.md` | Positioning against prior work |
+| `docs/research/LITERATURE_DATABASE.md` | Key papers, differentiators, benchmarks |
+| `paper/FINAL_PAPER_PLAN.md` | Paper structure, figures, tables, references |
 | `spatial-moe-adverse-weather-sod-blueprint.md` | Research blueprint with literature review |
 
 ## 7. Where the Paper Manuscript Is Stored
 
-No paper manuscript file exists yet in the repository. The `docs/research/` directory serves as the persistent knowledge base from which the paper will be written. `PAPER_PLAN.md` contains the suggested paper structure.
+`paper/main.tex` is the manuscript; `docs/research/` remains the persistent knowledge base from which it is written and revised. `paper/FINAL_PAPER_PLAN.md` contains the suggested paper structure, and `paper/CLAIM_AUDIT.md`, `paper/MANUSCRIPT_AUDIT.md` and `docs/research/PAPER_CORRECTIONS.md` are audits of an earlier manuscript revision (their banners state which findings are settled).
 
 ## Rules for This Project (Default Mode)
 
 1. **Never invent implementation details.** If unsure about how something is implemented, read the source file. Every architecture claim should reference a file and line number.
 
-2. **Never invent experimental results.** Use only values from `evaluation/` or `metrics.json`. If results don't exist, say so.
+2. **Never invent experimental results.** Use only values from `results/<experiment_id>/`. If results don't exist, say so.
 
-3. **Never invent citations.** Use only papers listed in `docs/research/LITERATURE_NOTES.md` or `spatial-moe-adverse-weather-sod-blueprint.md`. If a citation is needed and not listed, flag it as unknown.
+3. **Never invent citations.** Use only papers listed in `docs/research/LITERATURE_DATABASE.md` or `spatial-moe-adverse-weather-sod-blueprint.md`. If a citation is needed and not listed, flag it as unknown.
 
 4. **Distinguish verified facts from inference.** When stating something, note whether it comes from reading the code (verified) or from interpretation (inferred). The research docs separate these explicitly where possible.
 
@@ -143,7 +150,7 @@ These rules govern any session explicitly scoped to modify `src/`, `tests/`, or 
 - Any code path gated by `if rank == 0:` must not contain collective/expensive work (validation forward passes, diagnostics forward passes) that leaves other ranks idle for more than a few seconds. If a block only rank 0 should do (logging, checkpoint writing, HF/artifact upload), it must be provably short, or must be followed by a `dist.monitored_barrier(timeout=...)` so a stall is caught immediately with a clear error instead of a downstream NCCL timeout.
 - `dist.init_process_group` must always be called with an explicit `timeout=timedelta(...)`. Never rely on the 600s NCCL default as the actual safety margin.
 - Checkpoint I/O (`torch.save`/`torch.load`) must never block the training hot path synchronously for verification; integrity checks belong off the critical path (background thread, separate step).
-- Every expert module in `SpatialMoELayer` must be touched by the forward pass on every rank every step (even with zero routed tokens routed to it), or DDP's gradient sync will desync across ranks with different expert-usage patterns. The existing sparse-dispatch pattern in `moe_layer.py` already does this correctly — preserve it exactly; do not "optimize" it into conditional expert calls.
+- Every expert module in `SpatialMoELayer` must be touched by the forward pass on every rank every step (even with zero routed tokens routed to it), or DDP's gradient sync will desync across ranks with different expert-usage patterns. The existing sparse-dispatch pattern in `src/moe_layer.py` already does this correctly — preserve it exactly; do not "optimize" it into conditional expert calls.
 - No dead code: if a file is renamed or replaced, delete the old file and its `__pycache__` entry. Do not leave orphaned modules that duplicate functionality.
 
 ### 8.2 Style
@@ -162,7 +169,7 @@ These rules govern any session explicitly scoped to modify `src/`, `tests/`, or 
 
 ### 8.4 Skill
 
-If `skills/pytorch-ddp-safety/SKILL.md` exists in this repo, read it before finishing any edit that touches `train_ddp.py`, dataloader construction, or checkpoint save/load code — it's a checklist for exactly the rank-imbalance/NCCL-timeout class of bug this codebase has hit before.
+If `.agents/skills/pytorch-ddp-safety/SKILL.md` exists in this repo, read it before finishing any edit that touches `src/train_ddp.py`, dataloader construction, or checkpoint save/load code — it's a checklist for exactly the rank-imbalance/NCCL-timeout class of bug this codebase has hit before.
 
 ## Evidence Hierarchy
 
@@ -170,7 +177,7 @@ When conflicts arise between sources, use this priority order:
 
 1. **Source code** is authoritative for implementation.
 2. **Configuration files** (`experiments/*.json`) are authoritative for experiment settings.
-3. **Actual logs/results** (`evaluation/`, `metrics.json`) are authoritative for experimental results.
+3. **Actual logs/results** (`results/<experiment_id>/`) are authoritative for experimental results.
 4. **`docs/research/*.md`** contains verified summaries derived from those sources.
 5. **AI-generated explanations** are never authoritative.
 

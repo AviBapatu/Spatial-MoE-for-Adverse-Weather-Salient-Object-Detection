@@ -98,7 +98,7 @@ are the editable source. Each notebook uses `RUN_MODE` to control behaviour:
 | `--overwrite` | Bypass "training already complete" safety check |
 | `--max_optimizer_steps N` | Stop after N optimizer steps |
 | `--max_epochs N` | Cap maximum training epochs |
-| `--smoke_test` | Legacy smoke test mode |
+| `--smoke_test` | Legacy flag; inert (run `uv run python -m src.smoke_test` instead) |
 | `--calibration` | Memory calibration mode |
 
 ## Experiment Configs
