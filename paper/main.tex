@@ -574,9 +574,6 @@ The model has 69.21M parameters and 277.9G MACs per $384{\times}384$ input image
   \item \textbf{The mixture-of-experts does not change the prediction.} Removing it entirely
         leaves real-test MAE at $0.0195$, identical to the full model, and routing at one
         pyramid scale instead of three gives the same $0.0195$ (Table~\ref{tab:ablate}).
-  \item Four results, each backed by a table below.
-
-\begin{itemize}[leftmargin=*,nosep,topsep=2pt,itemsep=1pt]
   \item \textbf{Competitive without weather labels.} MAE $0.0192$ on the 1{,}500 synthesized
         test images leads every method in the published benchmark, including the
         weather-supervised WFANet ($0.0229$); $0.0168$ on the 554 real images is second of
