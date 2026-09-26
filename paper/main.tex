@@ -65,12 +65,15 @@
 % Allow a bottom float to share a page with only a small amount of
 % text above it (needed so Fig. 4 can land on the same page as the
 % tail of the reference list instead of being deferred to a new page).
-\renewcommand{\textfraction}{0.03}
-\renewcommand{\bottomfraction}{0.95}
-\renewcommand{\topfraction}{0.95}
-\renewcommand{\dbltopfraction}{0.95}
-\renewcommand{\dblfloatpagefraction}{0.05}
-\renewcommand{\floatpagefraction}{0.05}
+% Float placement: keep floats on the page their text is on rather than
+% stranding them. The earlier values (textfraction 0.03, floatpagefraction
+% 0.05) let LaTeX emit near-empty float pages and defer figures arbitrarily.
+\renewcommand{\textfraction}{0.10}
+\renewcommand{\bottomfraction}{0.55}
+\renewcommand{\topfraction}{0.90}
+\renewcommand{\dbltopfraction}{0.90}
+\renewcommand{\dblfloatpagefraction}{0.70}
+\renewcommand{\floatpagefraction}{0.70}
 
 \newcommand{\bx}{\mathbf{x}}
 \newcommand{\bX}{\mathbf{X}}
@@ -228,7 +231,7 @@ We detail each component below.
 % ============================================================
 %  FIGURE 1 -- ARCHITECTURE OVERVIEW  (left-to-right pipeline)
 % ============================================================
-\begin{figure*}[t]
+\begin{figure*}[htbp]
 \centering
 \resizebox{0.94\textwidth}{!}{%
 \begin{tikzpicture}[x=1mm,y=1mm,
@@ -373,7 +376,7 @@ The hidden dimension 128 provides a bottleneck between the $2C{=}512$ input and 
 %  diagram uses vertical space instead of squeezing everything
 %  into one long horizontal strip)
 % ============================================================
-\begin{figure*}[t]
+\begin{figure*}[htbp]
 \centering
 \resizebox{0.92\textwidth}{!}{%
 \begin{tikzpicture}[x=1mm,y=1mm,
@@ -608,7 +611,7 @@ are driven primarily by the PVTv2-B4 backbone and the training schedule rather t
 routing mechanism under study.
 However, this comparison is confounded by test-set composition: the synthetic test set includes compound weather conditions (rain+fog, rain+snow, snow+fog) that are absent from the real-world test set, which may increase synthetic-test error independently of any domain-shift effect.
 
-\begin{table}[t]
+\begin{table}[htbp]
 \centering
 \caption{Global performance on WXSOD test splits.}
 \label{tab:main}
@@ -634,7 +637,7 @@ ablation isolating it, and given that the routing mechanism is itself shown to b
 boundary supervision is a more promising direction for architectural investment than
 additional expert capacity.
 
-\begin{table}[t]
+\begin{table}[htbp]
 \centering
 \caption{Extended metrics for the reported model. Real split $N{=}554$, synthetic $N{=}1500$.}
 \label{tab:extended}
@@ -666,7 +669,7 @@ than a re-implementation, and it is labelled as reported.
 Our model is also larger than WFANet (69.21M against 50.87M parameters), which we state
 plainly rather than present as an efficiency claim.
 
-\begin{table}[t]
+\begin{table}[htbp]
 \centering
 \caption{Comparison with published WXSOD results. Published values are as reported in
 \cite{wxsod2025} (Tables II and III); ours are measured here. WFANet uses weather class
@@ -729,7 +732,7 @@ and every subsequent per-arm table (Tables~\ref{tab:ext_all}--\ref{tab:diag_all}
 arms by this code alone, so the full configuration is stated once rather than repeated
 verbatim in five different tables.
 
-\begin{table}[t]
+\begin{table}[htbp]
 \centering
 \caption{Arm codes used in Tables~\ref{tab:ablate}, \ref{tab:ext_all}, \ref{tab:ext_all},
 \ref{tab:diag_all} and \ref{tab:diag_all}. \textbf{R} is the reported model; \textbf{Ref} is the
@@ -764,7 +767,7 @@ Code & Configuration \\
 \end{tabular}
 \end{table}
 
-\begin{table}[t]
+\begin{table}[htbp]
 \centering
 \caption{All trained arms (codes per Table~\ref{tab:legend}). Real split $N{=}554$,
 synthetic $N{=}1500$.}
@@ -796,7 +799,7 @@ Arm & MAE$\downarrow$ & $S_\phi\uparrow$ & MAE$\downarrow$ & $S_\phi\uparrow$ \\
 \end{tabular}
 \end{table}
 
-\begin{table*}[t]
+\begin{table*}[htbp]
 \centering
 \caption{Extended metrics for every arm. Left: real test ($N{=}554$). Right: synthetic test
 ($N{=}1500$). bMAE and bF1 are boundary MAE and boundary F1. Same arm order as
@@ -840,7 +843,7 @@ the $1/4$ scale to a single expert changes it by $-0.0001$.
 None of the mechanism's parts affects the output: the mixture, its routing and its entropy
 channel are all inert at inference.
 
-\begin{table}[t]
+\begin{table}[htbp]
 \centering
 \caption{Inference-time ablations on the reference arm (real test, $N{=}554$). Random routing
 is the mean over 4 seeds.}
@@ -885,7 +888,7 @@ single expert's output and is measurably worse (0.0212 against 0.0195).
 %   the bibliography, so LaTeX can slot it into any page with free
 %   space instead of stranding it alone at the end of the document)
 % ============================================================
-\begin{figure*}[t]
+\begin{figure*}[htbp]
 \centering
 \includegraphics[width=0.88\textwidth]{figures/fig_qualitative_moe_vs_none.png}
 \caption{\textbf{The mixture-of-experts does not change the prediction.}
@@ -902,7 +905,7 @@ removing the MoE leaves real-test MAE unchanged at 0.0195.}
 \label{fig:qualitative}
 \end{figure*}
 
-\begin{table}[t]
+\begin{table}[htbp]
 \centering
 \caption{Routing diagnostics on the reference arm at the final logged epoch. Usage is the hard
 assignment fraction per expert (uniform would be 12.5\% for $E{=}8$); dead marks experts below
@@ -930,7 +933,7 @@ On synthetic data, compound weather conditions (rain+fog) yield the worst MAE (0
 % ============================================================
 %  FIGURE 3 -- WEATHER-WISE MAE BAR CHART (compact fonts)
 % ============================================================
-\begin{figure}[t]
+\begin{figure}[htbp]
 \centering
 \begin{tikzpicture}
 \begin{axis}[
@@ -973,7 +976,7 @@ Snow yields the lowest error, while low-light yields the highest.}
 \label{fig:weather}
 \end{figure}
 
-\begin{table}[t]
+\begin{table}[htbp]
 \centering
 \caption{Weather-wise results on real-world test (554 images).}
 \label{tab:weather}
@@ -1030,7 +1033,7 @@ The compound conditions are the hardest, and the clean subset is not the easiest
 single-degradation conditions are harder than the clean images, so the difficulty ordering is
 not simply a function of how much noise was injected.
 
-\begin{table}[t]
+\begin{table}[htbp]
 \centering
 \caption{Weather-wise results on synthetic test (1,500 images), ordered by MAE.}
 \label{tab:weathsyn}
@@ -1060,7 +1063,7 @@ The uniformity is not a property of one configuration: every arm sits at essenti
 its $\log E$ ceiling, including the arms that remove routing entirely at two scales and the
 arm that removes the load-balancing loss that is supposed to enforce balance.
 
-\begin{table*}[t]
+\begin{table*}[htbp]
 \centering
 \caption{Diagnostics for every arm. Left: routing entropy per scale, normalised by $\log E$
 (1.000 = a uniform distribution over the eight experts), and the number of dead experts
@@ -1115,7 +1118,7 @@ synthetic MAE spans 0.0004.
 This is the noise floor for every comparison in this paper: differences smaller than about
 0.0005 MAE are not interpretable.
 
-\begin{table}[t]
+\begin{table}[htbp]
 \centering
 \caption{Seed variance for E8 $k{=}2$, 8 epochs, everything else fixed.}
 \label{tab:seeds}
@@ -1174,6 +1177,10 @@ Future work should determine whether a routing objective that is actually superv
 rather than one optimised only through the saliency loss -- can induce specialisation, and
 should re-run the benchmark's baselines under a single unified protocol.
 
+% Flush all pending floats before the reference list, so the bibliography is
+% genuinely the last thing in the paper rather than sharing a page with a
+% deferred figure.
+\clearpage
 \balance
 \bibliographystyle{ieeetr}
 {\scriptsize
