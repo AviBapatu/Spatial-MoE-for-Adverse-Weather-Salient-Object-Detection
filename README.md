@@ -178,7 +178,7 @@ This means the model architecture or critical hyperparameters changed between tr
 
 ## Documentation
 
-Two documents are canonical: `RESEARCH_TRUTH.md` (what may be claimed, and what is
+Two documents are canonical: `docs/research/RESEARCH_TRUTH.md` (what may be claimed, and what is
 forbidden) and `docs/research/RESULTS.md` (every measured number, each traceable to a
 result file). `docs/research/INDEX.md` maps the rest.
 

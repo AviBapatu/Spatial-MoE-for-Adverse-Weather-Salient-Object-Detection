@@ -78,7 +78,7 @@ settings. Source: `results/legacy_8expert_best/{none,hflip}/legacy_best/`.
 
 Cost of this project's model, measured: **69.21 M parameters, 277.9 G MACs** at 384x384
 (the earlier 66.27 M figure is wrong for every architecture variant; see
-`RESEARCH_TRUTH.md`).
+`docs/research/RESEARCH_TRUTH.md`).
 
 ## What this means
 

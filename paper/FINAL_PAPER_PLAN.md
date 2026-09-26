@@ -14,7 +14,7 @@ This plan is derived exclusively from the research corpus below. No outside assu
 
 | Document | Role in this plan |
 |----------|-------------------|
-| `RESEARCH_TRUTH.md` | Authoritative scientific claims; supported/unsupported claims; evidence hierarchy |
+| `docs/research/RESEARCH_TRUTH.md` | Authoritative scientific claims; supported/unsupported claims; evidence hierarchy |
 | `docs/research/RESULTS.md` | All experimental data with sources |
 | `docs/research/RELATED_WORK.md` | Defensible novelty claims, positioning, corrections to prior work |
 | `docs/research/ARCHITECTURE.md` | Component-level architecture details, tensor dims |
@@ -28,7 +28,7 @@ This plan is derived exclusively from the research corpus below. No outside assu
 
 ---
 
-## 1. Scientific Position (from RESEARCH_TRUTH.md + RELATED_WORK.md)
+## 1. Scientific Position (from docs/research/RESEARCH_TRUTH.md + RELATED_WORK.md)
 
 ### 1.1 What the experiments support
 
@@ -496,7 +496,7 @@ Three short subsections, matching `paper/main.tex` §II:
 
 ---
 
-## 11. Scientific Positioning (from RESEARCH_TRUTH.md + RELATED_WORK.md)
+## 11. Scientific Positioning (from docs/research/RESEARCH_TRUTH.md + RELATED_WORK.md)
 
 ### 11.1 Claims to make (architectural contribution, empirical characterization)
 
@@ -506,7 +506,7 @@ Three short subsections, matching `paper/main.tex` §II:
 4. The model has no weather-specific component — routing operates purely on spatial content features.
 5. The model achieves MAE 0.0192 on synthetic and 0.0168 on real-world weather conditions.
 
-### 11.2 Claims to AVOID (from RESEARCH_TRUTH.md §3)
+### 11.2 Claims to AVOID (from docs/research/RESEARCH_TRUTH.md §3)
 
 | Forbidden Claim | Reason |
 |----------------|--------|
@@ -559,8 +559,8 @@ Before finalizing the manuscript, verify:
 | 2 | Weather-wise values match weather breakdown in metrics.json | `docs/research/RESULTS.md` §2 |
 | 3 | Routing entropy values match `results/legacy/legacy_8expert/routing_entropy/entropy_comparison.json` (the pre-fix `eval_results/entropy_comparison.json` is top-2 only) | `docs/research/RESULTS.md` §4 |
 | 4 | Forced-expert values match `results/legacy/legacy_8expert/eval_results/proxy_ablation_results.json` | `docs/research/RESULTS.md` §3 |
-| 5 | Tensor dimensions match `RESEARCH_TRUTH.md` §1.1 | RESEARCH_TRUTH.md |
-| 6 | No forbidden claims appear (§11.2 above) | RESEARCH_TRUTH.md §3 |
+| 5 | Tensor dimensions match `docs/research/RESEARCH_TRUTH.md` §1.1 | docs/research/RESEARCH_TRUTH.md |
+| 6 | No forbidden claims appear (§11.2 above) | docs/research/RESEARCH_TRUTH.md §3 |
 | 7 | All references are from §6 shortlist | This plan §6 |
 | 8 | Page count ≤ 6 via pdflatex build | Manual verification |
 | 9 | All figures are self-contained (axis labels, legends, captions) | This plan §10 |

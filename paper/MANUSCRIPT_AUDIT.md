@@ -8,23 +8,23 @@
 > - **Parameter count.** The audit records 66.27M. That figure is not present in any file
 >   under `results/`; the correct value is **69.21M**, measured directly (69,212,349 at
 >   window 7 with deep supervision off, 69,213,120 with it on; the legacy `compute_cost.json`
->   reports 68.9M). See `RESEARCH_TRUTH.md`.
+>   reports 68.9M). See `docs/research/RESEARCH_TRUTH.md`.
 > - **Routing entropy.** `SpatialMoELayer` takes the entropy of the **full E-way softmax**
 >   over the router logits, so its ceiling is `ln E` — `ln 8 = 2.0794` for the 8-expert
 >   model — and `EntropyFusionBlock` normalises by `ln 8`. For the reported E8 model the
 >   measured mean is 2.076–2.079 nats, i.e. **99.8–100% of `ln 8`**: the router is close to
 >   uniform over all eight experts. The "0.9309" and "0.6931" figures below are both
->   pre-fix top-2 measurements. See `RESEARCH_TRUTH.md`.
+>   pre-fix top-2 measurements. See `docs/research/RESEARCH_TRUTH.md`.
 > - `LITERATURE_NOTES.md` no longer exists; it is `docs/research/LITERATURE_DATABASE.md`.
 > - `docs/research/PAPER_CORRECTIONS.md` repeats the 66.27M figure for the same reason.
 > - **Loss terms.** The reported recipe activates SSIM, boundary, auxiliary-boundary and deep
 >   supervision (`ssim_weight`/`boundary_weight` 1.0, `aux_boundary_weight` 0.5,
 >   `deep_supervision_weight` 0.4). The "inactive / λ=0" loss rows below were checked against
 >   `experiments/baseline_v1.json`, which is a template, not the recipe. See
->   `RESEARCH_TRUTH.md`.
+>   `docs/research/RESEARCH_TRUTH.md`.
 >
 > **Take no number or fact from the body of this file.** It is a historical record; the
-> authoritative sources are `RESEARCH_TRUTH.md`, `docs/research/ARCHITECTURE.md`,
+> authoritative sources are `docs/research/RESEARCH_TRUTH.md`, `docs/research/ARCHITECTURE.md`,
 > `docs/research/TRAINING.md` and `docs/research/RESULTS.md`.
 
 

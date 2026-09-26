@@ -8,7 +8,7 @@ contradict them, and every number must be traceable to a file named in them.
 
 To have the paper written from these documents, give the writer:
 
-- `RESEARCH_TRUTH.md` (repo root)
+- `docs/research/RESEARCH_TRUTH.md`
 - everything in `docs/research/`
 - `paper/FINAL_PAPER_PLAN.md` and `paper/main.tex`
 
@@ -53,7 +53,7 @@ expert specialisation by weather, and no causal claim about any design choice.
 
 | File | What it is |
 |---|---|
-| `RESEARCH_TRUTH.md` (repo root) | **Canonical.** What may be claimed, and what is forbidden. Every claim is marked as implementation-, experiment- or literature-supported, with the gaps stated. |
+| `docs/research/RESEARCH_TRUTH.md` | **Canonical.** What may be claimed, and what is forbidden. Every claim is marked as implementation-, experiment- or literature-supported, with the gaps stated. |
 | `docs/research/RESULTS.md` | **Canonical.** Every measured number, each traceable to a result file. |
 
 ## Reference
