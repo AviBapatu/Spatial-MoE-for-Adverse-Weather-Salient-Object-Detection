@@ -20,22 +20,42 @@ result files and names its source for every value.
 | Backbone is PVTv2-B4 via timm, `features_only=True`, `out_indices=(0,1,2)` | `MultiScaleBackbone.__init__` |
 | Each scale is 1x1-convolved to a common width (256) | `MultiScaleBackbone.proj_4/8/16` |
 | Three independent MoE layers, one per scale | `SpatialMoESODNet.__init__` (`self.moe_4/8/16`) |
-| Router is DWConv3x3 + 2-layer MLP over local+global context | `SpatialMoELayer` router |
+| Router input is the token's own features concatenated with a local depthwise-conv context (`cat([x_tokens, dwconv(x)])`, `2C` wide) | `SpatialMoELayer.forward` |
 | Routing is noisy top-k with a learned softplus noise scale | `RouterNoise`, `add_noise` |
 | Dispatch is truly sparse: a loop over experts with mask selection | `SpatialMoELayer.forward` |
 | Every expert is called every forward pass, even on an empty slice | `SpatialMoELayer.forward` (required for DDP gradient sync) |
 | Expert is a token-wise MLP: LN -> 4C -> C with a residual | `TokenWiseMLP` |
 | Decoder is a package: `src/decoder/decoder.py`, `src/decoder/blocks.py` | `SpatialMoEDecoder`, `EntropyFusionBlock` |
 | Decoder fuses routing entropy as a per-scale channel | `EntropyFusionBlock` |
+| Routing entropy is computed over the full E-way gate distribution (`-sum(g log g)` over all experts), so its range is `[0, ln E]` | `SpatialMoELayer.forward` |
 | Heads: saliency, boundary, and three deep-supervision aux heads | `SpatialMoEDecoder` |
-| Parameter count for the current E8 k=2 configuration | **69,213,120** (reproduced in training logs) |
+| Parameter count, E8 k=2 | **69,213,120** for the reported recipe (window 7, deep supervision **on** — every `experiments/v_e8_*.json` sets `deep_supervision: true`, and the run artifacts agree); **69,212,349** with deep supervision off; **69,212,797** / **69,213,568** at window 8 (off / on). Enumerated directly over `parameters()` |
+| Active loss terms, reported (legacy) recipe | BCE 1.0, IoU 1.0, SSIM 1.0, boundary 1.0, per-scale load-balance 0.01, importance 0.01, aux-boundary 0.5, deep supervision 0.4; Z-loss and router-confidence 0.0. The 2026-09 arm configs differ on the router terms: importance 0.05, Z-loss 0.001, per-scale load-balance 0.08/0.15/0.10 | `experiments/registry.csv` (loss string `BCE=1.0,IoU=1.0,SSIM=1.0,BND=1.0`), `results/EXP_B4_E8_K2_S32_R1_L3_M_SPARSE__ablation_full_moe/final_config.json`, `experiments/v_e8_repro_best.json` |
 
 **`gate_mode`** selects how top-k gates are formed and is genuinely consumed:
 `"renormalized"` (softmax over the selected top-k values) or `"dense"` (softmax over all
 experts, gathered at the top-k indices — which gives every expert gradient).
 
+**The preset is not the recipe.** `experiments/baseline_v1.json` (`ssim_weight: 0`,
+`boundary_weight: 0`, `deep_supervision: false`, `epochs: 50`, `warmup_ratio: 0.01`) is a
+template. The reported metrics (0.0192 / 0.0168) come from the **legacy-era run** of the E8
+k=2 S32 L3 recipe (old code), whose config is `results/legacy/preflight/final_config.json`:
+`ssim_weight: 1.0`, `boundary_weight: 1.0`, `aux_boundary_weight: 0.5`,
+`deep_supervision_weight: 0.4`, `model.deep_supervision: true`, `load_balance_weight: 0.01`,
+`importance_weight: 0.01`, `z_loss_weight: 0.0`, `warmup_ratio: 0.01`, `epochs: 50`,
+`batch_per_gpu: 4` × `grad_accum_steps: 4` × 2 GPUs. The 2026-09 arm configs
+(`experiments/v_e8_repro_best.json` and the tracked
+`results/EXP_B4_E8_K2_S32_R1_L3_M_SPARSE__ablation_full_moe/final_config.json`) reproduce the
+same recipe under the current code and differ on the router/optimisation terms:
+`importance_weight: 0.05`, `z_loss_weight: 0.001`,
+`load_balance_weights: [0.08, 0.15, 0.10]`, `warmup_ratio: 0.04`, `epochs: 8` (14 for the
+flagship run). A loss table, warmup or epoch count quoted from the preset will not describe a
+trained run — this is the single most common way these docs have gone stale.
+
 **`moe_type`** is consumed and selects the ablation arm: `"sparse"` (routed experts,
-the model under study), `"dense"` (one shared expert on every token), `"none"` (no MoE).
+the model under study), `"dense"` (one shared expert on every token), `"none"` (no MoE,
+expert parameters removed), `"sparse_fine"` (routed experts at the 1/4 scale only, the
+coarser two pass through — a routing-scope ablation that is not capacity-matched).
 
 ### 1.2 Training (`src/training/`, `src/optimization.py`, `src/config.py`)
 
@@ -99,9 +119,9 @@ values are single-pass; none is TTA-boosted.
 
 | Observation | Value | Source |
 |---|---|---|
-| Per-token routing entropy is at its maximum | normalized entropy 0.9995-0.9998 at every scale | diagnostics routing stats |
-| Router logits are nearly tied | mean logit std 0.03-0.07; top1-top2 margin 0.01-0.04 | same |
-| Dead or near-dead experts persist under the renormalized gate | `DEAD_EXPERT: [2]`; 2 of 8 experts below 2% usage | same |
+| Per-token routing entropy sits at its ceiling | normalized entropy 0.997-1.000 of `ln E` at every scale (E8: 2.074-2.079 nats of `ln 8 = 2.0794`) | diagnostics routing stats |
+| Router logits are nearly tied | mean logit std 0.001-0.10; top1-top2 margin 0.002-0.07 across runs and scales | same |
+| Dead or near-dead experts persist under the renormalized gate | `DEAD_EXPERT` warnings appear in the E8 arms (e.g. `[2]`, `[5]`, `[2, 5]`); in the legacy `moe_8` stats 2 of 8 experts sit below 2% usage | same |
 | The pattern reproduces across training runs | same dominant-expert shape as the legacy checkpoint | same, plus legacy stats |
 | Experts are not weather-specialised | per-expert weather divergence from the dataset prior is tiny (max KL 0.04 at scale 8, JS <= 0.05) | same, `weather_enrichment` |
 | The largest weather skew sits in the least-used experts | e.g. a 2.3%-usage expert is snow-enriched (26% vs 12% prior) | same |
@@ -120,10 +140,12 @@ renormalized and dense, two seed repeats, and E4 at the E8 recipe).
 
 Not supported by any evidence in this repository. Do not write them.
 
-- **Any comparison to prior methods.** No external baseline has been run or reproduced.
-- **"The MoE helps."** The mixture-vs-dense control has never been run: `M_DENSE` and
-  `M_NONE` have zero runs. Configs exist (`v_4expert_densecontrol.json`,
-  `v_4expert_nonecontrol.json`); this is the missing load-bearing ablation.
+- **Any *measured* comparison to prior methods.** No external method has been re-implemented
+  or re-run. A comparison against the WXSOD benchmark's published tables is permitted, but
+  only labelled "as reported" with the protocol difference disclosed.
+- **"The MoE helps."** The mixture-vs-shared-MLP control (`..._M_NONE_E4_NONECTRL`) and the
+  dense-gate control (`..._M_DENSE_E4_DENSECTRL`) were training at the time of writing;
+  results pending. Do not assert either outcome until their metrics land.
 - **"Experts specialise by weather."** Measured divergence from the weather prior is
   negligible; the residual skew is concentrated in the least-used experts.
 - **"Routing causes the improvement"** or any causal claim about a design choice — no
@@ -153,14 +175,54 @@ Not supported by any evidence in this repository. Do not write them.
 
 ---
 
-### Known discrepancy: parameter count
+### RESOLVED: parameter count
 
-Two numbers circulate. The training log reports **69,213,120** for the current E8 k=2
-configuration, and `build_model` prints the same figure on every run. A legacy
-`results/legacy/legacy_8expert/evaluation_results/compute_cost.json` reports **66.27M** for
-the older checkpoint. They disagree by ~2.9M and nobody has reconciled them, so any
-parameter-count claim in the paper must cite which measurement it uses and how it was
-taken. Do not present 66.27M and 278.2G MACs as a matched pair without re-measuring.
+The two legacy cost files — `results/legacy/legacy_8expert/eval_results/compute_cost.json` and
+its ignored copy under `evaluation_results/` — both report **68.9M** (`params_M`), with
+278.2G MACs. Direct enumeration over `parameters()` gives **69.21M** for every E8 k=2
+variant, and **69,213,120** for the reported recipe, which has deep supervision on: every
+`experiments/v_e8_*.json` sets `deep_supervision: true`, and the training log's 69,213,120
+matches it. The other enumerated values are 69,212,349 (window 7, deep supervision off),
+69,212,797 (window 8, off) and 69,213,568 (window 8, on).
+
+The **66.27M** figure that circulated in earlier manuscript revisions and in
+`PAPER_CORRECTIONS.md` is not present in any file under `results/` and must not be used.
+
+**The parameter count to report is 69.21M**, with **277.9G MACs** at 384x384 (measured with
+`thop` on the current model; the legacy file's 278.2G is a separate, older measurement and
+the two must not be quoted as a matched pair). The training log's 69,213,120 was correct
+all along. Component split: backbone 51.18M, decoder 5.19M, each MoE layer 4.28M.
+
+### RESOLVED: routing entropy
+
+`SpatialMoELayer.forward` computes per-token entropy over the **full softmax over all E
+router logits** (`full_gates = softmax(noisy_logits)`; `-sum(full_gates * log(full_gates))`),
+so its range is `[0, ln E]`, not `[0, ln K]`. `routing_summary` normalises by `ln E` and
+`EntropyFusionBlock` divides by `math.log(8.0)`, which is exactly the ceiling of the
+quantity the 8-expert model produces — the earlier note calling that a mismatch was written
+against a top-k-entropy implementation that no longer exists.
+
+| Quantity | E8 measurement | Meaning |
+|---|---|---|
+| `mean_entropy` | 2.074-2.079 nats | mean entropy of the full 8-way gate distribution |
+| `max_entropy` | 2.0794 nats | `ln 8`, the ceiling |
+| `mean_normalized_entropy` | 0.997-1.000 | that value divided by `ln 8` |
+
+The mean therefore sits at **~99.7-100% of the ceiling** at every scale on both test splits:
+the router's full distribution is nearly uniform, so the per-token selection carries almost
+no information. Because the normalised value is ~1.0, the decoder's entropy channel is
+nearly constant, which is an adequate explanation for why entropy fusion is inert
+independent of the earlier `no_entropy_fusion` comparison. Sources:
+`results/**/routing_entropy/entropy_comparison.json` and
+`results/**/diagnostics/*/routing_stats_contentonly.json`.
+
+**Stale measurement warning.** `results/legacy/legacy_8expert/eval_results/entropy_comparison.json`
+(and the ignored copy under `evaluation_results/`) reports 0.692-0.693 nats for the
+eight-expert legacy checkpoint. That file predates the fix to the entropy computation and
+holds the *top-2 gate* entropy, capped at `ln 2 = 0.6931`; it must not be compared against
+`ln 8`, and its values must not be mixed with the current-code numbers in the table above.
+The current-code measurement for the same checkpoint is
+`results/legacy/legacy_8expert/routing_entropy/entropy_comparison.json` (2.075-2.079 nats).
 
 ## 5. Maintenance
 
