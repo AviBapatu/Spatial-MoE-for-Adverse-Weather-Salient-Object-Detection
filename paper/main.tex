@@ -65,9 +65,9 @@
 % Allow a bottom float to share a page with only a small amount of
 % text above it (needed so Fig. 4 can land on the same page as the
 % tail of the reference list instead of being deferred to a new page).
-% Float placement: keep floats on the page their text is on rather than
-% stranding them. The earlier values (textfraction 0.03, floatpagefraction
-% 0.05) let LaTeX emit near-empty float pages and defer figures arbitrarily.
+% Conventional float fractions. The earlier values (textfraction 0.03,
+% floatpagefraction 0.05) let LaTeX emit near-empty float pages, which both
+% stranded figures and inflated the page count whenever the text changed.
 \renewcommand{\textfraction}{0.10}
 \renewcommand{\bottomfraction}{0.55}
 \renewcommand{\topfraction}{0.90}
@@ -145,23 +145,17 @@ Weather-Label-Free Salient Object Detection: A Strong Baseline and a\\ Null Resu
     \begin{minipage}{0.92\textwidth}
     \small
     \noindent\textbf{\textit{Abstract}\textemdash}
-    Salient object detection (SOD) degrades under adverse weather.
-    We investigate whether spatial token-level mixture-of-experts (MoE) routing, applied
-    without weather labels, improves adverse-weather SOD, using a three-scale PVTv2-B4
-    backbone with per-scale top-$K$ routing and entropy-informed decoding.
-    On WXSOD the model achieves MAE $0.0192$ on 1{,}500 synthetic test images and
-    $0.0168$ on 554 real-world test images, competitive with weather-supervised methods.
-    However, a full ablation matrix shows the mixture-of-experts contributes nothing
-    measurable: removing it entirely, reducing routing to a single pyramid scale, and
-    replacing routed experts with one dense expert all leave real-test MAE within
-    $0.0004$ of the full model, inside the seed-variance noise floor. Routing entropy sits
-    at $99.8$--$100\%$ of its theoretical ceiling in every configuration, and random
-    routing at inference costs under $0.0005$ MAE. We report this as a characterization
-    rather than a demonstrated improvement: the strong result comes from the backbone and
-    the training budget -- extending training from 8 to 14 epochs improves MAE by more
-    than any architectural change we tested -- not from the routing mechanism. We present
-    the full ablation and diagnostic evidence so that the field can avoid over-crediting
-    MoE-style architectures for gains earned elsewhere.
+    Salient object detection degrades under adverse weather.
+    We ask whether spatial token-level mixture-of-experts (MoE) routing, used without weather
+    labels, helps. On WXSOD our model reaches MAE $0.0192$ on 1{,}500 synthetic and $0.0168$ on
+    554 real test images, competitive with weather-supervised methods. A full ablation, however,
+    shows the mixture contributes nothing measurable: removing it, routing at one scale instead
+    of three, or replacing routed experts with a dense expert all leave real-test MAE within
+    $0.0004$ of the full model, inside the seed-variance floor; entropy sits at
+    $99.8$--$100\%$ of its ceiling in every arm, and random routing costs under $0.0005$ MAE.
+    The numbers come from the backbone and the training budget -- 14 epochs instead of 8
+    improves MAE more than any architectural change we tested -- not from routing, and we report
+    that dissociation rather than over-crediting the MoE.
 
 
     \vspace{2mm}
@@ -179,22 +173,17 @@ SOD identifies visually prominent regions as pixel-wise masks, but performance d
 Two strategies address this: (1)~weather-label-conditioned models---NIFM~\cite{nifm2025}---require metadata at inference; (2)~MoE for weather restoration---WM-MoE~\cite{wmmoe2023}---targets pixel regression, not segmentation.
 To our knowledge, existing MoE-SOD methods primarily explore modality-, scale-, or task-level routing for multi-modal inputs rather than per-token routing for single-RGB SOD.
 To our knowledge, no existing method combines (a)~spatial token-level routing, (b)~independent routing at multiple pyramid scales, and (c)~an SOD decoder informed by routing confidence, all without weather-specific supervision.
-We emphasise upfront that this paper's central empirical finding is a null result: the
-spatial MoE mechanism we designed does not measurably affect predictions (Sections~IV-F
-and~IV-G). We report the architecture, the benchmark numbers it achieves, and the evidence
-that those numbers are not attributable to routing, because this dissociation is itself
-informative for how MoE is used in dense prediction.
+This paper's central finding is a null result: the spatial MoE we designed does not measurably
+affect predictions (Sections~IV-F, IV-G). We report the architecture and its numbers together
+with the evidence that they are not attributable to routing.
 
 Our contributions:
 \begin{enumerate}[leftmargin=*,nosep,label=\arabic*)]
   \item A token-level spatial router that assigns each token to top-$K{=}2$ experts from 8 per scale, using depthwise-convolutional context, noisy top-$K$ gating, and true sparse dispatch.
   \item Three independent routers at scales $1/4$, $1/8$, $1/16$, each with a separate expert pool.
   \item Routing entropy over the full expert distribution, normalized by $\log 8$ for $E{=}8$, is injected as an explicit decoder feature via learnable additive fusion.
-  \item A controlled ablation and inference-time intervention study (11 trained arms, 4
-        inference-time perturbations) showing that this routing mechanism is inert: entropy
-        is near-uniform in every arm, random routing barely changes the output, and no
-        architectural ablation moves MAE beyond the measured noise floor of
-        $\pm0.0004$--$0.0008$.
+  \item An ablation and inference-time intervention study (11 trained arms, 4 perturbations)
+        showing that this routing mechanism is inert.
 \end{enumerate}
 
 Code, configurations and the per-run evaluation artifacts are available at~\cite{artifact2026}.
@@ -208,19 +197,16 @@ methods, and a controlled ablation suite --- and explains why the ablation behav
 Section~V states what the evidence supports and what it does not.
 
 \section{Related Work}
-
-\subsection{Adverse-Weather SOD}
-NIFM~\cite{nifm2025} fuses noise indicators from explicit weather-type one-hot vectors.
-WXSOD~\cite{wxsod2025} provides 14,945 images with per-image weather labels and synthetic/real-world test splits for weather-robust SOD.
-
-\subsection{MoE for Weather Restoration}
-WM-MoE~\cite{wmmoe2023} uses weather-aware routing for adverse-weather image restoration, whereas our method performs spatial token-level routing for single-RGB SOD without weather-specific supervision.
-Existing MoE weather methods target pixel regression, not segmentation.
-
-\subsection{MoE for SOD}
-To our knowledge, existing MoE-SOD methods primarily explore modality-, scale-, or task-level routing for multi-modal inputs rather than per-token routing for single-RGB SOD.
-V-MoE~\cite{v-moe2021} established token-level top-$K$ routing for classification.
-Routing entropy has been explored for uncertainty estimation in MoE classifiers. We additionally inject it as an explicit decoder feature for dense prediction, although its isolated contribution has not been evaluated by an ablation.
+Two strategies address SOD under adverse weather. Weather-label-conditioned models such as
+NIFM~\cite{nifm2025} fuse noise indicators from explicit weather-type one-hot vectors, and
+WXSOD~\cite{wxsod2025} supplies the benchmark and its own weather-aware baseline; both need
+weather supervision. Mixture-of-experts has instead been applied to adverse-weather restoration,
+notably WM-MoE~\cite{wmmoe2023}, which routes with weather-aware gating and targets pixel
+regression rather than segmentation. Within SOD, existing MoE methods explore modality-, scale-
+or task-level routing for multi-modal inputs rather than per-token routing for single-RGB
+imagery. Token-level top-$K$ routing was established by V-MoE~\cite{v-moe2021} for
+classification, where routing entropy has also served for uncertainty estimation; we inject it
+as a decoder feature for dense prediction.
 
 \section{Method}
 
@@ -582,21 +568,17 @@ The model has 69.21M parameters and 277.9G MACs per $384{\times}384$ input image
   \item \textbf{The mixture-of-experts does not change the prediction.} Removing it entirely
         leaves real-test MAE at $0.0195$, identical to the full model, and routing at one
         pyramid scale instead of three gives the same $0.0195$ (Table~\ref{tab:ablate}).
-
   \item Four results, each backed by a table below.
 
 \begin{itemize}[leftmargin=*,nosep,topsep=2pt,itemsep=1pt]
-
   \item \textbf{Competitive without weather labels.} MAE $0.0192$ on the 1{,}500 synthesized
         test images leads every method in the published benchmark, including the
         weather-supervised WFANet ($0.0229$); $0.0168$ on the 554 real images is second of
         nineteen (Table~\ref{tab:compare}).
-
   \item \textbf{The router is not making a meaningful choice.} Routing entropy sits at
         $99.8$--$100\%$ of its $\log E$ ceiling in every arm, and expert weights are
         orthogonal while their activations correlate at $0.64$
         (Tables~\ref{tab:entropy} and~\ref{tab:diag_all}).
-
   \item \textbf{Training budget matters more than any design choice.} The same recipe at 14
         epochs instead of 8 improves real-test MAE from $0.0195$ to $0.0174$, against a seed
         spread of $\pm0.0004$ (Tables~\ref{tab:ablate} and~\ref{tab:seeds}).
@@ -605,10 +587,9 @@ The model has 69.21M parameters and 277.9G MACs per $384{\times}384$ input image
 \subsection{Main Results}
 Table~\ref{tab:main} reports global performance on both test splits.
 The model achieves MAE of $0.0192$ on synthetic data and $0.0168$ on real-world data.
-Real-world MAE ($0.0168$) is slightly lower than synthetic MAE ($0.0192$).
-These headline numbers should be read alongside Section~IV-E: the ablations indicate they
-are driven primarily by the PVTv2-B4 backbone and the training schedule rather than by the
-routing mechanism under study.
+Real-world MAE ($0.0168$) is slightly lower than synthetic MAE ($0.0192$). These numbers are
+driven primarily by the backbone and the training schedule rather than by the routing
+mechanism under study (Section~IV-E).
 However, this comparison is confounded by test-set composition: the synthetic test set includes compound weather conditions (rain+fog, rain+snow, snow+fog) that are absent from the real-world test set, which may increase synthetic-test error independently of any domain-shift effect.
 
 \begin{table}[htbp]
@@ -630,12 +611,9 @@ Real   & 0.0168 & 0.9151 & 0.8936 & 0.9530 \\
 Table~\ref{tab:extended} reports the remaining metrics for the reported model, and
 Table~\ref{tab:ext_all} gives the same six metrics for every arm in the ablation table.
 All three E-measure and F-measure variants agree with the trends above. The boundary measures
-are the weakest component: boundary F1 is 0.3601 on real test, so while the saliency masks
-are accurate, fine boundary detail is not. This is expected rather than incidental: the
-reported configuration trains with the boundary term inactive. We did not run a dedicated
-ablation isolating it, and given that the routing mechanism is itself shown to be inert,
-boundary supervision is a more promising direction for architectural investment than
-additional expert capacity.
+are the weakest component: boundary F1 is 0.3601 on real test. This is expected: the reported
+configuration trains with the boundary term inactive, and given that routing is itself inert,
+boundary supervision is the more promising direction for architectural work.
 
 \begin{table}[htbp]
 \centering
@@ -717,10 +695,8 @@ Third, the only architectural knob that moves the metric is top-$k$: routing to 
 expert costs 0.0017 MAE (0.0212 against 0.0195), roughly four times the seed spread of
 $\pm0.0004$ measured across seeds 42--44.
 
-Comparing the rows to Table~\ref{tab:ablate}, several deltas fall within or at the edge of
-that noise band and should not be read as meaningful differences (A2 against Ref: $0.0002$;
-A4: $0.0001$; A5: $0.0004$). Only the top-$k$ result (A3, $\Delta{=}0.0017$) and the
-epoch-count result (A1, $\Delta{=}0.0021$) clearly exceed it.
+(The A2, A4 and A5 deltas of $0.0002$, $0.0001$ and $0.0004$ sit inside that band and are not
+meaningful; only the top-$k$ result at $0.0017$ and the epoch count at $0.0021$ exceed it.)
 
 \textbf{Training budget is the only variable that matters more than any architectural choice}: the
 same recipe and seed trained for 14 epochs instead of 8 improves real-test MAE from 0.0195
@@ -1142,23 +1118,18 @@ However, several important limitations must be noted.
 First, the comparison against prior methods uses the benchmark's published numbers rather than our own re-implementations, so it is a comparison as reported; WFANet still attains the best real-split MAE, so we do not claim state-of-the-art performance.
 Second, the model was trained once without replicate runs, so variance estimates are unavailable.
 Third, the forced-expert analysis suggests that expert specialization may be limited, and the benefit of multi-expert routing over a single larger expert remains unclear.
-First and most centrally: the spatial MoE mechanism that motivates the architecture is
-shown, across eleven trained arms and four inference-time interventions, to have no
-measurable effect on output quality. We do not treat this as a limitation to be listed last
-but as the paper's primary empirical contribution. Alongside it, routing entropy sits at
-$99.8$--$100\%$ of the ceiling over the eight experts, so the decoder's entropy channel is
-nearly constant; its contribution has not been isolated by an ablation.
+First and most centrally, the spatial MoE is shown across eleven trained arms and four
+inference-time interventions to have no measurable effect on output quality; we treat that as
+the paper's primary contribution rather than a caveat. Routing entropy also sits at
+$99.8$--$100\%$ of its ceiling, so the decoder's entropy channel is nearly constant.
 
 \section{Conclusion}
 
-We presented and rigorously ablated SpatialMoE-SOD, a spatial mixture-of-experts architecture
-for weather-label-free SOD. While the full model attains competitive MAE against
-weather-supervised baselines on WXSOD, a complete ablation and inference-time intervention
-study shows that the mixture-of-experts mechanism itself is not responsible for that
-performance: it can be removed, reduced to a single scale, or replaced with one dense expert
-with no measurable effect. This generalises a caution already familiar in the MoE literature
--- sparse routing does not guarantee learned specialisation -- to a dense-prediction,
-single-modality setting.
+We presented and rigorously ablated SpatialMoE-SOD. The full model is competitive with
+weather-supervised baselines on WXSOD, but a complete ablation and intervention study shows the
+mixture-of-experts is not responsible for that performance: it can be removed, reduced to one
+scale, or replaced with a dense expert with no measurable effect -- generalising to dense
+prediction a caution already familiar in the MoE literature.
 Per-token routing entropy is normalized and injected as an explicit decoder feature via learnable additive fusion.
 On WXSOD, the model achieves MAE $0.0192$ (synthetic, 1,500 images) and $0.0168$ (real-world, 554 images), with weather-wise MAE ranging from $0.0094$ (snow) to $0.0243$ (low-light).
 
@@ -1177,10 +1148,6 @@ Future work should determine whether a routing objective that is actually superv
 rather than one optimised only through the saliency loss -- can induce specialisation, and
 should re-run the benchmark's baselines under a single unified protocol.
 
-% Flush all pending floats before the reference list, so the bibliography is
-% genuinely the last thing in the paper rather than sharing a page with a
-% deferred figure.
-\clearpage
 \balance
 \bibliographystyle{ieeetr}
 {\scriptsize
