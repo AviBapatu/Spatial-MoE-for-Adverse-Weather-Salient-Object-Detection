@@ -67,3 +67,17 @@ results/**/*.png
 results/**/*.jpg
 results/**/*.jpeg
 results/**/*.webp
+
+# LaTeX build artifacts (keep only the final PDF)
+paper/*.aux
+paper/*.blg
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.log
+paper/*.out
+paper/*.synctex.gz
+
+# local scratch
+TODO*.md
+HANDOFF.md
+*.repo-backup
