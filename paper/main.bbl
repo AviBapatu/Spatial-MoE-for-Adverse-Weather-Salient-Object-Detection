@@ -11,8 +11,8 @@ Y.~Luo, R.~Zhao, X.~Wei, J.~Chen, Y.~Lu, S.~Xie, T.~Wang, R.~Xiong, M.~Lu, and
   adverse weather removal,'' {\em arXiv preprint arXiv:2303.13739}, 2023.
 
 \bibitem{artifact2026}
-S.~Shit, B.~A. Reddy, L.~M. Chundi, and A.~Muppalla, ``{SpatialMoE-SOD}: Source
-  code, configurations and per-run evaluation artifacts.''
+B.~A. Reddy, ``{SpatialMoE-SOD}: Source code, configurations and per-run
+  evaluation artifacts.''
   \url{https://github.com/AviBapatu/Spatial-MoE-for-Adverse-Weather-Salient-Object-Detection},
   2026.
 
