@@ -16,7 +16,7 @@ The SpatialMoESODNet — a PVTv2-B4 backbone with three independent spatial MoE 
 | Synthetic (test_sys) | 1,500 | 0.0192 | 0.9139 | 0.9015 |
 | Real-world (test_real) | 554 | 0.0168 | 0.9151 | 0.8936 |
 
-The model processes images at 384×384 resolution and produces pixel-wise saliency maps plus boundary maps. It has 69,213,120 parameters and 278.2G MACs.
+The model processes images at 384×384 resolution and produces pixel-wise saliency maps plus boundary maps. It has **69.21M parameters** by direct enumeration (69,213,120 for the reported recipe, which has deep supervision on; 69,212,349 with it off; the legacy `compute_cost.json` reports 68.9M, which no configuration reproduces) and **277.9G MACs** at 384×384 (the current measurement; the legacy file says 278.2G).
 
 **What this establishes:** The architecture is functional and produces reasonable SOD predictions across diverse weather conditions. The evaluation pipeline is deterministic (identical metrics across 6 independent evaluation runs of the same checkpoint).
 
@@ -42,17 +42,21 @@ The weather-wise breakdown reveals that the model's performance is **not uniform
 
 ## 3. What the Forced-Expert Ablation Shows
 
-Forcing all tokens at scale 4 to expert 0 (bypassing the router) causes:
-- MAE increase: +0.0002 (+1.2%)
-- S_measure decrease: -0.0012 (-0.1%)
-- F_mean decrease: -0.0034 (-0.4%)
+Forcing all tokens at scale 4 to expert 0 (bypassing the router) barely moves the global
+metrics. In the tracked proxy file
+(`results/legacy/legacy_8expert/eval_results/proxy_ablation_results.json`) MAE goes from
+0.016841 to 0.016923 (+0.0001, +0.5%) and S_measure from 0.915091 to 0.914655
+(-0.0004, -0.05%). The per-condition breakdown of the forced run is not present in the
+tracked result files, so no weather-wise claim about it is made here. (The manuscript quotes
+a slightly larger delta, +0.0002 / +0.9%; that pair is not reproducible from any file under
+`results/` and should be reconciled before submission.)
 
 **This is a surprisingly small degradation.** Two possible interpretations:
 
 1. **Optimistic:** The router is not critical because the expert pool is over-parameterized — even a single expert can handle most tokens adequately.
 2. **Pessimistic:** The router is not learning meaningful specialization — experts may be learning similar functions, making routing redundant.
 
-The forced-expert test only affects one of three scales. The full effect of disabling all routing is unknown. The weather-wise breakdown of the forced-expert result shows the degradation is largest on "light" conditions (ΔMAE=+0.0003) and negligible on "snow" (ΔMAE=+0.0000).
+The forced-expert test only affects one of three scales. The full effect of disabling all routing is unknown.
 
 **Cannot determine** which interpretation is correct without per-expert output analysis.
 
@@ -60,18 +64,23 @@ The forced-expert test only affects one of three scales. The full effect of disa
 
 ## 4. What the Entropy Data Shows
 
-Mean routing entropy across all tokens is 0.68-0.69 in nats, which is the maximum for a
-two-way top-k distribution and close to the maximum of the eight-way distribution it is
-drawn from (ln 8 = 2.079). Note the decoder's normalization constant has since changed:
-the legacy model's entropy channel was divided by ln(2), the current code divides by
-ln(8). These numbers are the legacy measurement. This indicates:
-- Tokens are NOT being routed to a single expert (entropy would be ~0)
-- Tokens are NOT being routed uniformly (entropy would be ~1.0)
-- The router is making **moderately confident** decisions
+Mean routing entropy across all tokens is 0.68-0.69 nats in the legacy measurement
+(`results/legacy/legacy_8expert/eval_results/entropy_comparison.json`), which is the ceiling
+`ln 2 = 0.6931` of a two-way gate distribution. That file predates the fix to the entropy
+computation: `SpatialMoELayer` now takes the entropy of the full softmax over all E router
+logits, range `[0, ln E]`, and under that code the same checkpoint measures 2.076-2.079 nats
+against `ln 8 = 2.0794`
+(`results/legacy/legacy_8expert/routing_entropy/entropy_comparison.json`), i.e. 99.8-100% of
+the ceiling. Both readings say the same thing. This indicates:
+- Tokens are NOT being routed to a single expert (entropy would be 0)
+- Tokens are routed close to uniformly (entropy sits at its maximum)
+- The router is making almost no distinction between experts
 
 Entropy is very similar between synthetic and real data (difference < 0.003 at all scales), suggesting the router's behavior generalizes across domains.
 
-Scale 16 has slightly lower entropy (0.680-0.682) than scales 4 and 8 (0.691-0.693), meaning the coarsest scale has more confident routing. This could reflect that coarser spatial resolution makes routing decisions easier.
+Scale 1/16 has marginally lower entropy (2.0756 nats) than scales 1/4 and 1/8 (2.0788 and
+2.0789 nats) in the current-code measurement, i.e. the coarsest scale's routing is very
+slightly less uniform. The difference is small and no significance test has been run.
 
 **Cannot claim** that entropy correlates with difficulty or that the entropy fusion in the decoder provides benefit.
 

@@ -1,11 +1,60 @@
-# Documentation index
+# Documentation index and writing brief
 
-Two documents are canonical. Read them before writing anything.
+This directory is the knowledge base the paper is written from. Two documents are
+**canonical**: `RESEARCH_TRUTH.md` and `docs/research/RESULTS.md`. Nothing in the paper may
+contradict them, and every number must be traceable to a file named in them.
+
+## Writing brief
+
+To have the paper written from these documents, give the writer:
+
+- `RESEARCH_TRUTH.md` (repo root)
+- everything in `docs/research/`
+- `paper/FINAL_PAPER_PLAN.md` and `paper/main.tex`
+
+Do **not** give the historical audits listed under "Historical — do not cite" as sources;
+they are records of earlier revisions and their bodies contain superseded numbers.
+
+Read in this order:
+
+1. `RESEARCH_TRUTH.md` — what may be claimed, what is forbidden, and the evidence behind each claim.
+2. `docs/research/RESULTS.md` — every measured number, each with its source file.
+3. `docs/research/PROJECT_OVERVIEW.md` — problem, claimed novelty, system summary, repository map.
+4. `docs/research/ARCHITECTURE.md` — the model as built (tensor shapes, router, decoder, heads).
+5. `docs/research/TRAINING.md` — optimisation, checkpointing, distributed invariants, evaluation protocol.
+6. `docs/research/DATASETS.md` — WXSOD splits, geometry, augmentation, targets.
+7. `docs/research/EXPERIMENTS.md` — config system, experiment IDs, the run set, protocols, gaps.
+8. `docs/research/ABLATIONS.md` — what has and has not been ablated.
+9. `docs/research/RESULTS_NARRATIVE.md` — interpretation of the results.
+10. `docs/research/RELATED_WORK.md` and `docs/research/LITERATURE_DATABASE.md` — positioning and citations.
+11. `paper/FINAL_PAPER_PLAN.md` — the target structure, page budget, figures, tables, equations and references.
+
+**Target paper:** SCOVA, **6 pages maximum including references**, two-column, 8 references.
+The structure, float plan and page budget are in `paper/FINAL_PAPER_PLAN.md` §2–§7, and its
+section numbering matches `paper/main.tex` (§I–§V, with §III-A–G and §IV-A–F). `paper/main.tex`
+is the current manuscript and builds with `latexmk -pdf` to 6 pages.
+
+**The two traps that produced every stale claim in this repository:**
+
+- **The preset is not the recipe.** `experiments/baseline_v1.json` is a template
+  (`ssim_weight`/`boundary_weight` = 0, `deep_supervision` = false). The reported recipe sets
+  both loss weights to 1.0 without it and enables deep supervision, so the objective has eight
+  active terms, not four. See `RESEARCH_TRUTH.md` §1.1.
+- **Routing entropy is over the full $E$-way distribution**, ceiling `ln E = 2.0794` nats for
+  `E = 8`, normalised by `log 8` — not the top-$k$ gate entropy. The older
+  `legacy_8expert/eval_results/entropy_comparison.json` files (~0.69 nats) are a pre-fix
+  measurement.
+
+**Forbidden claims** are listed in `RESEARCH_TRUTH.md` §3; do not write them. In particular:
+no measured comparison to prior methods, no claim that the mixture helps, no claim of
+expert specialisation by weather, and no causal claim about any design choice.
+
+## Canonical
 
 | File | What it is |
 |---|---|
 | `RESEARCH_TRUTH.md` (repo root) | **Canonical.** What may be claimed, and what is forbidden. Every claim is marked as implementation-, experiment- or literature-supported, with the gaps stated. |
-| `docs/research/RESULTS.md` | **Canonical.** Every measured number, each traceable to a result file. Generated from the JSON under `results/` — regenerate rather than edit. |
+| `docs/research/RESULTS.md` | **Canonical.** Every measured number, each traceable to a result file. |
 
 ## Reference
 
@@ -30,12 +79,18 @@ Two documents are canonical. Read them before writing anything.
 
 | File | Covers |
 |---|---|
-| `paper/main.tex` | The manuscript |
-| `paper/FINAL_PAPER_PLAN.md` | Structure, figure and table plan |
-| `paper/REDESIGN_PLAN.md` | Figure, table and reference plan for the 4-page format |
-| `paper/CLAIM_AUDIT.md`, `paper/MANUSCRIPT_AUDIT.md`, `docs/research/PAPER_CORRECTIONS.md` | Audits of a specific manuscript revision; findings are issues to check, not current fact |
-| `docs/research/BLUEPRINT_CODE_AUDIT.md` | Audit of the original blueprint against the code |
-| `spatial-moe-adverse-weather-sod-blueprint.md` | The original research blueprint (repository root) |
+| `paper/main.tex` | The manuscript (6 pages), and the reference for any rewrite |
+| `paper/FINAL_PAPER_PLAN.md` | Structure, figure and table plan; matches `paper/main.tex` |
+| `paper/REDESIGN_PLAN.md` | The (applied) 6-page redesign plan |
+
+## Historical — do not cite
+
+| File | Why |
+|---|---|
+| `paper/CLAIM_AUDIT.md`, `paper/MANUSCRIPT_AUDIT.md`, `docs/research/PAPER_CORRECTIONS.md` | Audits of an earlier manuscript revision. Their banners list the findings that are settled; their bodies still carry superseded numbers (66.27M, top-2 entropy, `log 2`). Take no number or fact from them. |
+| `docs/research/BLUEPRINT_CODE_AUDIT.md` | Audit of the original blueprint against the code; same caveat. |
+| `spatial-moe-adverse-weather-sod-blueprint.md` (repo root) | The original research blueprint. Aspirational, and wrong in the places `RELATED_WORK.md` lists. |
+| `HANDOFF.md` (repo root) | Scratch session handoff, marked for deletion. |
 
 ## Working rules
 

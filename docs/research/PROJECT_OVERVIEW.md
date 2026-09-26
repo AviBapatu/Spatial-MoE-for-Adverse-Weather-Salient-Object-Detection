@@ -28,11 +28,11 @@ show.
 | Experts per scale | 8 (configurable) | `experiments/v_e8_repro_best.json` |
 | Top-k | 2 (configurable) | same |
 | Expert | token-wise MLP, LN -> 4C -> C with residual | `src/moe_layer.py` |
-| Router | DWConv3x3 + MLP over local and global context, noisy top-k | `src/moe_layer.py` |
+| Router | DWConv3x3 + MLP over the token and its local context, noisy top-k | `src/moe_layer.py` |
 | Gate mode | `renormalized` or `dense` | `src/moe_layer.py` |
 | Decoder | cross-attention fusion + refinement, entropy fused per scale | `src/decoder/` |
-| Loss | BCE + IoU + SSIM + boundary + load-balance + importance + z + deep supervision | `src/loss.py` |
-| Model size | 69,213,120 parameters (E8 k=2) | training log |
+| Loss | BCE + IoU + SSIM + boundary + load-balance + importance + z + routing-confidence + deep supervision | `src/loss.py` |
+| Model size | 69,213,120 parameters (E8 k=2, window 7, deep supervision on = the reported recipe); 69,212,349 with supervision off | enumerated over `parameters()` |
 | Training | DDP 2 GPU, AMP fp16, AdamW, warmup+cosine | `src/training/` |
 | Dataset | WXSOD — 12,891 train / 1,500 synthetic test / 554 real test | `src/dataset.py` |
 
