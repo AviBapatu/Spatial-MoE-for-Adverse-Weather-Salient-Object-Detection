@@ -1146,16 +1146,16 @@ Seed & MAE & $S_\phi$ & $E^{\text{adp}}$ & MAE & $S_\phi$ & $E^{\text{adp}}$ \\
 \subsection{Discussion}
 The model demonstrates that spatial token-level routing is feasible for single-RGB SOD without weather-specific supervision.
 However, several important limitations must be noted.
-First, the comparison against prior methods uses the benchmark's published numbers rather than our own re-implementations, so it is a comparison as reported; WFANet still attains the best real-split MAE, so we do not claim state-of-the-art performance.
-Second, the reported model attains boundary F1 of only $0.3601$ on real test. That follows from
-training with the boundary term inactive, and it is a limitation of the reported model rather
-than of the ablation.
-Third, the model was trained once without replicate runs, so variance estimates are unavailable.
-Third, the forced-expert analysis suggests that expert specialization may be limited, and the benefit of multi-expert routing over a single larger expert remains unclear.
 First and most centrally, the spatial MoE is shown across eleven trained arms and four
 inference-time interventions to have no measurable effect on output quality; we treat that as
 the paper's primary contribution rather than a caveat. Routing entropy also sits at
 $99.8$--$100\%$ of its ceiling, so the decoder's entropy channel is nearly constant.
+Second, the comparison against prior methods uses the benchmark's published numbers rather than our own re-implementations, so it is a comparison as reported; WFANet still attains the best real-split MAE, so we do not claim state-of-the-art performance.
+Third, the reported model attains boundary F1 of only $0.3601$ on real test. That follows from
+training with the boundary term inactive, and it is a limitation of the reported model rather
+than of the ablation.
+Fourth, the model was trained once without replicate runs, so variance estimates are unavailable.
+Fifth, the forced-expert analysis suggests that expert specialization may be limited, and the benefit of multi-expert routing over a single larger expert remains unclear.
 
 \section{Conclusion}
 
