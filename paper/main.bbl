@@ -12,22 +12,26 @@ Y.~Luo, R.~Zhao, X.~Wei, J.~Chen, Y.~Lu, S.~Xie, T.~Wang, R.~Xiong, M.~Lu, and
 
 \bibitem{moespnet}
 Z.~Zhao, X.~Qi, Y.~Xu, {\em et~al.}, ``{MoE-SPNet}: A mixture-of-experts scene
-  parsing network,'' {\em arXiv preprint arXiv:1806.07049}, 2018.
+  parsing network,'' {\em Pattern Recognition}, 2018.
+\newblock arXiv:1806.07049.
 
 \bibitem{segmote}
 Y.~Lu, J.~Li, S.~Ju, {\em et~al.}, ``{SegMoTE}: Token-level mixture of experts
   for medical image segmentation,'' in {\em Proceedings of the IEEE/CVF
-  Conference on Computer Vision and Pattern Recognition (CVPR)}, 2026.
+  Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pp.~36332--36342, 2026.
 
 \bibitem{sparsemoecnn}
 S.~Pavlitska, H.~Fan, K.~Ditschuneit, and J.~M. Z{\"o}llner, ``Design and
   behavior of sparse mixture-of-experts layers in {CNN}-based semantic
-  segmentation,'' in {\em CVPR Workshop on Safe Artificial Intelligence for
-  Automated Driving (SAIAD)}, 2026.
+  segmentation,'' in {\em CVPR Workshops (Safe Artificial Intelligence for
+  Automated Driving)}, pp.~4272--4281, 2026.
+\newblock arXiv:2604.13761.
 
 \bibitem{smoe}
-N.~E. Roberts, M.~Khrennikov, {\em et~al.}, ``Spatial mixture-of-experts,'' in
-  {\em Advances in Neural Information Processing Systems (NeurIPS)}, 2022.
+N.~Dryden, T.~Hoefler, {\em et~al.}, ``Spatial mixture-of-experts,'' in {\em
+  Advances in Neural Information Processing Systems (NeurIPS)}, 2022.
+\newblock arXiv:2211.13491.
 
 \bibitem{artifact2026}
 B.~A. Reddy, ``{SpatialMoE-SOD}: Source code, configurations and per-run
@@ -45,7 +49,7 @@ Q.~Chen, X.~Yang, R.~Lu, Q.~Zhang, Y.~Liu, X.~Zhou, and B.~Zheng, ``{WXSOD}: A
 C.~Riquelme, J.~Puigcerver, B.~Mustafa, M.~Neumann, R.~Jenatton,
   A.~Susano~Pinto, D.~Keysers, and N.~Houlsby, ``Scaling vision with sparse
   mixture of experts,'' in {\em Advances in Neural Information Processing
-  Systems (NeurIPS)}, vol.~34, pp.~8583--8595, 2021.
+  Systems (NeurIPS)}, vol.~34, 2021.
 
 \bibitem{pvtv2}
 W.~Wang, E.~Xie, X.~Li, D.-P. Fan, K.~Song, D.~Liang, T.~Lu, P.~Luo, and

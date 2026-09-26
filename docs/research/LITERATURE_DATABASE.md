@@ -209,6 +209,9 @@ All papers below were found via web searches and verified against primary source
 
 ## TIER 3: Spatial MoE / Fine-grained Spatial Routing
 
+> **CORRECTED 2026-09-26.** The author list recorded here was wrong. The paper is by
+> Nikoli Dryden and Torsten Hoefler et al., NeurIPS 2022, arXiv:2211.13491.
+
 ### DB-16. Spatial Mixture-of-Experts (SMOE)
 - **Authors:** Nicholas E. Roberts, Mikhail Khrennikov, et al.
 - **Year:** 2022
