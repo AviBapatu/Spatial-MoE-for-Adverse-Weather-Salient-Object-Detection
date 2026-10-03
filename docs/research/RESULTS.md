@@ -1,8 +1,8 @@
 # Results
 
-Every number in this file is read from a result file on disk and names its source. Nothing here is transcribed by hand: `RESULTS.md` is generated from the JSON under `results/`, so it can be regenerated after new evaluations land.
+Every number in this file is read from a result file on disk and names its source. Nothing here is transcribed by hand: `RESULTS.md` is generated from the JSON under `results/` and `analysis_results/`, so it can be regenerated after new evaluations land.
 
-All evaluations are scored in **original image coordinates** — predictions are reverse-geometried out of the 384x384 padded model frame before metrics are computed. The S32 arms use flip-average TTA (`--tta hflip`); the legacy and S40 rows are single-pass and are labelled accordingly. TTA is worth about 0.0001 MAE, so it does not move any comparison here.
+All evaluations are scored in **original image coordinates** — predictions are reverse-geometried out of the 384x384 padded model frame before metrics are computed. Most rows are single-pass; the S32 arms use flip-average TTA (`--tta hflip`), and so does the S40 E2 k=1 diverged row. TTA is worth about 0.0001 MAE, so it does not move any comparison here.
 
 ## 1. Main results
 
@@ -38,12 +38,16 @@ Two test sets: `test_sys` (1500 synthetic adverse-weather images) and `test_real
 | S40: E2 k=1, dense gate, batch 40 | test_sys | 0.0215 | 0.9041 | 0.9520 | 0.8590 | 1500 | `results/EXP_B4_E2_K1_S40_R1_L3_M_SPARSE_GATEDENSE/eval_results/metrics_test_sys_20260923_060210.json` |
 | S40: E4 k=2, dense gate, batch 40 | test_real | 0.0197 | 0.9043 | 0.9446 | 0.8397 | 554 | `results/EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_GATEDENSE/eval_results/metrics_test_real_20260923_060823.json` |
 | S40: E4 k=2, dense gate, batch 40 | test_sys | 0.0215 | 0.9040 | 0.9526 | 0.8593 | 1500 | `results/EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_GATEDENSE/eval_results/metrics_test_sys_20260923_060508.json` |
+| S40: E2 k=1, batch 40 (diverged) | test_real | 0.0546 | 0.7714 | 0.7905 | 0.6040 | 554 | `results/EXP_B4_E2_K1_S40_R1_L3_M_SPARSE/eval_results/best/test_real/hflip/metrics_test_real_20260925_183536.json` |
+| S40: E2 k=1, batch 40 (diverged) | test_sys | 0.0597 | 0.7827 | 0.8236 | 0.6421 | 1500 | `results/EXP_B4_E2_K1_S40_R1_L3_M_SPARSE/eval_results/best/test_sys/hflip/metrics_test_sys_20260925_184059.json` |
+| S40: E4 k=2, entropy-confidence 0.2 | test_real | 0.0194 | 0.9049 | 0.9461 | 0.8398 | 554 | `analysis_results/EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_ENTROPYCONF/best/test_real/none/metrics_test_real_20261003_025240.json` |
+| S40: E4 k=2, entropy-confidence 0.0 (control) | test_real | 0.0197 | 0.9042 | 0.9454 | 0.8401 | 554 | `analysis_results/EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_ENTROPYCONFCTRL/best/test_real/none/metrics_test_real_20261003_025629.json` |
 
 **Provenance and confounds — read before comparing rows.**
 
 **Three groups, not one table.** Compare within a group only.
 
-- **REPORTED** — the 14-epoch E8 model. This is the headline row and the one the paper reports. It was trained under the older recipe (SSIM/boundary/Z-loss off, deep supervision off, effective batch 32) and has been re-evaluated under current code, reproducing its recorded MAE/S exactly.
+- **REPORTED** — the 14-epoch E8 model. This is the headline row and the one the paper reports. It was trained under the legacy-era recipe (`results/legacy/preflight/final_config.json`: `ssim_weight` 1.0, `boundary_weight` 1.0, `aux_boundary_weight` 0.5, deep supervision on, Z-loss and router-confidence off, effective batch 32) and has been re-evaluated under current code, reproducing its recorded MAE/S exactly. It was configured for 50 epochs and early-stopped at 14, so its learning rate was not annealed.
 - **S32 arms** — one recipe, one comparable family: renormalized gate, router noise on, load-balance weights 0.08/0.15/0.10, effective batch 32, 8 epochs unless stated. Every design-choice comparison in the paper must be made inside this group.
 - **S40 arms** — an earlier recipe generation: effective batch 40 (2578 vs 3222 optimizer steps), different loss weights, and router noise off in the dense-gate family. Not comparable row-for-row with the S32 arms.
 
@@ -79,6 +83,10 @@ Two test sets: `test_sys` (1500 synthetic adverse-weather images) and `test_real
 | S40: E2 k=1, dense gate, batch 40 | test_sys | 0.9516 | 0.9588 | 0.8687 | 0.8862 | 0.5676 | 0.4782 |
 | S40: E4 k=2, dense gate, batch 40 | test_real | 0.9483 | 0.9559 | 0.8561 | 0.8804 | 0.7330 | 0.2768 |
 | S40: E4 k=2, dense gate, batch 40 | test_sys | 0.9522 | 0.9592 | 0.8692 | 0.8862 | 0.5685 | 0.4771 |
+| S40: E2 k=1, batch 40 (diverged) | test_real | 0.8181 | 0.8684 | 0.6375 | 0.7090 | 0.9314 | 0.0656 |
+| S40: E2 k=1, batch 40 (diverged) | test_sys | 0.8427 | 0.8778 | 0.6714 | 0.7279 | 0.8539 | 0.1563 |
+| S40: E4 k=2, entropy-confidence 0.2 | test_real | 0.9495 | 0.9570 | 0.8563 | 0.8808 | 0.7309 | 0.2767 |
+| S40: E4 k=2, entropy-confidence 0.0 (control) | test_real | 0.9491 | 0.9571 | 0.8562 | 0.8813 | 0.7362 | 0.2723 |
 
 ## 2. Weather-wise breakdown
 
@@ -282,6 +290,30 @@ Per-condition MAE / S-measure / F-measure. Conditions with fewer than 10 samples
 | S40: E4 k=2, dense gate, batch 40 | test_sys | rainasnow | 166 | 0.0209 | 0.9037 | 0.8612 |
 | S40: E4 k=2, dense gate, batch 40 | test_sys | snow | 172 | 0.0222 | 0.9011 | 0.8541 |
 | S40: E4 k=2, dense gate, batch 40 | test_sys | snowafog | 156 | 0.0223 | 0.8910 | 0.8463 |
+| S40: E2 k=1, batch 40 (diverged) | test_real | dark | 125 | 0.0588 | 0.7669 | 0.6036 |
+| S40: E2 k=1, batch 40 (diverged) | test_real | fog | 126 | 0.0419 | 0.7741 | 0.5846 |
+| S40: E2 k=1, batch 40 (diverged) | test_real | light | 93 | 0.0793 | 0.7200 | 0.5378 |
+| S40: E2 k=1, batch 40 (diverged) | test_real | rain | 120 | 0.0563 | 0.7775 | 0.6334 |
+| S40: E2 k=1, batch 40 (diverged) | test_real | snow | 90 | 0.0389 | 0.8186 | 0.6610 |
+| S40: E2 k=1, batch 40 (diverged) | test_sys | clean | 167 | 0.0484 | 0.8052 | 0.6640 |
+| S40: E2 k=1, batch 40 (diverged) | test_sys | dark | 156 | 0.0579 | 0.7802 | 0.6125 |
+| S40: E2 k=1, batch 40 (diverged) | test_sys | fog | 166 | 0.0708 | 0.7823 | 0.6591 |
+| S40: E2 k=1, batch 40 (diverged) | test_sys | light | 166 | 0.0561 | 0.7914 | 0.6616 |
+| S40: E2 k=1, batch 40 (diverged) | test_sys | rain | 179 | 0.0599 | 0.7932 | 0.6603 |
+| S40: E2 k=1, batch 40 (diverged) | test_sys | rainafog | 172 | 0.0695 | 0.7460 | 0.5960 |
+| S40: E2 k=1, batch 40 (diverged) | test_sys | rainasnow | 166 | 0.0571 | 0.7839 | 0.6408 |
+| S40: E2 k=1, batch 40 (diverged) | test_sys | snow | 172 | 0.0527 | 0.8029 | 0.6632 |
+| S40: E2 k=1, batch 40 (diverged) | test_sys | snowafog | 156 | 0.0646 | 0.7572 | 0.6172 |
+| S40: E4 k=2, entropy-confidence 0.2 | test_real | dark | 125 | 0.0218 | 0.8974 | 0.8374 |
+| S40: E4 k=2, entropy-confidence 0.2 | test_real | fog | 126 | 0.0167 | 0.9049 | 0.8296 |
+| S40: E4 k=2, entropy-confidence 0.2 | test_real | light | 93 | 0.0257 | 0.8838 | 0.7952 |
+| S40: E4 k=2, entropy-confidence 0.2 | test_real | rain | 120 | 0.0200 | 0.9057 | 0.8547 |
+| S40: E4 k=2, entropy-confidence 0.2 | test_real | snow | 90 | 0.0125 | 0.9359 | 0.8835 |
+| S40: E4 k=2, entropy-confidence 0.0 (control) | test_real | dark | 125 | 0.0222 | 0.8974 | 0.8381 |
+| S40: E4 k=2, entropy-confidence 0.0 (control) | test_real | fog | 126 | 0.0168 | 0.9036 | 0.8289 |
+| S40: E4 k=2, entropy-confidence 0.0 (control) | test_real | light | 93 | 0.0255 | 0.8874 | 0.8024 |
+| S40: E4 k=2, entropy-confidence 0.0 (control) | test_real | rain | 120 | 0.0205 | 0.9030 | 0.8541 |
+| S40: E4 k=2, entropy-confidence 0.0 (control) | test_real | snow | 90 | 0.0132 | 0.9334 | 0.8787 |
 
 ## 3. Proxy ablations
 
@@ -419,9 +451,16 @@ Stated plainly so no claim outruns the evidence:
 - **Comparisons against prior methods are cited, not measured.** Every number in this file is this project's own. The published WXSOD tables give 17 methods plus WFANet on the same two splits and metrics, so a comparison table is possible as reported -- but no external method has been re-run here.
 - **Single seed per configuration** except the REPRO seed repeats (42, 43, 44), which give a spread of about +/-0.0004 MAE. A difference smaller than that cannot be interpreted; the S40 arms have no repeat at all.
 - **The backbone axis is not testable as configured.** `config.model.backbone` does not reach the model — `src/model.py` hard-codes `pvt_v2_b4` — so the generated ablation arms that vary it would train identical architectures. Do not report a backbone comparison until this is wired through.
+- **No equivalence comparison uses a second seed.** Every ablation arm is one run; the only seed replicates are REPRO_SEED43/44. The decisive experiment — three seeds each of no-MoE vs full model at the reported recipe, and at 14 epochs — has not been run.
+- **No positive control.** Routing forced by weather class (oracle routing) has not been run; without it the paper cannot say whether the architecture could help if the router were given a signal. The paired bootstrap + TOST over the 554 real images is in `analysis_results/bootstrap_tost/bootstrap_tost.json`; the router init-vs-trained entropy is in `analysis_results/bootstrap_tost/router_entropy_init_vs_trained.json`.
+- **The entropy-confidence arm is uninformative by construction.** `analysis_results/EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_ENTROPYCONF{,_CTRL}` differ by under 0.0003 MAE and under 3.5e-5 nats, but the objective is the mean normalised entropy, whose gradient vanishes at the uniform gate, so it cannot move an already-uniform router.
 
 ## 6. Source files
 
+- `analysis_results/EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_ENTROPYCONF/best/test_real/none/metrics_test_real_20261003_025240.json`
+- `analysis_results/EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_ENTROPYCONFCTRL/best/test_real/none/metrics_test_real_20261003_025629.json`
+- `results/EXP_B4_E2_K1_S40_R1_L3_M_SPARSE/eval_results/best/test_real/hflip/metrics_test_real_20260925_183536.json`
+- `results/EXP_B4_E2_K1_S40_R1_L3_M_SPARSE/eval_results/best/test_sys/hflip/metrics_test_sys_20260925_184059.json`
 - `results/EXP_B4_E2_K1_S40_R1_L3_M_SPARSE_GATEDENSE/eval_results/metrics_test_real_20260923_060513.json`
 - `results/EXP_B4_E2_K1_S40_R1_L3_M_SPARSE_GATEDENSE/eval_results/metrics_test_sys_20260923_060210.json`
 - `results/EXP_B4_E2_K2_S32_R1_L3_M_SPARSE/eval_results/best/test_real/hflip/metrics_test_real_20260925_225059.json`
