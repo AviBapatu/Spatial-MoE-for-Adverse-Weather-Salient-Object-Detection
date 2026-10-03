@@ -1,0 +1,87 @@
+\begin{figure}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[x=1mm,y=1mm, arr/.style={moeflow},
+    lane/.style={moeblock, minimum width=31mm, text width=30mm, minimum height=11mm}]
+
+% --- one lane per scale; boxes stacked vertically so each can stay large ---
+\def\yF{32}\def\yR{16}\def\yE{0}\def\yH{-16}\def\yC{-32}
+\def\xLaneA{50}\def\xLaneB{87}\def\xLaneC{124}
+\def\xDec{157}
+
+% input and backbone
+\node[moeback, minimum width=22mm, text width=21mm, minimum height=11mm] (input) at (0,38)
+  {\textbf{Input}\\ {\footnotesize$\bX\in\reals^{3\times384\times384}$}};
+\node[moeback, minimum width=22mm, text width=21mm, minimum height=56mm] (bb) at (0,4)
+  {\textbf{PVTv2-B4}\\ \textbf{backbone}\\ {\footnotesize pretrained}\\ {\footnotesize $1/4$, $1/8$, $1/16$}};
+
+% --- lane 1/4 ---
+\node[moeback, lane] (f4)  at (\xLaneA,\yF) {\textbf{$1/4$ features}\\ {\footnotesize $256{\times}96{\times}96$}};
+\node[moerout, lane] (r4)  at (\xLaneA,\yR) {\textbf{Router}\\ {\footnotesize DWConv$3{\times}3$ + 2-layer MLP}};
+\node[moeexp, lane]  (e4)  at (\xLaneA,\yE) {\textbf{Top-2 of 8 experts}\\ {\footnotesize token-wise residual MLP}};
+\node[moeent, lane]  (h4)  at (\xLaneA,\yH) {\textbf{Routing entropy}\\ {\footnotesize $\Hs_4\in[0,1]$}};
+\node[moefuse, lane] (c4)  at (\xLaneA,\yC) {\textbf{Entropy fusion}\\ {\footnotesize $\bF_4$}};
+
+% --- lane 1/8 ---
+\node[moeback, lane] (f8)  at (\xLaneB,\yF) {\textbf{$1/8$ features}\\ {\footnotesize $256{\times}48{\times}48$}};
+\node[moerout, lane] (r8)  at (\xLaneB,\yR) {\textbf{Router}\\ {\footnotesize DWConv$3{\times}3$ + 2-layer MLP}};
+\node[moeexp, lane]  (e8)  at (\xLaneB,\yE) {\textbf{Top-2 of 8 experts}\\ {\footnotesize token-wise residual MLP}};
+\node[moeent, lane]  (h8)  at (\xLaneB,\yH) {\textbf{Routing entropy}\\ {\footnotesize $\Hs_8\in[0,1]$}};
+\node[moefuse, lane] (c8)  at (\xLaneB,\yC) {\textbf{Entropy fusion}\\ {\footnotesize $\bF_8$}};
+
+% --- lane 1/16 ---
+\node[moeback, lane] (f16) at (\xLaneC,\yF) {\textbf{$1/16$ features}\\ {\footnotesize $256{\times}24{\times}24$}};
+\node[moerout, lane] (r16) at (\xLaneC,\yR) {\textbf{Router}\\ {\footnotesize DWConv$3{\times}3$ + 2-layer MLP}};
+\node[moeexp, lane]  (e16) at (\xLaneC,\yE) {\textbf{Top-2 of 8 experts}\\ {\footnotesize token-wise residual MLP}};
+\node[moeent, lane]  (h16) at (\xLaneC,\yH) {\textbf{Routing entropy}\\ {\footnotesize $\Hs_{16}\in[0,1]$}};
+\node[moefuse, lane] (c16) at (\xLaneC,\yC) {\textbf{Entropy fusion}\\ {\footnotesize $\bF_{16}$}};
+
+% --- decoder ---
+\node[moedec, minimum width=30mm, text width=29mm, minimum height=52mm] (dec) at (\xDec,8)
+  {\textbf{Cross-attention}\\ \textbf{decoder}\\[1.5mm]
+   {\footnotesize $1/16{\to}1/8$ global\\[0.6mm] $1/8{\to}1/4$ windowed\\[0.6mm]
+    $3\times$ refinement\\[0.6mm] coarse $\to$ fine}};
+
+% --- heads ---
+\node[moehead, minimum width=30mm, text width=29mm, minimum height=11mm] (sal) at (\xDec,-34)
+  {\textbf{Saliency head}\\ {\footnotesize $1{\times}1$ conv, $384{\times}384$}};
+\node[moehead, minimum width=30mm, text width=29mm, minimum height=11mm] (bnd) at (\xDec,-50)
+  {\textbf{Boundary head}\\ {\footnotesize $1{\times}1$ conv, $384{\times}384$}};
+
+% --- arrows ---
+\draw[arr] (input) -- (bb);
+\def\dOut{3.0}
+\draw[arr] (bb.east) -- ++(\dOut,0) |- (f4.west);
+\draw[arr] (bb.east) -- ++(\dOut,0) |- (f8.west);
+\draw[arr] (bb.east) -- ++(\dOut,0) |- (f16.west);
+\foreach \a/\b in {f4/r4, r4/e4, e4/h4, h4/c4, f8/r8, r8/e8, e8/h8, h8/c8,
+                   f16/r16, r16/e16, e16/h16, h16/c16}{
+  \draw[arr] (\a) -- (\b);
+}
+\draw[arr] (c4.east)  -- ++(\dOut,0) |- ([yshift=15mm]dec.west);
+\draw[arr] (c8.east)  -- ++(\dOut,0) |- ([yshift=5mm]dec.west);
+\draw[arr] (c16.east) -- ++(\dOut,0) |- ([yshift=-5mm]dec.west);
+\draw[arr, draw=red!75!black] (dec.south) -- (sal.north);
+\draw[arr, draw=red!75!black] (sal.south) -- (bnd.north);
+
+% --- one brace over the three routers, marking them independent ---
+\draw[decorate, decoration={brace, amplitude=3pt}, black!80, line width=0.5pt]
+  ([xshift=3mm]r4.north west) -- ([xshift=-3mm]r16.north east)
+  node[midway, above=1.5mm, font=\sffamily\footnotesize\bfseries]
+  {independent router and expert pool at every scale};
+
+\end{tikzpicture}%
+}
+\moelegend
+\caption{\textbf{SpatialMoE-SOD.}
+A PVTv2-B4 backbone produces features at three resolutions.
+Each scale is handled by its \emph{own} Spatial MoE layer: a depthwise-convolutional
+router turns every token into eight logits, noisy top-$K{=}2$ sends the token to two
+experts, and those experts' outputs are combined with their gate weights.
+Per-token routing entropy $\Hs_s$, taken over the full eight-way distribution and
+normalised by $\log 8$, is added to the routed features by the entropy-fusion block.
+The cross-attention decoder merges the three scales coarse-to-fine, and two
+$1{\times}1$ convolutions produce the saliency and boundary maps.
+Red arrows mark the refinement direction; colours are keyed by the legend.}
+\label{fig:arch}
+\end{figure}

@@ -1,0 +1,65 @@
+\begin{figure}[htbp]
+\centering
+\resizebox{0.92\textwidth}{!}{%
+\begin{tikzpicture}[x=1mm,y=1mm,
+  token/.style={circle, draw=black!85, line width=0.4pt, fill=blue!20,
+    minimum size=11mm, font=\sffamily\small\bfseries, inner sep=0pt},
+  op/.style={moerout, minimum width=52mm, text width=50mm, minimum height=10mm,
+    font=\sffamily\small},
+  logits/.style={moerout, minimum width=52mm, text width=50mm, minimum height=10mm,
+    font=\sffamily\small, fill=green!24},
+  exp/.style={moeexp, minimum width=44mm, text width=42mm, minimum height=12mm,
+    font=\sffamily\small},
+  dec/.style={moedec, minimum width=52mm, text width=50mm, minimum height=10mm,
+    font=\sffamily\small},
+  note/.style={font=\sffamily\footnotesize, anchor=west},
+]
+
+\node[token] (x)    at (0,0)    {$\bx_i$};
+\node[op]    (ctx)  at (0,-15)  {DWConv $3{\times}3$ $\to$ local context};
+\node[op]    (cat)  at (0,-29)  {concatenate: $\br_i=[\bx_i\,\|\,\text{ctx}_i]\in\reals^{2C}$};
+\node[op]    (mlp)  at (0,-43)  {router MLP: $2C\to 128\to 8$, GELU};
+\node[logits] (log) at (0,-57)  {routing logits $\bh_i\in\reals^{8}$};
+
+\node[op, fill=yellow!34] (topk) at (0,-73)
+  {noisy top-$K{=}2$ during training; at test, top-$K{=}2$};
+
+% --- the two selected experts ---
+\node[exp] (gk) at (-30,-90) {gate weights\\ $g_{i,k_1},\,g_{i,k_2}$};
+\node[exp] (ek) at (30,-90)  {expert outputs\\ $\E_{k_1}(\bx_i),\,\E_{k_2}(\bx_i)$};
+\node[op, fill=green!24] (sum) at (0,-106)
+  {$\by_i=\textstyle\sum_{k\in\{k_1,k_2\}} g_{i,k}\,\E_k(\bx_i)$};
+
+\node[op, fill=red!18] (ent) at (0,-121)
+  {entropy over all 8 experts: $\mathcal{H}_i=-\sum_j p_{i,j}\log p_{i,j}$, \ $\Hs_i=\mathcal{H}_i/\log 8$};
+\node[dec] (dec) at (0,-135) {project to $C$ channels, add to the decoder feature};
+
+% --- arrows ---
+\foreach \a/\b in {x/ctx, ctx/cat, cat/mlp, mlp/log, log/topk, sum/ent, ent/dec}{
+  \draw[moeflow] (\a) -- (\b);
+}
+\draw[moeflow] (topk.south) -- ++(0,-4) -| (gk.north);
+\draw[moeflow] (topk.south) -- ++(0,-4) -| (ek.north);
+\draw[moeflow] (gk.south) |- (sum.west);
+\draw[moeflow] (ek.south) |- (sum.east);
+
+\node[note] at (8,-73) {$g_{i,k}=\text{softmax}$ over the two selected logits only};
+
+\draw[decorate, decoration={brace, amplitude=3pt, mirror}, black!80, line width=0.5pt]
+  (ek.south west) -- (ek.south east);
+\node[font=\sffamily\footnotesize, below=1.5mm of ek, align=center]
+  {$\E_k(\bx)=\bx+W_k^{(2)}\,\mathrm{GELU}\!\left(W_k^{(1)}\mathrm{LN}(\bx)\right)$,\ \ $W_k^{(1)}\!\in\!\reals^{4C\times C}$};
+
+\end{tikzpicture}%
+}
+\caption{\textbf{Routing for one token at one pyramid scale.}
+A depthwise $3{\times}3$ convolution supplies local context, which is concatenated with
+the token and passed through a two-layer MLP to give eight routing logits.
+Input-dependent Gaussian noise is added during training; top-$K{=}2$ then selects two
+experts, and the gate weights are a softmax over those two logits only.
+Each selected expert is a residual MLP with a $4{\times}$ channel expansion.
+Routing entropy is taken over the \emph{full} eight-way distribution, not the selected
+pair, and the normalised value is projected and added to the decoder feature so the
+decoder can condition on how decisive the router was.}
+\label{fig:router}
+\end{figure}
