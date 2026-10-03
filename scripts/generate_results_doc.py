@@ -27,6 +27,9 @@ RUNS = [
     ("E4 k=2, no MoE at all", "results/EXP_B4_E4_K2_S32_R1_L3_M_NONE_E4_NONECTRL"),
     ("S40: E2 k=1, dense gate, batch 40", "results/EXP_B4_E2_K1_S40_R1_L3_M_SPARSE_GATEDENSE"),
     ("S40: E4 k=2, dense gate, batch 40", "results/EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_GATEDENSE"),
+    ("S40: E2 k=1, batch 40 (diverged)", "results/EXP_B4_E2_K1_S40_R1_L3_M_SPARSE"),
+    ("S40: E4 k=2, entropy-confidence 0.2", "analysis_results/EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_ENTROPYCONF"),
+    ("S40: E4 k=2, entropy-confidence 0.0 (control)", "analysis_results/EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_ENTROPYCONFCTRL"),
 ]
 
 
@@ -58,13 +61,13 @@ w("# Results")
 w("")
 w("Every number in this file is read from a result file on disk and names its source. "
   "Nothing here is transcribed by hand: `RESULTS.md` is generated from the JSON under "
-  "`results/`, so it can be regenerated after new evaluations land.")
+  "`results/` and `analysis_results/`, so it can be regenerated after new evaluations land.")
 w("")
 w("All evaluations are scored in **original image coordinates** — predictions are "
   "reverse-geometried out of the 384x384 padded model frame before metrics are computed. "
-  "The S32 arms use flip-average TTA (`--tta hflip`); the legacy and S40 rows are "
-  "single-pass and are labelled accordingly. TTA is worth about 0.0001 MAE, so it does not "
-  "move any comparison here.")
+  "Most rows are single-pass; the S32 arms use flip-average TTA (`--tta hflip`), and so does "
+  "the S40 E2 k=1 diverged row. TTA is worth about 0.0001 MAE, so it does not move any "
+  "comparison here.")
 w("")
 
 w("## 1. Main results")
@@ -90,9 +93,11 @@ w("")
 w("**Three groups, not one table.** Compare within a group only.")
 w("")
 w("- **REPORTED** — the 14-epoch E8 model. This is the headline row and the one the paper "
-  "reports. It was trained under the older recipe (SSIM/boundary/Z-loss off, deep "
-  "supervision off, effective batch 32) and has been re-evaluated under current code, "
-  "reproducing its recorded MAE/S exactly.")
+  "reports. It was trained under the legacy-era recipe (`results/legacy/preflight/final_config.json`: "
+  "`ssim_weight` 1.0, `boundary_weight` 1.0, `aux_boundary_weight` 0.5, deep supervision on, "
+  "Z-loss and router-confidence off, effective batch 32) and has been re-evaluated under "
+  "current code, reproducing its recorded MAE/S exactly. It was configured for 50 epochs and "
+  "early-stopped at 14, so its learning rate was not annealed.")
 w("- **S32 arms** — one recipe, one comparable family: renormalized gate, router noise on, "
   "load-balance weights 0.08/0.15/0.10, effective batch 32, 8 epochs unless stated. Every "
   "design-choice comparison in the paper must be made inside this group.")
@@ -201,6 +206,18 @@ w("- **The backbone axis is not testable as configured.** `config.model.backbone
   "not reach the model — `src/model.py` hard-codes `pvt_v2_b4` — so the generated "
   "ablation arms that vary it would train identical architectures. Do not report a "
   "backbone comparison until this is wired through.")
+w("- **No equivalence comparison uses a second seed.** Every ablation arm is one run; the "
+  "only seed replicates are REPRO_SEED43/44. The decisive experiment — three seeds each of "
+  "no-MoE vs full model at the reported recipe, and at 14 epochs — has not been run.")
+w("- **No positive control.** Routing forced by weather class (oracle routing) has not been "
+  "run; without it the paper cannot say whether the architecture could help if the router "
+  "were given a signal. The paired bootstrap + TOST over the 554 real images is in "
+  "`analysis_results/bootstrap_tost/bootstrap_tost.json`; the router init-vs-trained entropy "
+  "is in `analysis_results/bootstrap_tost/router_entropy_init_vs_trained.json`.")
+w("- **The entropy-confidence arm is uninformative by construction.** "
+  "`analysis_results/EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_ENTROPYCONF{,_CTRL}` differ by under "
+  "0.0003 MAE and under 3.5e-5 nats, but the objective is the mean normalised entropy, whose "
+  "gradient vanishes at the uniform gate, so it cannot move an already-uniform router.")
 w("")
 w("## 6. Source files")
 w("")
