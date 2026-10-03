@@ -4,7 +4,13 @@
 **Date:** 2026-09-02
 **Venue:** SCOVA (maximum 6 pages including references)
 **Style:** Physics-like scientific exposition, mathematically rigorous, visually sophisticated
-**Status:** The manuscript `paper/main.tex` exists and follows the structure and float plan in §2–§7; this file is the brief it was written from and the reference for any rewrite.
+**Status:** **Superseded (2026-10-02).** This file is the brief for the 6-page SCOVA
+conference version. The manuscript has since become a **journal submission with no page
+limit**, which changes the preamble (the compression that forced 6 pages is gone), the section
+structure (a new §V analysis, separate Limitations and Conclusion, data/code availability
+statements, an appendix) and the float plan (14 tables, 8 figures). `paper/main.tex` is the
+current manuscript and no longer follows §2–§7 below. Read this file as the history of how the
+conference version was shaped, not as a description of what is in the repository now.
 
 ---
 
