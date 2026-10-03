@@ -1,0 +1,168 @@
+{
+  "generated_utc": "2026-10-03T04:28:12.863861Z",
+  "split": "test_real",
+  "n_images": 554,
+  "margin": 0.001,
+  "n_boot": 20000,
+  "reference": "EXP_B4_E8_K2_S32_R1_L3_M_SPARSE_REPRO",
+  "reference_mae": 0.019482733994165086,
+  "arms": [
+    {
+      "arm": "EXP_B4_E4_K2_S32_R1_L3_M_NONE_E4_NONECTRL",
+      "label": "A5 (E4 k2, MoE off)",
+      "n": 554,
+      "ref_mae": 0.019482733994165086,
+      "arm_mae": 0.01946398321236988,
+      "delta": -1.8750781795204978e-05,
+      "ci_lo": -0.0005111014715030021,
+      "ci_hi": 0.0004854860903560947,
+      "tost_p": 0.0001,
+      "equivalent": true,
+      "ci_excludes_zero": false
+    },
+    {
+      "arm": "EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_GATEDENSE",
+      "label": "E4 k2 S40 gd",
+      "n": 554,
+      "ref_mae": 0.019482733994165086,
+      "arm_mae": 0.01955776133279094,
+      "delta": 7.502733862585647e-05,
+      "ci_lo": -0.00035683520147509687,
+      "ci_hi": 0.0005174794181354891,
+      "tost_p": 0.0001,
+      "equivalent": true,
+      "ci_excludes_zero": false
+    },
+    {
+      "arm": "EXP_B4_E8_K2_S32_R1_L3_M_SPARSE_SCALE1",
+      "label": "scale1",
+      "n": 554,
+      "ref_mae": 0.019482733994165086,
+      "arm_mae": 0.019366186907319925,
+      "delta": -0.00011654708684516217,
+      "ci_lo": -0.0005621734572928995,
+      "ci_hi": 0.00035367715446697024,
+      "tost_p": 5e-05,
+      "equivalent": true,
+      "ci_excludes_zero": false
+    },
+    {
+      "arm": "EXP_B4_E4_K2_S32_R1_L3_M_SPARSE_NOLB",
+      "label": "A8 (E4 k2, no LB)",
+      "n": 554,
+      "ref_mae": 0.019482733994165086,
+      "arm_mae": 0.01960066208329694,
+      "delta": 0.00011792808913185332,
+      "ci_lo": -0.00028195376909822926,
+      "ci_hi": 0.0005062462859868993,
+      "tost_p": 0.0,
+      "equivalent": true,
+      "ci_excludes_zero": false
+    },
+    {
+      "arm": "EXP_B4_E2_K2_S32_R1_L3_M_SPARSE",
+      "label": "A2 (E2 k2)",
+      "n": 554,
+      "ref_mae": 0.019482733994165086,
+      "arm_mae": 0.019309385303834064,
+      "delta": -0.00017334869033102255,
+      "ci_lo": -0.000473106815705592,
+      "ci_hi": 0.000123511692986589,
+      "tost_p": 0.0,
+      "equivalent": true,
+      "ci_excludes_zero": false
+    },
+    {
+      "arm": "EXP_B4_E8_K2_S32_R1_L3_M_SPARSE_REPRO_SEED43",
+      "label": "Ref seed43",
+      "n": 554,
+      "ref_mae": 0.019482733994165086,
+      "arm_mae": 0.019945172113047017,
+      "delta": 0.0004624381188819326,
+      "ci_lo": -0.00015313166165505855,
+      "ci_hi": 0.0011722801216320709,
+      "tost_p": 0.05655,
+      "equivalent": false,
+      "ci_excludes_zero": false
+    },
+    {
+      "arm": "EXP_B4_E4_K2_S32_R1_L3_M_DENSE_E4_DENSECTRL",
+      "label": "A6 (E4 k2, dense)",
+      "n": 554,
+      "ref_mae": 0.019482733994165086,
+      "arm_mae": 0.018995207277622952,
+      "delta": -0.00048752671654213434,
+      "ci_lo": -0.001230994723705194,
+      "ci_hi": 0.00020431150333024515,
+      "tost_p": 0.08285,
+      "equivalent": false,
+      "ci_excludes_zero": false
+    },
+    {
+      "arm": "EXP_B4_E8_K2_S32_R1_L3_M_SPARSE_REPRO_SEED44",
+      "label": "Ref seed44",
+      "n": 554,
+      "ref_mae": 0.019482733994165086,
+      "arm_mae": 0.018985443143237093,
+      "delta": -0.0004972908509279927,
+      "ci_lo": -0.0011154956794667498,
+      "ci_hi": 8.686107476384657e-05,
+      "tost_p": 0.05105,
+      "equivalent": false,
+      "ci_excludes_zero": false
+    },
+    {
+      "arm": "EXP_B4_E4_K1_S32_R1_L3_M_SPARSE",
+      "label": "A3 (E4 k1)",
+      "n": 554,
+      "ref_mae": 0.019482733994165086,
+      "arm_mae": 0.021081654903174644,
+      "delta": 0.0015989209090095577,
+      "ci_lo": 0.00103430491512274,
+      "ci_hi": 0.002124857584407279,
+      "tost_p": 0.9808,
+      "equivalent": false,
+      "ci_excludes_zero": true
+    },
+    {
+      "arm": "EXP_B4_E8_K2_S32_R1_L3_M_SPARSE_REPRO_E14",
+      "label": "R@14ep",
+      "n": 554,
+      "ref_mae": 0.019482733994165086,
+      "arm_mae": 0.01725886282906111,
+      "delta": -0.002223871165103975,
+      "ci_lo": -0.002788114652500655,
+      "ci_hi": -0.0016898740185499288,
+      "tost_p": 1.0,
+      "equivalent": false,
+      "ci_excludes_zero": true
+    },
+    {
+      "arm": "EXP_B4_E2_K1_S40_R1_L3_M_SPARSE",
+      "label": "E2 k1 S40",
+      "n": 554,
+      "ref_mae": 0.019482733994165086,
+      "arm_mae": 0.0546715323265225,
+      "delta": 0.03518879833235741,
+      "ci_lo": 0.032444218899128,
+      "ci_hi": 0.03805949318393227,
+      "tost_p": 1.0,
+      "equivalent": false,
+      "ci_excludes_zero": true
+    }
+  ],
+  "seed_floor": {
+    "EXP_B4_E8_K2_S32_R1_L3_M_SPARSE_REPRO_SEED43": {
+      "mean": 0.0004624381188819326,
+      "lo": -0.00015313166165505855,
+      "hi": 0.0011722801216320709,
+      "n": 554
+    },
+    "EXP_B4_E8_K2_S32_R1_L3_M_SPARSE_REPRO_SEED44": {
+      "mean": -0.0004972908509279927,
+      "lo": -0.0011154956794667498,
+      "hi": 8.686107476384657e-05,
+      "n": 554
+    }
+  }
+}

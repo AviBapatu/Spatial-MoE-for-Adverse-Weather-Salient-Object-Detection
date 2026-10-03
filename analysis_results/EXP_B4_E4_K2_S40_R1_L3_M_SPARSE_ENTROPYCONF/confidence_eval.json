@@ -1,0 +1,25 @@
+{
+  "generated_utc": "2026-10-03T04:07:05.571051+00:00",
+  "arm": "CONF02",
+  "experiment_id": "EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_ENTROPYCONF",
+  "split": "test_real",
+  "entropy_confidence_weight": null,
+  "routing_entropy": {
+    "scale_4": 1.3862885443312167,
+    "scale_8": 1.3862887851167671,
+    "scale_16": 1.3846083959087139
+  },
+  "metrics": {
+    "MAE": 0.01940254849720668,
+    "S_measure": 0.9048513320293101,
+    "E_adaptive": 0.9461402465961918,
+    "E_mean": 0.9494791604899833,
+    "E_max": 0.9570066451960298,
+    "F_adaptive": 0.8397846991036997,
+    "F_mean": 0.856261601375537,
+    "F_max": 0.8808367201995683,
+    "boundary_MAE": 0.7309280037879944,
+    "boundary_F1": 0.2767042977670699,
+    "sample_count": 554
+  }
+}

@@ -1,0 +1,184 @@
+{
+  "generated_utc": "2026-10-03T04:29:11.372192Z",
+  "checkpoint": "checkpoints/best.pth",
+  "model_config": {
+    "backbone": "pvt_v2_b4",
+    "working_dim": 256,
+    "decoder_dim": 256,
+    "num_experts": 8,
+    "top_k": 2,
+    "router_variant": "token_only",
+    "expert_variant": "standard",
+    "attention_config": "default",
+    "window_size": 7,
+    "deep_supervision": true,
+    "moe_type": "sparse",
+    "moe_16_mode": "sparse",
+    "router_noise_enabled": true,
+    "router_noise_scale": 1.0,
+    "router_noise_min_std": 0.1
+  },
+  "routing_entropy_at_init": [
+    {
+      "seed": 0,
+      "module": "moe_16",
+      "scale": "scale_16",
+      "E": 8,
+      "entropy": 2.0776732563972473,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9991496345306442
+    },
+    {
+      "seed": 0,
+      "module": "moe_4",
+      "scale": "scale_4",
+      "E": 8,
+      "entropy": 2.078757345676422,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9996709712729597
+    },
+    {
+      "seed": 0,
+      "module": "moe_8",
+      "scale": "scale_8",
+      "E": 8,
+      "entropy": 2.077980399131775,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9992973389639602
+    },
+    {
+      "seed": 1,
+      "module": "moe_16",
+      "scale": "scale_16",
+      "E": 8,
+      "entropy": 2.0767595171928406,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9987102188576897
+    },
+    {
+      "seed": 1,
+      "module": "moe_4",
+      "scale": "scale_4",
+      "E": 8,
+      "entropy": 2.077663004398346,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9991447043613195
+    },
+    {
+      "seed": 1,
+      "module": "moe_8",
+      "scale": "scale_8",
+      "E": 8,
+      "entropy": 2.078598439693451,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9995945536484263
+    },
+    {
+      "seed": 2,
+      "module": "moe_16",
+      "scale": "scale_16",
+      "E": 8,
+      "entropy": 2.0771923065185547,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9989183465290089
+    },
+    {
+      "seed": 2,
+      "module": "moe_4",
+      "scale": "scale_4",
+      "E": 8,
+      "entropy": 2.0786163210868835,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9996031527809695
+    },
+    {
+      "seed": 2,
+      "module": "moe_8",
+      "scale": "scale_8",
+      "E": 8,
+      "entropy": 2.0775731205940247,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9991014793884027
+    },
+    {
+      "seed": 3,
+      "module": "moe_16",
+      "scale": "scale_16",
+      "E": 8,
+      "entropy": 2.0776209235191345,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.999124467736068
+    },
+    {
+      "seed": 3,
+      "module": "moe_4",
+      "scale": "scale_4",
+      "E": 8,
+      "entropy": 2.0774700045585632,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9990518910574039
+    },
+    {
+      "seed": 3,
+      "module": "moe_8",
+      "scale": "scale_8",
+      "E": 8,
+      "entropy": 2.0782459378242493,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9994250360822259
+    },
+    {
+      "seed": 4,
+      "module": "moe_16",
+      "scale": "scale_16",
+      "E": 8,
+      "entropy": 2.078477144241333,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9995362228660087
+    },
+    {
+      "seed": 4,
+      "module": "moe_4",
+      "scale": "scale_4",
+      "E": 8,
+      "entropy": 2.07702499628067,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9988378873121803
+    },
+    {
+      "seed": 4,
+      "module": "moe_8",
+      "scale": "scale_8",
+      "E": 8,
+      "entropy": 2.078275203704834,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9994391099958215
+    }
+  ],
+  "routing_entropy_trained": [
+    {
+      "module": "moe_16",
+      "scale": "scale_16",
+      "E": 8,
+      "entropy": 2.07270485162735,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9967603368897575
+    },
+    {
+      "module": "moe_4",
+      "scale": "scale_4",
+      "E": 8,
+      "entropy": 2.078969180583954,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9997728423298208
+    },
+    {
+      "module": "moe_8",
+      "scale": "scale_8",
+      "E": 8,
+      "entropy": 2.0792845487594604,
+      "ceiling": 2.0794415416798357,
+      "frac": 0.9999245023641067
+    }
+  ]
+}
