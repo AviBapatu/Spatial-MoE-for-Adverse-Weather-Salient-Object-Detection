@@ -36,6 +36,7 @@
 \setlength{\parfillskip}{0pt plus 1fil}
 
 \usepackage{graphicx}
+\usepackage{flafter}
 \usepackage{amsmath,amssymb}
 \usepackage{newtxtext}
 \usepackage{newtxmath}
@@ -69,12 +70,12 @@
 % Float budget. The defaults (18) are below this paper's 22 floats, and an
 % exhausted queue silently drops the later ones and breaks their \ref.
 \setcounter{totalnumber}{30}
-\setcounter{topnumber}{6}
-\setcounter{bottomnumber}{6}
-\renewcommand{\topfraction}{0.9}
-\renewcommand{\bottomfraction}{0.6}
-\renewcommand{\textfraction}{0.1}
-\renewcommand{\floatpagefraction}{0.7}
+\setcounter{topnumber}{8}
+\setcounter{bottomnumber}{8}
+\renewcommand{\topfraction}{0.95}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\floatpagefraction}{0.85}
 
 % ---------------------------------------------------------------- math shorthands
 \newcommand{\bx}{\mathbf{x}}
@@ -144,8 +145,8 @@
 \title{Weather-Label-Free Salient Object Detection with an
 Inert Spatial Router}
 
-\author{Sahadeb Shit$^{1,*}$, Bapatu Avinash Reddy$^1$, Lalith Madhav Chundi$^1$
-and Anudeep Muppalla$^1$}
+\author{Avinash Reddy Bapatu$^1$, Lalith Madhav Chundi$^1$, Anudeep Chowdary Muppalla$^1$
+and Sahadeb Shit$^{1,*}$}
 
 \affil{$^1$Department of Computer Science and Engineering}
 
@@ -309,7 +310,7 @@ The hidden dimension 128 provides a bottleneck between the $2C{=}512$ input and 
 % ============================================================
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.68\textwidth]{fig_routing.pdf}
+\includegraphics[width=\textwidth]{fig_routing.pdf}
 \caption{\textbf{Routing for one token at one pyramid scale.}
 A depthwise $3{\times}3$ convolution supplies local context, which is concatenated with
 the token and passed through a two-layer MLP to give eight routing logits.
@@ -563,7 +564,7 @@ WFANet~\cite{wxsod2025} \textit{(weather-supervised)} & 0.0229 & 0.9051 & \textb
   bar shift=0pt,
   bar width=6pt,
   width=0.90\textwidth,
-  height=76mm,
+  height=66mm,
   xlabel={MAE on real-world test (554 images) $\downarrow$},
   xlabel style={font=\small},
   xmin=0.010, xmax=0.062,
@@ -705,7 +706,7 @@ Arm & MAE$\downarrow$ & $S_\phi\uparrow$ & MAE$\downarrow$ & $S_\phi\uparrow$ \\
 % ============================================================
 \begin{figure}[htbp]
 \centering
-\figor{fig_arms_grid.pdf}{0.95\textwidth}
+\figor{fig_arms_grid.pdf}{0.82\textwidth}
 \caption{\textbf{The same scenes predicted by eight different trained arms.}
 Rows are the five real-world test conditions, easiest to hardest by MAE: snow, fog, rain,
 dark and light. The first two columns are the input
@@ -758,7 +759,7 @@ Force scale $1/4$ to one expert & 0.0196 & 0.9048 \\
 % ============================================================
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.88\textwidth]{figures/fig_qualitative_moe_vs_none.png}
+\includegraphics[width=0.74\textwidth]{figures/fig_qualitative_moe_vs_none.png}
 \caption{\textbf{The mixture-of-experts does not change the prediction.}
 Read the four columns left to right: \textbf{(1) input}, \textbf{(2) ground truth},
 \textbf{(3) full MoE} (E8, $k{=}2$, 14 epochs) and \textbf{(4) no MoE} (the identical
@@ -791,7 +792,7 @@ On synthetic data, compound weather conditions (rain+fog) yield the worst MAE (0
   ybar,
   bar width=7pt,
   width=\columnwidth,
-  height=48mm,
+  height=40mm,
   title={Real-world test ($N{=}554$)},
   title style={font=\small, yshift=-1mm},
   ylabel={MAE $\downarrow$},
@@ -825,7 +826,7 @@ On synthetic data, compound weather conditions (rain+fog) yield the worst MAE (0
   ybar,
   bar width=7pt,
   width=\columnwidth,
-  height=44mm,
+  height=36mm,
   ylabel={$S_\phi$ $\uparrow$},
   ylabel style={font=\small, yshift=-2mm},
   symbolic x coords={Snow, Fog, Rain, Dark, Light},
@@ -877,7 +878,7 @@ Light     & 93  & 0.0243 & 0.8897 & 0.8629 \\
 % ============================================================
 \begin{figure}[htbp]
 \centering
-\figor{fig_pr_curves.pdf}{0.95\textwidth}
+\figor{fig_pr_curves.pdf}{0.80\textwidth}
 \caption{\textbf{Precision--recall and $F_\beta$ versus threshold, reported model.}
 One panel per real-world condition; the inset zooms the high-precision region.
 Curves are computed by sweeping the binarisation threshold over the continuous predictions
@@ -892,9 +893,9 @@ another method.}
 % ============================================================
 %  FIGURE -- DECODER STAGES
 % ============================================================
-\begin{figure}[htbp]
+\begin{figure}[t]
 \centering
-\figor{fig_stages.pdf}{0.95\textwidth}
+\figor{fig_stages.pdf}{0.62\textwidth}
 \caption{\textbf{Progressive refinement through the decoder.}
 Each column is a successive stage of the top-down decoder, from coarse to fine: the
 saliency head applied to the $1/16$ stage features, then to the $1/8$ stage, then to
@@ -918,7 +919,7 @@ experts take about $84\%$ of assignments and two are dead (Table~\ref{tab:sim}) 
 near-uniform softmax coexists with a consistent, and possibly token-independent, ranking.
 Section~\ref{sec:info} takes this up.
 
-\begin{table}[htbp]
+\begin{table}[t]
 \centering
 \caption{Mean routing entropy per scale. Entropy is over the full distribution over all
 $E{=}8$ experts, so the maximum is $\log E = 2.0794$ nats.}
@@ -944,7 +945,7 @@ The compound conditions are the hardest, and the clean subset is the easiest (MA
 among the single-degradation conditions, light is the hardest, so the ordering is not simply
 the number of degradation types.
 
-\begin{table}[htbp]
+\begin{table}[t]
 \centering
 \caption{Weather-wise results on synthetic test (1,500 images), ordered by MAE.}
 \label{tab:weathsyn}
@@ -1556,7 +1557,6 @@ Arm & weights & activations & weights & activations & weights & activations \\
 \end{tabular}
 \end{table}
 
-\clearpage
 \clearpage
 \bibliographystyle{unsrt}
 \bibliography{references}
