@@ -100,3 +100,5 @@ opencode*
 
 # build output; the distributable is paper/SpatialMoE-SOD.pdf
 paper/main.pdf
+# the standalone diagram harness: _figtest.tex is committed, its PDF is build output
+paper/_figtest.pdf
