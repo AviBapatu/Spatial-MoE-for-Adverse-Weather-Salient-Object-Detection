@@ -41,6 +41,8 @@ GENERATORS = [
     ]),
     ("notebooks/generators/generate_notebook_legacy_eval.py",
      ["notebooks/evaluate/moe-of-sod__legacy_eval.ipynb"]),
+    ("notebooks/generators/generate_notebook_paper_figures.py",
+     ["notebooks/figures/moe-of-sod__paper_figures.ipynb"]),
 ]
 
 
