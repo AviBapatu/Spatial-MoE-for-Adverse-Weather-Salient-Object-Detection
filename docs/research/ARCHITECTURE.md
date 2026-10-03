@@ -59,8 +59,9 @@ at construction (`assert_model_matches_config` in `src/model.py`):
 | `none` | no MoE; features pass through (also removes the expert parameters) |
 | `sparse_fine` | routed experts at the 1/4 scale only; 1/8 and 1/16 pass through — the routing-scope ablation, not capacity-matched |
 
-**None of these arms has been run.** `results/` contains zero `M_DENSE`, `M_NONE` or
-`SCALE1` runs. See `RESULTS.md` §5 and `RESEARCH_TRUTH.md` §3.
+**All four arms have been run and evaluated** (dense 0.0191, none 0.0195, sparse_fine 0.0195
+real MAE, against the 0.0195 reference). See `RESULTS.md` and the paired TOST in
+`analysis_results/bootstrap_tost/`.
 
 `moe_16_mode="dense"` replaces only the 1/16-scale layer with a single-expert adapter.
 
@@ -73,7 +74,10 @@ at construction (`assert_model_matches_config` in `src/model.py`):
    `disable_entropy=True` skips it for the ablation.
    **Note:** the normalization constant is hard-coded as `1 / ln(8)`, matching 8 experts.
    For a four-expert configuration the entropy channel is therefore scaled differently —
-   worth knowing before comparing entropy-fused arms across expert counts.
+   worth knowing before comparing entropy-fused arms across expert counts. The entropy map is
+   **not detached**: `EntropyFusionBlock` receives the entropy tensor directly, so the decoder
+   is a differentiable function of the router logits and forms a second, direct task-gradient
+   path to the router (weak near uniformity, where `dH/dh -> 0`, but not zero).
 2. `GlobalCrossAttentionBlock`: LayerNorm + 8-head `nn.MultiheadAttention` over flattened
    tokens, plus a residual FFN. Fuses 1/16 into 1/8.
 3. A pooled global context is added to the 1/4 features (`global_context_pool` +

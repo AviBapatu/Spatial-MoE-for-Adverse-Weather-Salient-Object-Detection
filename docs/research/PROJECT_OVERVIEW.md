@@ -19,6 +19,23 @@ close to uniform and shows no weather specialisation. The architecture claim abo
 about design intent; the paper must not claim learned specialisation the data does not
 show.
 
+## Study status
+
+The ablation study is complete. The mixture-of-experts, its routing and its entropy channel
+are each removable, randomisable or short-circuitable with no measurable effect: the no-MoE,
+one-scale, dense-expert and no-load-balance variants all sit within the seed-noise band of the
+reference, and all but the dense-expert variant pass a TOST equivalence test at a 0.001 MAE
+margin. The performance comes from the backbone, decoder and training budget, not routing.
+*Why* the router is inert is a ranked set of hypotheses, not a settled finding: **H1** selection
+is noise-dominated at initialisation; **H2** the auxiliary and Z-loss terms do not reward
+decisiveness; **H3** the experts are near-identical at initialisation, leaving the gate nothing
+to separate. The measured gate is a **static selector**: flat full-softmax
+entropy (0.997-1.000 of the ceiling) coexists with a strongly skewed ranking (at 1/8, three
+experts take ~84% of hard assignments and two are dead). The decisive measurements — the
+initial-vs-trained top-2 assignment agreement, the input-dependence of the assignment, and
+oracle routing by weather class as the positive control — have not been run. See
+`RESEARCH_TRUTH.md` §2.3 and `RESULTS.md`.
+
 ## System summary
 
 | Component | Choice | Source |

@@ -98,8 +98,10 @@ All of these are unrun. Where an existing hook makes one cheap, that is noted.
 | C | share one router across scales and compare | needs code |
 | D | remove the entropy channel and compare — **`disable_entropy` already exists** | yes, one evaluation run |
 | E | compare against NIFM and WFANet on WXSOD | needs baselines |
-| MoE itself | the mixture-vs-dense control — **configs already exist** | yes, one training run |
+| MoE itself | the mixture-vs-dense control — **run** (A5 dense 0.0191, A6 none 0.0195 vs Ref 0.0195) | done |
 | Specialisation | per-expert assignment statistics — the diagnostics already compute them | yes, already measured (no specialisation found) |
 
-The last two rows are the point: the cheapest experiments that move the paper forward are
-the mixture-vs-dense control and the entropy ablation, both of which are runnable now.
+The mixture-vs-dense control and the entropy ablation have now been run. The decisive
+experiments still outstanding are oracle routing by weather class (a positive control) and the
+initial-vs-trained top-2 assignment agreement measurement; until those exist the mechanism is a
+hypothesis, even though the equivalence is established.

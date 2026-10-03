@@ -129,10 +129,49 @@ values are single-pass; none is TTA-boosted.
 
 ### 2.2 Runs that exist
 
-`results/` contains exactly: the legacy 8-expert checkpoint evaluations, the two
-GATEDENSE runs (E2 K1 and E4 K2, effective batch 40), the two E8 ablation runs
-(`ablation_full_moe`, `ablation_moe16_dense`), and the 2026-09 experiment set (E8 k=2
-renormalized and dense, two seed repeats, and E4 at the E8 recipe).
+`results/` contains the legacy 8-expert checkpoint evaluations, the two GATEDENSE runs
+(E2 K1 and E4 K2, effective batch 40), the two E8 ablation runs (`ablation_full_moe`,
+`ablation_moe16_dense`), and the full 2026-09 ablation family: the E8 k=2 reference and dense
+gate, two seed repeats, E4 at the E8 recipe, E2 k=2, E4 k=1, no-load-balance, dense-expert and
+no-MoE controls, routing at 1/4 only, the 14-epoch run, and the divergent E2 k=1 batch-40 run.
+
+`analysis_results/` holds the paired bootstrap + TOST
+(`bootstrap_tost/bootstrap_tost.json`), the router init-vs-trained entropy
+(`bootstrap_tost/router_entropy_init_vs_trained.json`), and the entropy-confidence arm and its
+matched control (`EXP_B4_E4_K2_S40_R1_L3_M_SPARSE_ENTROPYCONF{,CTRL}`). Every measured number,
+with sources, is in `RESULTS.md`.
+
+### 2.3 Routing hypotheses
+
+*Why* the router is inert is a ranked set of hypotheses, not a settled finding. Each is stated
+with the evidence already in hand and the measurement that would discriminate it. **The gate is
+not gradient-starved.** The gate (the manuscript's Eq. (5)) is a softmax over the two selected
+logits, so at near-equal logits the weights are near 0.5 and the two-way Jacobian `g(1-g)` is
+maximal (~0.25), not small; the only small factor is the expert difference `E_a - E_b`. With
+residual experts the shared `x` cancels, so the mixture's own signal is the difference of two
+MLP branches, ~0 if the experts are near-identical at initialisation. The earlier "product of two
+small quantities / gradient starvation through small gate weights" explanation is therefore not
+a valid mechanism and must not be repeated.
+
+| # | Hypothesis | Evidence status |
+|---|---|---|
+| H1 | **Selection is noise-dominated at initialisation.** Noisy top-k adds Gaussian noise with a learned softplus scale of order 0.7 against logits of order 0.1, so training-time selection is close to random. | Cut against: the noise-off batch-40 arms B1/B2 (the E2 k=1 and E4 k=2 GATEDENSE runs) sit at **1.0000** normalised entropy at 1/4 and 1/8, flatter than the reference, so removing the noise does not make the gate more structured. Confounded by batch and gate mode. |
+| H2 | **The auxiliary and Z-loss terms do not reward decisiveness.** The load-balance and importance terms are minimised at a uniform gate, and the ablation recipe's Z-loss penalises logit magnitude, so the objective contains no reward for a decisive gate. | Cut against as the main cause: arm A4 (E4 k=2, load-balance weight 0) removes the load-balance term and the router is still equally flat (load-balance is not what makes it flat), and the reported model R (E8 k=2, Z-loss weight 0) has no Z-loss yet is equally flat (the Z-loss is not the main cause either). |
+| H3 | **The experts are near-identical at initialisation, leaving the gate nothing to separate.** The mixture's own signal is `g·(E_a - E_b)`; with residual experts the shared `x` cancels, so the signal is the difference of two MLP branches, ~0 at init. This also predicts a **static selector**: small logits with a consistent, possibly input-independent ranking. | 1/8 hard usage ~84% across three experts with two dead, in nearly every arm; arm A3 (E4 k=1, the single-expert arm, least gradient through the mixture) is the **least** flat (0.9766 at 1/8, with dead experts), which argues against pure gradient starvation. Not established. |
+
+**A static selector.** Flat full-softmax entropy (normalised 0.997-1.000 of
+`ln E`) *coexists* with a strongly skewed ranking: at 1/8 three experts take ~84% of hard
+assignments and two are dead, in nearly every arm (`RESULTS.md` §4, usage table). "Flat entropy"
+therefore does not mean the gate is uninformed, and the earlier "not a collapse" reading
+overstates the evidence — the selection may be a static, possibly input-independent ranking.
+
+**Decisive measurements — not yet made.**
+
+- Initial-versus-trained **top-2 assignment agreement** on identical tokens.
+- The **input-dependence of the assignment**: a decomposition of the logit variance into
+  token-independent and token-dependent parts, and the mutual information of the assignment with
+  weather class and with spatial position.
+- **Oracle routing by weather class** as the positive control.
 
 ---
 
@@ -143,13 +182,20 @@ Not supported by any evidence in this repository. Do not write them.
 - **Any *measured* comparison to prior methods.** No external method has been re-implemented
   or re-run. A comparison against the WXSOD benchmark's published tables is permitted, but
   only labelled "as reported" with the protocol difference disclosed.
-- **"The MoE helps."** The mixture-vs-shared-MLP control (`..._M_NONE_E4_NONECTRL`) and the
-  dense-gate control (`..._M_DENSE_E4_DENSECTRL`) were training at the time of writing;
-  results pending. Do not assert either outcome until their metrics land.
+- **"The MoE helps."** The mixture-vs-shared-MLP control (`..._M_NONE_E4_NONECTRL`, real
+  MAE 0.0195) and the dense-expert control (`..._M_DENSE_E4_DENSECTRL`, real MAE 0.0191) have
+  run. Both are within the seed-noise band of the reference, and the dense variant does not
+  pass the TOST equivalence test. The mixture shows no measurable benefit; the opposite claim
+  is equally unsupported, since the architecture was not shown to hurt either.
 - **"Experts specialise by weather."** Measured divergence from the weather prior is
   negligible; the residual skew is concentrated in the least-used experts.
 - **"Routing causes the improvement"** or any causal claim about a design choice — no
   matched control exists for any of them.
+- **"Gradient starvation through small gate weights."** The gate (the manuscript's Eq. (5)) is a
+  softmax over the two selected logits, so at near-equal logits the two-way Jacobian `g(1-g)` is
+  maximal (~0.25), not small; only the expert difference `E_a - E_b` is small. Arm A3, which has
+  the *least* gradient through the mixture, is the *least* flat arm, so the router is not starved.
+  See §2.3.
 - **Any backbone comparison.** `config.model.backbone` does not reach the model;
   `src/model.py` hard-codes PVTv2-B4, so configs that vary it train identical
   architectures. The ablation arms that "vary the backbone" are currently no-ops.
@@ -169,7 +215,8 @@ Not supported by any evidence in this repository. Do not write them.
 |---|---|
 | `config.model.backbone` is never passed to the model | backbone ablations are meaningless as configured |
 | `router_variant` is consumed only by the experiment-ID builder | the three router variants train the same router |
-| The mixture-vs-dense control arm has never been run | the central claim has no support |
+| No matched no-MoE control at the **reported** recipe | the headline model R was never re-run against a null control; the equivalence result rests on single-seed family arms whose reference (Ref) is a different recipe |
+| No oracle-routing positive control | routing forced by weather class has not been run, so nothing shows the architecture could help if the router were given a signal |
 | Single seed per configuration (except the repeats) | no variance estimate |
 | `src/ablations.py` `# A: PVT-B2` arm would train B4 | a fabricated backbone comparison if ever run |
 
@@ -227,5 +274,6 @@ The current-code measurement for the same checkpoint is
 ## 5. Maintenance
 
 Update this file whenever a claim becomes supported or stops being supported, and
-regenerate `docs/research/RESULTS.md` after new evaluations. Provenance for every number
-must remain a file path that a reader can open.
+regenerate `docs/research/RESULTS.md` after new evaluations (its generator scans `results/`
+and `analysis_results/`). Provenance for every number must remain a file path that a reader
+can open.

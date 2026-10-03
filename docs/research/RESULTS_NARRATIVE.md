@@ -1,5 +1,12 @@
 # RESULTS NARRATIVE — Scientific Interpretation of Completed Experiments
 
+> **SUPERSEDED 2026-10-03.** This file was written when only the single legacy model had been
+> evaluated. The ablation study has since been completed: the no-MoE, one-scale, dense-expert
+> and no-load-balance variants are equivalent to the reference in a paired TOST, and the
+> mechanism is a ranked hypothesis. The authoritative sources are now
+> `RESEARCH_TRUTH.md`, `RESULTS.md` and `paper/main.tex`. Read the sections below as the
+> interpretation of the single-model era; statements that "no ablation exists" are historical.
+
 **Audit date:** 2026-09-02
 **Purpose:** Concise scientific interpretation of what the experiments actually show.
 
@@ -20,7 +27,7 @@ The model processes images at 384×384 resolution and produces pixel-wise salien
 
 **What this establishes:** The architecture is functional and produces reasonable SOD predictions across diverse weather conditions. The evaluation pipeline is deterministic (identical metrics across 6 independent evaluation runs of the same checkpoint).
 
-**What this does NOT establish:** Whether any specific design choice (MoE, routing, entropy fusion, multi-scale independent routing) contributes to this performance. No ablation against a simpler baseline exists.
+**What this does NOT establish:** Whether any specific design choice (MoE, routing, entropy fusion, multi-scale independent routing) contributes to this performance. The ablations that followed answer this: the mixture is removable with no measurable effect. (This section predates them; see the status banner.)
 
 ---
 
@@ -94,19 +101,19 @@ slightly less uniform. The difference is small and no significance test has been
 
 3. **Snow is the easiest condition on real data.** Snow images may have high contrast between the white snow and darker salient objects, making segmentation easier.
 
-4. **Boundary F1 is low across the board.** 0.36 on real, 0.55 on synthetic. The boundary head appears to be the weakest component.
+4. **Boundary F1 is low across the board.** 0.36 on real, 0.55 on synthetic — but these come from the binarised saliency mask's edge, not the boundary head, so the head itself is unmeasured.
 
 ---
 
 ## 6. Design Choices That Are Empirically Supported
 
-**None.** No design choice has been empirically validated through ablation. All architectural decisions (MoE, routing, entropy fusion, multi-scale independent routing) remain unvalidated design choices.
+**The negative result is the supported finding.** The mixture-of-experts, its routing and its entropy channel are each removable, randomisable or short-circuitable with no measurable effect (see `RESULTS.md` and the paired TOST in `analysis_results/bootstrap_tost/`). No design choice is shown to *help*; the reportable claim is that none of them is needed for the accuracy achieved here.
 
 ---
 
 ## 7. Design Choices That Are NOT Supported
 
-Cannot be determined without ablation studies. The current experiments provide zero evidence for or against any specific design choice.
+No design choice is shown to improve accuracy: every architectural variant tested is within the seed-noise band of the reference. The *mechanism* behind the flat router is not settled (see `RESEARCH_TRUTH.md` §2 and the ranked hypotheses in `paper/main.tex` §5).
 
 ---
 
@@ -114,7 +121,9 @@ Cannot be determined without ablation studies. The current experiments provide z
 
 1. **Single model, single run.** No variance estimation. No multiple seeds. Results could be specific to this particular training run.
 
-2. **No ablation studies.** The most critical gap. Without ablations, no causal claims can be made about any design choice.
+2. **Ablations are complete** (superseded): the no-MoE, one-scale, dense-expert and
+   no-load-balance variants have been run and are equivalent to the reference within a
+   0.001 MAE TOST margin.
 
 3. **No SOTA comparison.** Cannot claim competitive or superior performance.
 
@@ -126,7 +135,7 @@ Cannot be determined without ablation studies. The current experiments provide z
 
 7. **No training logs.** Cannot assess convergence, overfitting, or training stability.
 
-8. **No non-MoE baseline.** Cannot attribute any performance to the MoE architecture.
+8. **No matched no-MoE control at the reported recipe.** The family arms are equivalent, but the headline model R was never re-run against a null control; equivalence rests on single-seed family arms.
 
 ---
 
@@ -148,7 +157,7 @@ The completed experiments do NOT demonstrate:
 5. That the model is computationally efficient.
 6. That entropy fusion provides benefit.
 
-**The paper should be framed as an architectural proposal with comprehensive empirical characterization, not as a validated design with proven contributions.**
+**The paper is now framed as an equivalence result — the mixture is removable with no measurable effect — plus a ranked hypothesis about why. See `paper/main.tex`, `RESEARCH_TRUTH.md` and `RESULTS.md`.**
 
 
 ## Provenance note

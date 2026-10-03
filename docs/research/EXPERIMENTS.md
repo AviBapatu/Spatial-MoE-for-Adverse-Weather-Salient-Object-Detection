@@ -69,7 +69,11 @@ control (`v_e4_repro_nonectrl.json`, `E4_NONECTRL`), a dense-gate control at E4
 
 Three seeds of A give the noise floor; without it, no difference between arms is
 interpretable. B tests the mechanism behind dead experts: the renormalized gate gives
-gradient only to selected experts, the dense gate gives it to all.
+gradient only to selected experts, the dense gate gives it to all. The mixture-vs-dense controls
+are within noise of the reference, but the gate is a **static selector**: flat
+full-softmax entropy coexists with a skewed hard assignment (at 1/8, three experts take ~84% of
+assignments and two are dead). The mechanism is a ranked set of hypotheses, and gradient
+starvation through small gate weights is not one of them; see `RESEARCH_TRUTH.md` §2.3.
 
 ## Historical runs
 
@@ -105,7 +109,8 @@ Numbers for every evaluated run: `RESULTS.md`.
 
 | Gap | Why it matters |
 |---|---|
-| Mixture-vs-dense control (`v_e4_repro_nonectrl.json`, `v_e4_repro_densectrl.json`, and the older `v_4expert_nonecontrol.json`, `v_4expert_densecontrol.json`) | no `M_DENSE`/`M_NONE` run has been evaluated under `results/`; without it the mixture's contribution is unmeasured |
+| Matched no-MoE control at the **reported** recipe | the mixture-vs-dense controls (`E4_NONECTRL`, `E4_DENSECTRL`) have run and sit within noise of the reference, but the reported model R was never re-run against a null control; equivalence rests on single-seed family arms |
+| Oracle routing (positive control) | routing forced by weather class has not been run, so the paper cannot say whether the architecture could help if the router were given a signal |
 | External baselines | no comparison to prior methods exists |
 | Seed repeats beyond arm A | every other number is a single run |
 | Backbone comparison | `config.model.backbone` does not reach the model, so backbone arms train identical architectures |

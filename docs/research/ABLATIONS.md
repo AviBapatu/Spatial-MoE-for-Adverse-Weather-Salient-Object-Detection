@@ -52,8 +52,15 @@ Compare against non-MoE baselines:
 
 **Status:** `moe_type` *is* consumed — it selects the arm in `SpatialMoESODNet.__init__`
 (`"none"` passes features through, `"dense"` applies one shared expert, `"sparse"` routes
-top-k experts). However **none of these arms has been run**: `results/` contains zero
-runs with `M_DENSE` or `M_NONE`, so the mixture-vs-dense comparison does not yet exist.
+top-k experts). All four arms have now been run and evaluated: `"dense"` (A5) real MAE 0.0191,
+`"none"` (A6) 0.0195, `"sparse_fine"` (A8, routing at 1/4 only) 0.0195, against the reference
+0.0195. The mixture-vs-dense comparison exists and is the paper's central result; see
+`RESULTS.md` and the paired TOST in `analysis_results/bootstrap_tost/`. The mixture is removable,
+but the gate is a **static selector**, not a well-trained one: the flat full-softmax entropy
+coexists with a strongly skewed hard assignment (at 1/8, three experts take ~84% of assignments
+and two are dead, in nearly every arm; the ordering may be input-independent). The mechanism is a
+ranked set of hypotheses, and gradient starvation through small gate weights is not one of them;
+see `RESEARCH_TRUTH.md` §2.3.
 
 ## Loss Matrix (`ablations.py:93-117`)
 
