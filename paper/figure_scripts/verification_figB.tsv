@@ -1,0 +1,15 @@
+figure	value	source	match
+B	real/Snow MAE=0.0094 N=90	metrics_test_real_20260925_193945.json	match
+B	real/Fog MAE=0.0148 N=126	metrics_test_real_20260925_193945.json	match
+B	real/Rain MAE=0.0165 N=120	metrics_test_real_20260925_193945.json	match
+B	real/Dark MAE=0.0191 N=125	metrics_test_real_20260925_193945.json	match
+B	real/Light MAE=0.0243 N=93	metrics_test_real_20260925_193945.json	match
+B	synthetic/Clean MAE=0.0142 N=167	metrics_test_sys_20260925_194231.json	match
+B	synthetic/Fog MAE=0.0166 N=166	metrics_test_sys_20260925_194231.json	match
+B	synthetic/Snow MAE=0.0189 N=172	metrics_test_sys_20260925_194231.json	match
+B	synthetic/Snow+fog MAE=0.0189 N=156	metrics_test_sys_20260925_194231.json	match
+B	synthetic/Rain+snow MAE=0.0194 N=166	metrics_test_sys_20260925_194231.json	match
+B	synthetic/Dark MAE=0.0199 N=156	metrics_test_sys_20260925_194231.json	match
+B	synthetic/Rain MAE=0.0200 N=179	metrics_test_sys_20260925_194231.json	match
+B	synthetic/Light MAE=0.0215 N=166	metrics_test_sys_20260925_194231.json	match
+B	synthetic/Rain+fog MAE=0.0237 N=172	metrics_test_sys_20260925_194231.json	match
