@@ -185,13 +185,6 @@
   year    = {2024}
 }
 
-@misc{artifact2026,
-  title        = {{SpatialMoE-SOD}: Source Code, Configurations and Per-Run Evaluation Artifacts},
-  author       = {Bapatu, Avinash Reddy},
-  howpublished = {\url{https://github.com/AviBapatu/Spatial-MoE-for-Adverse-Weather-Salient-Object-Detection}},
-  year         = {2026}
-}
-
 @inproceedings{smoe,
   title     = {Spatial Mixture-of-Experts},
   author    = {Dryden, Nikoli and Hoefler, Torsten},
@@ -219,9 +212,390 @@
 
 @inproceedings{sparsemoecnn,
   title     = {Design and Behavior of Sparse Mixture-of-Experts Layers in {CNN}-based Semantic Segmentation},
-  author  = {Pavlitska, S. and Fan, H. and Ditschuneit, K. and Z{\"o}llner, J. M.},
+  author    = {Pavlitska, S. and Fan, H. and Ditschuneit, K. and Z{\"o}llner, J. M.},
   booktitle = {CVPR Workshops (Safe Artificial Intelligence for Automated Driving)},
   pages     = {4272--4281},
   year      = {2026},
   note      = {arXiv:2604.13761}
+}
+
+% ---------------------------------------------------------------------------
+% Additions (Tier 1-5). Verified online: m4sam2026 and the six WXSOD baselines
+% (corrnet ... meanet); the rest are well-known papers entered from memory, so
+% spot-check each against the publisher/arXiv page before submission.
+% ---------------------------------------------------------------------------
+
+% --- Router design used but not cited --------------------------------------
+@inproceedings{shazeer2017moe,
+  title     = {Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer},
+  author    = {Shazeer, Noam and Mirhoseini, Azalia and Maziarz, Krzysztof and Davis, Andy and Le, Quoc and Hinton, Geoffrey and Dean, Jeff},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2017},
+  note      = {arXiv:1701.06538}
+}
+
+@article{fedus2022switch,
+  title   = {Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity},
+  author  = {Fedus, William and Zoph, Barret and Shazeer, Noam},
+  journal = {Journal of Machine Learning Research},
+  volume  = {23},
+  number  = {120},
+  pages   = {1--39},
+  year    = {2022}
+}
+
+@article{zoph2022stmoe,
+  title   = {{ST-MoE}: Designing Stable and Transferable Sparse Expert Models},
+  author  = {Zoph, Barret and Bello, Irwan and Kumar, Sameer and Du, Nan and Huang, Yanping and Dean, Jeff and Shazeer, Noam and Fedus, William},
+  journal = {arXiv preprint arXiv:2202.08906},
+  year    = {2022}
+}
+
+@inproceedings{lepikhin2021gshard,
+  title     = {{GShard}: Scaling Giant Models with Conditional Computation and Automatic Sharding},
+  author    = {Lepikhin, Dmitry and Lee, HyoukJoong and Xu, Yuanzhong and Chen, Dehao and Firat, Orhan and Huang, Yanping and Krikun, Maxim and Shazeer, Noam and Chen, Zhifeng},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2021}
+}
+
+@article{jacobs1991mixtures,
+  title   = {Adaptive Mixtures of Local Experts},
+  author  = {Jacobs, Robert A. and Jordan, Michael I. and Nowlan, Steven J. and Hinton, Geoffrey E.},
+  journal = {Neural Computation},
+  volume  = {3},
+  number  = {1},
+  pages   = {79--87},
+  year    = {1991}
+}
+
+@article{jiang2024mixtral,
+  title   = {Mixtral of Experts},
+  author  = {Jiang, Albert Q. and others},
+  journal = {arXiv preprint arXiv:2401.04088},
+  year    = {2024}
+}
+
+% --- Loss / decoder / training components used but not cited ---------------
+@inproceedings{qin2019basnet,
+  title     = {{BASNet}: Boundary-Aware Salient Object Detection},
+  author    = {Qin, Xuebin and Zhang, Zichen and Huang, Chenyang and Gao, Chao and Dehghan, Masood and Jagersand, Martin},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {7479--7489},
+  year      = {2019}
+}
+
+@article{wang2004ssim,
+  title   = {Image Quality Assessment: From Error Visibility to Structural Similarity},
+  author  = {Wang, Zhou and Bovik, Alan C. and Sheikh, Hamid R. and Simoncelli, Eero P.},
+  journal = {IEEE Transactions on Image Processing},
+  volume  = {13},
+  number  = {4},
+  pages   = {600--612},
+  year    = {2004}
+}
+
+@inproceedings{lee2015dsn,
+  title     = {Deeply-Supervised Nets},
+  author    = {Lee, Chen-Yu and Xie, Saining and Gallagher, Patrick and Zhang, Zhengyou and Tu, Zhuowen},
+  booktitle = {International Conference on Artificial Intelligence and Statistics (AISTATS)},
+  year      = {2015}
+}
+
+@inproceedings{liu2021swin,
+  title     = {Swin Transformer: Hierarchical Vision Transformer using Shifted Windows},
+  author    = {Liu, Ze and Lin, Yutong and Cao, Yue and Hu, Han and Wei, Yixuan and Zhang, Zheng and Lin, Stephen and Guo, Baining},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2021}
+}
+
+@inproceedings{vaswani2017attention,
+  title     = {Attention Is All You Need},
+  author    = {Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N. and Kaiser, {\L}ukasz and Polosukhin, Illia},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {30},
+  year      = {2017}
+}
+
+@inproceedings{loshchilov2019adamw,
+  title     = {Decoupled Weight Decay Regularization},
+  author    = {Loshchilov, Ilya and Hutter, Frank},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2019}
+}
+
+@inproceedings{loshchilov2017sgdr,
+  title     = {{SGDR}: Stochastic Gradient Descent with Warm Restarts},
+  author    = {Loshchilov, Ilya and Hutter, Frank},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2017}
+}
+
+@inproceedings{wu2018groupnorm,
+  title     = {Group Normalization},
+  author    = {Wu, Yuxin and He, Kaiming},
+  booktitle = {Proceedings of the European Conference on Computer Vision (ECCV)},
+  year      = {2018}
+}
+
+% --- Claims in the text that currently have no citation --------------------
+@article{m4sam2026,
+  title   = {{M$^4$-SAM}: Multi-Modal Mixture-of-Experts with Memory-Augmented {SAM} for {RGB-D} Video Salient Object Detection},
+  author  = {Liu, Jiyuan and Lin, Jia and Zhou, Xiaofei and Cong, Runmin and Liu, Deyang and Liu, Zhi},
+  journal = {arXiv preprint arXiv:2605.11760},
+  year    = {2026}
+}
+
+@inproceedings{pavlitskaya2020moeseg,
+  title     = {Using Mixture of Expert Models to Gain Insights into Semantic Segmentation},
+  author    = {Pavlitskaya, Svetlana and Hubschneider, Christian and Weber, Michael and Moritz, Ruby and H{\"u}ger, Fabian and Schlicht, Peter and Z{\"o}llner, J. Marius},
+  booktitle = {CVPR Workshops},
+  year      = {2020}
+}
+
+% --- Six baselines that appear in Fig. 4 but were never cited --------------
+@article{corrnet,
+  title   = {Lightweight Salient Object Detection in Optical Remote Sensing Images via Feature Correlation},
+  author  = {Li, Gongyang and Liu, Zhi and Bai, Zhen and Lin, Weisi and Ling, Haibin},
+  journal = {IEEE Transactions on Geoscience and Remote Sensing},
+  year    = {2022}
+}
+
+@article{iconet,
+  title   = {Salient Object Detection via Integrity Learning},
+  author  = {Zhuge, Mingchen and Fan, Deng-Ping and Liu, Nian and Zhang, Dingwen and Xu, Dong and Shao, Ling},
+  journal = {IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  volume  = {45},
+  number  = {3},
+  year    = {2023}
+}
+
+@article{hdnet,
+  title   = {Low-Light Salient Object Detection by Learning to Highlight the Foreground Objects},
+  author  = {Lu, Xiaoqiang and Yuan, Yuan and Liu, Xinyu and Wang, Liang and Zhou, Xiaofei and Yang, Yang},
+  journal = {IEEE Transactions on Circuits and Systems for Video Technology},
+  year    = {2024}
+}
+
+@article{fsminet,
+  title   = {Fully Squeezed Multiscale Inference Network for Fast and Accurate Saliency Detection in Optical Remote-Sensing Images},
+  author  = {Shen, K. and Zhou, X. and Wan, B. and Shi, R. and Zhang, J.},
+  journal = {IEEE Geoscience and Remote Sensing Letters},
+  volume  = {19},
+  year    = {2022}
+}
+
+@article{aesinet,
+  title   = {Adaptive Edge-Aware Semantic Interaction Network for Salient Object Detection in Optical Remote Sensing Images},
+  author  = {Zeng, X. and Xu, M. and Hu, Y. and Tang, H. and Hu, Y. and Nie, L.},
+  journal = {IEEE Transactions on Geoscience and Remote Sensing},
+  volume  = {61},
+  year    = {2023}
+}
+
+@article{meanet,
+  title   = {{MEANet}: An Effective and Lightweight Solution for Salient Object Detection in Optical Remote Sensing Images},
+  author  = {Liang, B. and Luo, H.},
+  journal = {Expert Systems with Applications},
+  volume  = {238},
+  year    = {2024}
+}
+
+% --- Tier 2: why the router is inert ---------------------------------------
+@inproceedings{roller2021hash,
+  title     = {Hash Layers for Large Sparse Models},
+  author    = {Roller, Stephen and Sukhbaatar, Sainbayar and Szlam, Arthur and Weston, Jason},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {34},
+  year      = {2021}
+}
+
+@inproceedings{zuo2022thor,
+  title     = {Taming Sparsely Activated Transformer with Stochastic Experts},
+  author    = {Zuo, Simiao and Liu, Xiaodong and Jiao, Jian and Kim, Young Jin and Hassan, Hany and Zhang, Ruofei and Zhao, Tuo and Gao, Jianfeng},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2022}
+}
+
+@inproceedings{dai2022stablemoe,
+  title     = {{StableMoE}: Stable Routing Strategy for Mixture of Experts},
+  author    = {Dai, Damai and Dong, Li and Ma, Shuming and Zheng, Bo and Sui, Zhifang and Chang, Baobao and Wei, Furu},
+  booktitle = {Proceedings of the Annual Meeting of the Association for Computational Linguistics (ACL)},
+  year      = {2022}
+}
+
+@inproceedings{chi2022repcollapse,
+  title     = {On the Representation Collapse of Sparse Mixture of Experts},
+  author    = {Chi, Zewen and Dong, Li and Huang, Shaohan and Dai, Damai and Ma, Shuming and Patra, Barun and Singhal, Saksham and Bajaj, Payal and Song, Xia and Mao, Xian-Ling and Huang, Heyan and Wei, Furu},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {35},
+  year      = {2022}
+}
+
+@inproceedings{chen2022understandingmoe,
+  title     = {Towards Understanding the Mixture-of-Experts Layer in Deep Learning},
+  author    = {Chen, Zixiang and Deng, Yihe and Wu, Yue and Gu, Quanquan and Li, Yuanzhi},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {35},
+  year      = {2022}
+}
+
+@inproceedings{zhou2022expertchoice,
+  title     = {Mixture-of-Experts with Expert Choice Routing},
+  author    = {Zhou, Yanqi and Lei, Tao and Liu, Hanxiao and Du, Nan and Huang, Yanping and Zhao, Vincent and Dai, Andrew M. and Chen, Zhifeng and Le, Quoc V. and Laudon, James},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {35},
+  year      = {2022}
+}
+
+@inproceedings{komatsuzaki2023upcycling,
+  title     = {Sparse Upcycling: Training Mixture-of-Experts from Dense Checkpoints},
+  author    = {Komatsuzaki, Aran and Puigcerver, Joan and Lee-Thorp, James and Riquelme Ruiz, Carlos and Mustafa, Basil and Ainslie, Joshua and Tay, Yi and Dehghani, Mostafa and Houlsby, Neil},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2023}
+}
+
+@inproceedings{dai2024deepseekmoe,
+  title     = {{DeepSeekMoE}: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models},
+  author    = {Dai, Damai and others},
+  booktitle = {Proceedings of the Annual Meeting of the Association for Computational Linguistics (ACL)},
+  year      = {2024},
+  note      = {arXiv:2401.06066}
+}
+
+% --- Tier 3: statistics and methodology ------------------------------------
+@article{lakens2017equivalence,
+  title   = {Equivalence Tests: A Practical Primer for $t$ Tests, Correlations, and Meta-Analyses},
+  author  = {Lakens, Dani{\"e}l},
+  journal = {Social Psychological and Personality Science},
+  volume  = {8},
+  number  = {4},
+  pages   = {355--362},
+  year    = {2017}
+}
+
+@article{schuirmann1987tost,
+  title   = {A Comparison of the Two One-Sided Tests Procedure and the Power Approach for Assessing the Equivalence of Average Bioavailability},
+  author  = {Schuirmann, Donald J.},
+  journal = {Journal of Pharmacokinetics and Biopharmaceutics},
+  volume  = {15},
+  number  = {6},
+  pages   = {657--680},
+  year    = {1987}
+}
+
+@book{efron1993bootstrap,
+  title     = {An Introduction to the Bootstrap},
+  author    = {Efron, Bradley and Tibshirani, Robert J.},
+  publisher = {Chapman \& Hall},
+  year      = {1993}
+}
+
+@inproceedings{bouthillier2021variance,
+  title     = {Accounting for Variance in Machine Learning Benchmarks},
+  author    = {Bouthillier, Xavier and others},
+  booktitle = {Proceedings of Machine Learning and Systems (MLSys)},
+  year      = {2021}
+}
+
+@article{picard2021seed,
+  title   = {{Torch.manual\_seed(3407)} is all you need: On the influence of random seeds in deep learning architectures for computer vision},
+  author  = {Picard, David},
+  journal = {arXiv preprint arXiv:2109.08203},
+  year    = {2021}
+}
+
+@article{lipton2019troubling,
+  title   = {Troubling Trends in Machine Learning Scholarship},
+  author  = {Lipton, Zachary C. and Steinhardt, Jacob},
+  journal = {ACM Queue},
+  volume  = {17},
+  number  = {1},
+  year    = {2019},
+  note    = {arXiv:1807.03341}
+}
+
+@inproceedings{melis2018state,
+  title     = {On the State of the Art of Evaluation in Neural Language Models},
+  author    = {Melis, G{\'a}bor and Dyer, Chris and Blunsom, Phil},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2018}
+}
+
+% --- Tier 4: SOD background and metric provenance --------------------------
+@article{wang2022sodsurvey,
+  title   = {Salient Object Detection in the Deep Learning Era: An In-Depth Survey},
+  author  = {Wang, Wenguan and Lai, Qiuxia and Fu, Huazhu and Shen, Jianbing and Ling, Haibin and Yang, Ruigang},
+  journal = {IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  volume  = {44},
+  number  = {6},
+  pages   = {3239--3259},
+  year    = {2022}
+}
+
+@article{borji2015sodbenchmark,
+  title   = {Salient Object Detection: A Benchmark},
+  author  = {Borji, Ali and Cheng, Ming-Ming and Jiang, Huaizu and Li, Jia},
+  journal = {IEEE Transactions on Image Processing},
+  volume  = {24},
+  number  = {12},
+  pages   = {5706--5722},
+  year    = {2015}
+}
+
+@inproceedings{perazzi2012saliency,
+  title     = {Saliency Filters: Contrast Based Filtering for Salient Region Detection},
+  author    = {Perazzi, Federico and Kr{\"a}henb{\"u}hl, Philipp and Pritch, Yael and Hornung, Alexander},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2012}
+}
+
+@inproceedings{achanta2009frequency,
+  title     = {Frequency-Tuned Salient Region Detection},
+  author    = {Achanta, Radhakrishna and Hemami, Sheila and Estrada, Francisco and S{\"u}sstrunk, Sabine},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2009}
+}
+
+% --- Tier 5 (optional): adverse-weather context and MoE in multi-task -------
+@inproceedings{hendrycks2019corruptions,
+  title     = {Benchmarking Neural Network Robustness to Common Corruptions and Perturbations},
+  author    = {Hendrycks, Dan and Dietterich, Thomas},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2019}
+}
+
+@inproceedings{sakaridis2021acdc,
+  title     = {{ACDC}: The Adverse Conditions Dataset with Correspondences for Semantic Driving Scene Understanding},
+  author    = {Sakaridis, Christos and Dai, Dengxin and Van Gool, Luc},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2021}
+}
+
+@inproceedings{valanarasu2022transweather,
+  title     = {{TransWeather}: Transformer-Based Restoration of Images Degraded by Adverse Weather Conditions},
+  author    = {Valanarasu, Jeya Maria Jose and Yasarla, Rajeev and Patel, Vishal M.},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2022}
+}
+
+@inproceedings{li2020allinone,
+  title     = {All in One Bad Weather Removal Using Architectural Search},
+  author    = {Li, Ruoteng and Tan, Robby T. and Cheong, Loong-Fah},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2020}
+}
+
+@inproceedings{liang2022m3vit,
+  title     = {{M$^3$ViT}: Mixture-of-Experts Vision Transformer for Efficient Multi-Task Learning with Model-Accelerator Co-Design},
+  author    = {Liang, Hanxue and Fan, Zhiwen and Sarkar, Rishov and Jiang, Ziyu and Chen, Tianlong and Zou, Kai and Cheng, Yu and Hao, Cong and Wang, Zhangyang},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {35},
+  year      = {2022}
+}
+
+@inproceedings{chen2023modsquad,
+  title     = {{Mod-Squad}: Designing Mixtures of Experts as Modular Multi-Task Learners},
+  author    = {Chen, Zitian and Shen, Yikang and Ding, Mingyu and Chen, Zhenfang and Zhao, Hengshuang and Learned-Miller, Erik and Gan, Chuang},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2023}
 }
