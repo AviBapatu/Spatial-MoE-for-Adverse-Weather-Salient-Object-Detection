@@ -1,0 +1,5 @@
+figure	value	source	match
+D	recomputed global MAE=0.01684	results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none	match
+D	0056_dark MAE=0.315145 (dark)	results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none	match
+D	0272_light MAE=0.250352 (light)	results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none	match
+D	0155_fog MAE=0.194618 (fog)	results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none	match
