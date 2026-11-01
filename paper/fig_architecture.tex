@@ -1,178 +1,168 @@
-% SpatialMoE-SOD architecture overview (Fig. 1)
-% Canvas is exactly 153 mm wide (= \textwidth of the manuscript), so include it at
-% width=\textwidth and every label prints at its true size (6 pt body text).
-% Optional thumbnails: figs/input.png, figs/gt.png, figs/saliency.png, figs/boundary.png.
-% If a file is missing a neutral drawn placeholder is used, so this always compiles.
-\documentclass[tikz,border=0pt]{standalone}
+\documentclass[border=3pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{helvet}
+\usepackage[scaled=0.92]{helvet}
 \renewcommand{\familydefault}{\sfdefault}
-\usepackage{amsmath,amssymb}
-\usepackage{sansmath}
+\usepackage{amsmath}
 \usepackage{graphicx}
+\usepackage{tikz}
 \usetikzlibrary{arrows.meta,calc}
 
-% ---------------------------------------------------------------- palette
-\definecolor{bbF}{HTML}{DCE8F5}  \definecolor{bbS}{HTML}{4F76A3}
-\definecolor{moF}{HTML}{FBEFC2}  \definecolor{moS}{HTML}{B08D2B}  \definecolor{moD}{HTML}{E9CF74}
-\definecolor{enF}{HTML}{F8DCC8}  \definecolor{enS}{HTML}{C07A3E}
-\definecolor{dcF}{HTML}{DCEBD2}  \definecolor{dcS}{HTML}{6B8F4E}
-\definecolor{hdF}{HTML}{E4DDF0}  \definecolor{hdS}{HTML}{7D6AA3}
-\definecolor{ink}{HTML}{333333}  \definecolor{sup}{HTML}{777777}
+\newcommand{\bF}{\mathbf{F}}
+\newcommand{\Hs}{\hat{\mathcal{H}}}
 
-% ---------------------------------------------------------------- styles
 \tikzset{
-  base/.style={font=\sansmath\sffamily\fontsize{6}{7}\selectfont, align=center, text=black},
-  big/.style={font=\sansmath\sffamily\fontsize{6.5}{7.5}\selectfont\bfseries},
-  box/.style={base, draw, line width=0.5pt, rounded corners=1.5pt, inner sep=1.5pt},
-  flow/.style={-{Stealth[length=1.5mm,width=1.2mm]}, line width=0.6pt, draw=ink, rounded corners=2pt},
-  conf/.style={flow, draw=enS, dash pattern=on 2pt off 1.5pt},
-  supv/.style={flow, draw=sup, dash pattern=on 2pt off 1.5pt},
-  plain/.style={line width=0.6pt, draw=ink},
-  plus/.style={draw=enS, fill=enF, line width=0.5pt},
+  box/.style={draw=black!70, line width=0.4pt, rounded corners=1.5pt, align=center,
+    font=\fontsize{6.5}{7.6}\selectfont, inner sep=1.5pt},
+  arr/.style={-{Stealth[length=1.7mm,width=1.3mm]}, line width=0.55pt, draw=black!85},
+  conf/.style={-{Stealth[length=1.7mm,width=1.3mm]}, line width=0.55pt,
+    draw=orange!75!black, dashed, dash pattern=on 2pt off 1.6pt},
+  lossarr/.style={-{Stealth[length=1.7mm,width=1.3mm]}, line width=0.5pt,
+    draw=black!55, dashed, dash pattern=on 2pt off 1.6pt},
+  plus/.style={circle, draw=black!80, line width=0.45pt, fill=white, inner sep=0pt,
+    minimum size=3.4mm, font=\footnotesize},
+  grp/.style={dashed, dash pattern=on 3pt off 2pt, draw=black!45, line width=0.45pt,
+    rounded corners=4pt},
+  cBB/.style={fill=blue!14},
+  cMoE/.style={fill=yellow!32},
+  cEnt/.style={fill=orange!24},
+  cDec/.style={fill=green!20},
+  cHd/.style={fill=violet!20},
+  decbox/.style={box, cDec, minimum width=3.0cm, minimum height=1.35cm, text width=2.75cm},
 }
-
-% ---------------------------------------------------------------- thumbnails
-% \thumbmask{file}{cx}{cy}{size}{kind}   kind: 0 = filled mask, 1 = outline (boundary)
-\newcommand{\thumbmask}[5]{%
-  \IfFileExists{#1}%
-  {\node[inner sep=0, draw=black!60, line width=0.4pt] at (#2,#3)
-     {\includegraphics[width=#4 cm,height=#4 cm]{#1}};}%
-  {\fill[black] (#2-#4/2,#3-#4/2) rectangle (#2+#4/2,#3+#4/2);
-   \ifnum#5=0
-     \fill[white] (#2,#3) ellipse ({#4*0.30} and {#4*0.24});
-   \else
-     \draw[white, line width=0.5pt] (#2,#3) ellipse ({#4*0.30} and {#4*0.24});
-   \fi
-   \draw[black!60, line width=0.4pt] (#2-#4/2,#3-#4/2) rectangle (#2+#4/2,#3+#4/2);}}
-\newcommand{\thumbinput}[4]{%
-  \IfFileExists{#1}%
-  {\node[inner sep=0, draw=black!60, line width=0.4pt] at (#2,#3)
-     {\includegraphics[width=#4 cm,height=#4 cm]{#1}};}%
-  {\fill[black!12] (#2-#4/2,#3-#4/2) rectangle (#2+#4/2,#3+#4/2);
-   \fill[black!38] (#2,#3-#4*0.04) ellipse ({#4*0.28} and {#4*0.22});
-   \draw[black!60, line width=0.4pt] (#2-#4/2,#3-#4/2) rectangle (#2+#4/2,#3+#4/2);}}
 
 \begin{document}
 \begin{tikzpicture}[x=1cm,y=1cm]
-% fixed canvas: 153 mm x 82 mm
-\useasboundingbox (0,-0.15) rectangle (15.3,8.05);
+% ------------------------------------------------------------- rows
+\def\yA{5.0}   % 1/16
+\def\yB{2.5}   % 1/8
+\def\yC{0.0}   % 1/4
 
-% ------------------------------------------------------------------ title
-\node[font=\sansmath\sffamily\fontsize{7.5}{8.5}\selectfont\bfseries] at (7.65,7.82)
-  {SpatialMoE-SOD: Weather-Label-Free Salient Object Detection};
+% group containers (dotted outline, no background fill)
+\draw[grp] (2.95,-1.8) rectangle (10.05,6.15);
+\node[font=\fontsize{7}{8}\selectfont\bfseries] at (6.5,5.87) {Independent Spatial MoE layer at each scale};
+\draw[grp] (10.65,-0.3) rectangle (13.85,6.15);
+\node[font=\fontsize{7}{8}\selectfont\bfseries] at (12.25,5.87) {Cross-attn. decoder};
+\draw[grp] (14.0,2.9) rectangle (17.4,6.15);
+\node[font=\fontsize{7}{8}\selectfont\bfseries] at (15.7,5.87) {Training objective};
 
-% ------------------------------------------------------------------ input
-\thumbinput{figs/input.png}{0.62}{4.175}{0.9}
-\node[base, anchor=north] at (0.62,3.64) {Input\\[1pt]$3{\times}384{\times}384$};
-\draw[flow] (1.09,4.175) -- (1.45,4.175);
+% ------------------------------------------------------------- input & backbone
+\node[draw=black!70, line width=0.4pt, inner sep=0] (in) at (0.5,2.5)
+  {\includegraphics[width=1.0cm]{figs/input.png}};
+\node[font=\fontsize{6.5}{7.6}\selectfont, align=center] at (0.5,1.62) {Input\\$3{\times}384{\times}384$};
 
-% ------------------------------------------------------------------ backbone
-\draw[draw=bbS, fill=bbF, line width=0.5pt, rounded corners=1.5pt] (1.45,1.1) rectangle (2.45,7.25);
-\node[base, rotate=90] at (1.95,4.175)
-  {{\bfseries PVTv2-B4 backbone}\quad(ImageNet pretrained)};
-\node[base] at (3.0,7.0) {1$\times$1 conv,\\$C{=}256$};
+\draw[box, cBB] (1.4,-1.8) rectangle (2.0,6.15);
+\node[font=\fontsize{7}{8}\selectfont\bfseries, rotate=90] at (1.7,2.275)
+  {PVTv2-B4 backbone (ImageNet pretrained)};
+\draw[arr] (1.0,2.5) -- (1.4,2.5);
 
-% ------------------------------------------------------------------ Spatial MoE group
-\draw[draw=moS, dash pattern=on 3pt off 2pt, line width=0.5pt, rounded corners=3pt] (3.55,1.1) rectangle (9.6,7.25);
-\node[base, font=\sansmath\sffamily\fontsize{6.5}{7.5}\selectfont\bfseries] at (6.575,7.06)
-  {Independent Spatial MoE layer at each scale};
+\node[font=\fontsize{7.2}{8.4}\selectfont, align=center] at (2.7,6.62) {$\mathrm{Proj}_s$: Channel Projection\\($1{\times}1$ Conv $\rightarrow$ $C{=}256$)};
 
-% rows: scale / spatial size / row centre
-\foreach \s/\hw/\yc in {16/24/6.0, 8/48/4.1, 4/96/2.2}{
-  \pgfmathsetmacro{\ym}{\yc+0.28}
-  \pgfmathsetmacro{\ye}{\yc-0.52}
+% ------------------------------------------------------------- the three scale rows
+\foreach \y/\lab/\res/\fn/\sel in {5.0/{1/16}/{24{\times}24}/{16}/{1,5},
+                                   2.5/{1/8}/{48{\times}48}/{8}/{2,6},
+                                   0.0/{1/4}/{96{\times}96}/{4}/{0,4}} {
   % backbone -> router
-  \draw[flow] (2.45,\ym) -- (3.75,\ym);
-  \node[base, anchor=south] at (3.1,\ym+0.03) {$1/\s$};
-  \node[base, anchor=north] at (3.1,\ym-0.03) {$\hw{\times}\hw$};
+  \draw[arr] (2.0,\y) -- (3.3,\y);
+  \node[font=\fontsize{5.8}{6.6}\selectfont, align=center] at (2.47,\y+0.36) {\lab\\$\res$};
+
   % router
-  \node[box, draw=moS, fill=moF, minimum width=1.48cm, minimum height=0.85cm] (R\s) at (4.41,\ym)
-    {{\bfseries Router}\\DWConv 3$\times$3\\$+$ MLP};
-  \draw[flow] (5.15,\ym) -- (5.55,\ym);
+  \node[box, cMoE, minimum width=1.3cm, minimum height=1.0cm] (R\fn) at (3.95,\y)
+    {\textbf{Router}\\DWConv $3{\times}3$\\+ MLP};
   % experts
-  \node[box, draw=moS, fill=moF, minimum width=2.0cm, minimum height=0.78cm] (X\s) at (6.55,\ym) {};
-  \foreach \e in {0,...,7}{
-    \pgfmathsetmacro{\ex}{5.695+\e*0.22}
-    \ifnum\e=1 \def\efill{moD}\else\ifnum\e=5 \def\efill{moD}\else\def\efill{white}\fi\fi
-    \draw[draw=moS, fill=\efill, line width=0.4pt] (\ex,\ym+0.03) rectangle (\ex+0.17,\ym+0.2);
+  \node[box, cMoE, minimum width=1.8cm, minimum height=1.0cm] (E\fn) at (6.0,\y) {};
+  \foreach \i in {0,...,7} {
+    \pgfmathsetmacro{\sx}{5.265+0.19*\i}
+    \draw[line width=0.3pt, draw=black!70, fill=white] (\sx,\y+0.12) rectangle ++(0.14,0.14);
   }
-  \node[base] at (6.55,\ym-0.2) {8 experts $\cdot$ top-2};
-  % experts -> plus
-  \draw[flow] (7.55,\ym) -- (8.27,\ym);
-  \node[base, anchor=south] at (7.91,\ym+0.03) {$\mathbf{Y}_s$};
-  \node[base, anchor=north] at (7.91,\ym-0.03) {Proj};
-  \node[circle, plus, inner sep=0, minimum size=0.27cm] (P\s) at (8.4,\ym) {};
-  \draw[enS, line width=0.5pt] (8.4-0.07,\ym) -- (8.4+0.07,\ym) (8.4,\ym-0.07) -- (8.4,\ym+0.07);
-  \draw[flow] (8.535,\ym) -- (8.75,\ym);
-  \node[box, draw=enS, fill=enF, minimum width=0.65cm, minimum height=0.5cm] (F\s) at (9.075,\ym)
-    {$\mathbf{F}_{\s}$};
-  % entropy branch (from the full 8-way logits)
-  \node[box, draw=enS, fill=enF, minimum width=2.2cm, minimum height=0.46cm] (H\s) at (6.45,\ye)
-    {$\hat{\mathcal{H}}_s$ from all 8 logits\\1$\times$1 conv, $\times\lambda_s$};
-  \draw[conf] (4.41,\ym-0.425) -- (4.41,\ye) -- (5.35,\ye);
-  \node[base, anchor=east] at (4.34,\ye+0.14) {$\mathbf{h}_i$};
-  \draw[conf] (7.55,\ye) -- (8.4,\ye) -- (8.4,\ym-0.135);
-  % F -> decoder
-  \draw[flow] (9.4,\ym) -- (10.0,\ym);
+  \foreach \i in \sel {
+    \pgfmathsetmacro{\sx}{5.265+0.19*\i}
+    \draw[line width=0.3pt, draw=black!70, fill=orange!65] (\sx,\y+0.12) rectangle ++(0.14,0.14);
+  }
+  \node[font=\fontsize{6.5}{7.6}\selectfont] at (6.0,\y-0.22) {8 experts $\cdot$ top-2};
+  % fusion (the routed output Y_s is added directly)
+  \node[plus] (S\fn) at (8.6,\y) {+};
+  \node[box, cMoE, minimum width=0.7cm, minimum height=0.6cm] (F\fn) at (9.45,\y)
+    {$\bF_{\fn}$};
+  % main flow
+  \draw[arr] (R\fn.east) -- (E\fn.west);
+  \draw[arr] (E\fn.east) -- (S\fn.west);
+  \draw[arr] (S\fn.east) -- (F\fn.west);
+  \node[font=\fontsize{6}{7}\selectfont] at (7.7,\y+0.14) {$\mathbf{Y}_s$};
+
+  % entropy branch (dashed, orthogonal)
+  \node[box, cEnt, minimum width=3.6cm, minimum height=0.66cm, font=\fontsize{7.2}{8.4}\selectfont] (H\fn) at (5.1,\y-1.22)
+    {$\Hs_s$ from all 8 logits\\
+     $\mathrm{Proj}_\mathcal{H}$ (Entropy Proj.):\\
+     $1{\times}1$ Conv, $\times\lambda_s$};
+  \draw[conf] (R\fn.south) -- (R\fn.south |- H\fn.north);
+  \node[font=\fontsize{6}{7}\selectfont, anchor=west] at ($(R\fn.south)+(0.04,-0.2)$) {$\mathbf{h}_i$};
+  \draw[conf] (H\fn.east) -| (S\fn.south);
 }
 
-% ------------------------------------------------------------------ decoder
-\draw[draw=dcS, fill=dcF, line width=0.5pt, rounded corners=1.5pt] (10.0,1.1) rectangle (12.6,7.25);
-\node[base, font=\sansmath\sffamily\fontsize{6.5}{7.5}\selectfont\bfseries] at (11.3,7.06) {Cross-attn. decoder};
-\node[box, draw=dcS, fill=white, minimum width=2.3cm, minimum height=1.05cm] (DA) at (11.3,6.225)
-  {{\bfseries A\; Global attention}\\8 heads\\$Q{=}\mathrm{Up}(\mathbf{F}_{16})$, $KV{=}\mathbf{F}_8$};
-\node[box, draw=dcS, fill=white, minimum width=2.3cm, minimum height=1.05cm] (DB) at (11.3,4.775)
-  {{\bfseries B\; Context injection}\\$\mathbf{F}_4^{\mathrm{ctx}}=\mathbf{F}_4+{}$\\$\mathrm{Proj}(\mathrm{AvgPool}(\mathbf{F}'_8))$};
-\node[box, draw=dcS, fill=white, minimum width=2.3cm, minimum height=1.05cm] (DC) at (11.3,3.325)
-  {{\bfseries C\; Windowed attention}\\$7{\times}7$ window\\$Q{=}\mathrm{Up}(\mathbf{F}'_8)$, $KV{=}\mathbf{F}_4^{\mathrm{ctx}}$};
-\node[box, draw=dcS, fill=white, minimum width=2.3cm, minimum height=1.05cm] (DD) at (11.3,1.875)
-  {{\bfseries D\; Refinement $\times$3}\\Conv-GN-ReLU $\times$2\\$1/4\to$ full res.};
-\draw[flow] (DA.south) -- (DB.north);
-\draw[flow] (DB.south) -- (DC.north);
-\draw[flow] (DC.south) -- (DD.north);
+% ------------------------------------------------------------- decoder blocks
+\node[decbox] (dA) at (12.25,5.0)
+  {\textbf{A} Global attention\\8 heads\\$Q{=}\mathrm{Up}(\bF_{16})$\\$KV{=}\bF_8$};
+\node[decbox] (dB) at (12.25,3.5)
+  {\textbf{B} Context injection\\$\bF_4^{\mathrm{ctx}}=\bF_4$\\$+\ \mathrm{Proj}_g(\mathrm{AvgPool}(\bF_8'))$\\$\mathrm{Proj}_g$: global-context proj.};
+\node[decbox] (dC) at (12.25,2.0)
+  {\textbf{C} Windowed attention\\$7{\times}7$ window\\$Q{=}\mathrm{Up}(\bF_8')$\\$KV{=}\bF_4^{\mathrm{ctx}}$};
+\node[decbox] (dD) at (12.25,0.5)
+  {\textbf{D} Refinement $\times3$\\Conv-GN-ReLU $\times2$\\$1/4\rightarrow$ full res.};
+\draw[arr] (dA.south) -- (dB.north);
+\draw[arr] (dB.south) -- (dC.north);
+\draw[arr] (dC.south) -- (dD.north);
 
-% ------------------------------------------------------------------ heads and outputs
-\draw[plain] (12.45,1.875) -- (12.82,1.875);
-\draw[plain] (12.82,1.6) -- (12.82,3.0);
-\draw[flow] (12.82,3.0) -- (13.05,3.0);
-\draw[flow] (12.82,1.6) -- (13.05,1.6);
-\node[box, draw=hdS, fill=hdF, minimum width=0.95cm, minimum height=0.8cm] (HS) at (13.525,3.0)
-  {{\bfseries Saliency}\\head\\1$\times$1 conv};
-\node[box, draw=hdS, fill=hdF, minimum width=0.95cm, minimum height=0.8cm] (HB) at (13.525,1.6)
-  {{\bfseries Boundary}\\head\\1$\times$1 conv};
-\draw[flow] (14.0,3.0) -- (14.27,3.0);
-\draw[flow] (14.0,1.6) -- (14.27,1.6);
-\thumbmask{figs/saliency.png}{14.625}{3.0}{0.7}{0}
-\thumbmask{figs/boundary.png}{14.625}{1.6}{0.7}{1}
-\node[base, anchor=north] at (14.625,2.6) {Saliency\\map};
-\node[base, anchor=north] at (14.625,1.21) {Boundary\\map};
+% feature maps -> decoder (orthogonal, no crossings)
+\draw[arr] (F16.east) -- (10.75,5.0);                         % F16 -> A (queries)
+\draw[arr] (F8.east) -- (10.35,2.5) -- (10.35,4.6) -- (10.75,4.6);   % F8 -> A (keys/values)
+\draw[arr] (F4.east) -- (10.65,0.0) -- (10.65,3.5) -- (10.75,3.5);   % F4 -> B
 
-% ------------------------------------------------------------------ training objective
-\draw[draw=sup, dash pattern=on 3pt off 2pt, line width=0.5pt, rounded corners=3pt] (12.9,4.15) rectangle (15.3,7.25);
-\node[base, font=\sansmath\sffamily\fontsize{6.5}{7.5}\selectfont\bfseries] at (14.1,7.03) {Training objective};
-\node[base] at (14.1,6.2)
-  {$\mathcal{L}_{\mathrm{BCE}}$, $\mathcal{L}_{\mathrm{IoU}}$, $\mathcal{L}_{\mathrm{SSIM}}$,\\[1.5pt]
-   $\mathcal{L}_{\mathrm{BND}}$, $\mathcal{L}_{\mathrm{auxBND}}$, $\mathcal{L}_{\mathrm{DS}}$,\\[1.5pt]
-   $\mathcal{L}_{\mathrm{LB}}$ (per scale), $\mathcal{L}_{\mathrm{IMP}}$};
-\node[base, anchor=west] at (13.62,4.62) {Ground-truth\\mask};
-\thumbmask{figs/gt.png}{13.3}{4.62}{0.5}{0}
-\draw[supv] (14.975,1.6) -- (15.15,1.6) -- (15.15,4.15);
-\draw[plain, draw=sup, dash pattern=on 2pt off 1.5pt] (14.975,3.0) -- (15.15,3.0);
+% ------------------------------------------------------------- heads and maps
+\draw[line width=0.55pt, draw=black!85] (dD.east) -- (13.95,0.5);
+\draw[line width=0.55pt, draw=black!85] (13.95,-0.4) -- (13.95,1.4);
+\node[box, cHd, minimum width=1.3cm, minimum height=0.8cm] (hS) at (14.95,1.4)
+  {Saliency head\\$1{\times}1$ conv};
+\node[box, cHd, minimum width=1.3cm, minimum height=0.8cm] (hB) at (14.95,-0.4)
+  {Boundary head\\$1{\times}1$ conv};
+\draw[arr] (13.95,1.4) -- (hS.west);
+\draw[arr] (13.95,-0.4) -- (hB.west);
 
-% ------------------------------------------------------------------ legend
-\draw[draw=black!25, line width=0.3pt] (0,0.52) -- (15.3,0.52);
-\newcommand{\lgsw}[3]{\draw[draw=#2, fill=#1, line width=0.5pt, rounded corners=1pt] (#3,0.14) rectangle (#3+0.35,0.32);}
-\lgsw{bbF}{bbS}{0.05}   \node[base, anchor=west] at (0.5,0.23)  {Backbone};
-\lgsw{moF}{moS}{1.65}   \node[base, anchor=west] at (2.1,0.23)  {Spatial MoE};
-\lgsw{enF}{enS}{3.6}    \node[base, anchor=west] at (4.05,0.23) {Entropy fusion};
-\lgsw{dcF}{dcS}{5.9}    \node[base, anchor=west] at (6.35,0.23) {Decoder};
-\lgsw{hdF}{hdS}{7.4}    \node[base, anchor=west] at (7.85,0.23) {Heads};
-\draw[flow] (8.7,0.23) -- (9.15,0.23);     \node[base, anchor=west] at (9.25,0.23)  {data flow};
-\draw[conf] (10.5,0.23) -- (10.95,0.23);   \node[base, anchor=west] at (11.05,0.23) {confidence path};
-\draw[supv] (13.0,0.23) -- (13.45,0.23);   \node[base, anchor=west] at (13.55,0.23) {loss};
-\node[circle, plus, inner sep=0, minimum size=0.27cm] at (14.4,0.23) {};
-\draw[enS, line width=0.5pt] (14.33,0.23) -- (14.47,0.23) (14.4,0.16) -- (14.4,0.30);
-\node[base, anchor=west] at (14.6,0.23) {add};
+\node[draw=black!70, line width=0.4pt, inner sep=0] (mS) at (16.75,1.4)
+  {\includegraphics[width=1.25cm]{figs/saliency.png}};
+\node[draw=black!70, line width=0.4pt, inner sep=0] (mB) at (16.75,-0.4)
+  {\includegraphics[width=1.25cm]{figs/boundary.png}};
+\draw[arr] (hS.east) -- (mS.west);
+\draw[arr] (hB.east) -- (mB.west);
+\node[font=\fontsize{6.5}{7.6}\selectfont] at (16.75,0.78) {Saliency map};
+\node[font=\fontsize{6.5}{7.6}\selectfont] at (16.75,-1.03) {Boundary map};
+
+% training objective content
+\node[font=\fontsize{6.3}{7.6}\selectfont, align=center] at (15.7,5.12)
+  {$\mathcal{L}_{\mathrm{BCE}},\ \mathcal{L}_{\mathrm{IoU}},\ \mathcal{L}_{\mathrm{SSIM}},$\\
+   $\mathcal{L}_{\mathrm{BND}},\ \mathcal{L}_{\mathrm{auxBND}},\ \mathcal{L}_{\mathrm{DS}},$\\
+   $\mathcal{L}_{\mathrm{LB}}$ (mean over scales), $\mathcal{L}_{\mathrm{IMP}}$};
+\node[draw=black!70, line width=0.4pt, inner sep=0] at (14.65,3.65)
+  {\includegraphics[width=0.62cm]{figs/gt.png}};
+\node[font=\fontsize{6.5}{7.6}\selectfont, anchor=west, align=left] at (15.1,3.65) {Ground-truth\\mask};
+
+% loss paths (dashed, orthogonal)
+\draw[lossarr] (mS.north) -- (16.75,2.9);
+\draw[lossarr] (mB.east) -- (17.7,-0.4) -- (17.7,4.1) -- (17.4,4.1);
+
+% ------------------------------------------------------------- legend
+\def\ly{-2.5}
+\foreach \x/\c/\t in {0.0/cBB/Backbone, 2.0/cMoE/Spatial MoE, 4.3/cEnt/Entropy fusion,
+                      6.9/cDec/Decoder, 8.9/cHd/Heads} {
+  \draw[box, \c] (\x,\ly-0.09) rectangle ++(0.34,0.18);
+  \node[anchor=west, font=\fontsize{6.5}{7.6}\selectfont] at (\x+0.42,\ly) {\t};
+}
+\draw[arr] (10.55,\ly) -- (11.15,\ly);
+\node[anchor=west, font=\fontsize{6.5}{7.6}\selectfont] at (11.22,\ly) {data flow};
+\draw[conf] (12.55,\ly) -- (13.15,\ly);
+\node[anchor=west, font=\fontsize{6.5}{7.6}\selectfont] at (13.22,\ly) {confidence path};
+\draw[lossarr] (14.95,\ly) -- (15.55,\ly);
+\node[anchor=west, font=\fontsize{6.5}{7.6}\selectfont] at (15.62,\ly) {loss};
+\node[plus, minimum size=2.8mm] at (16.55,\ly) {\scriptsize+};
+\node[anchor=west, font=\fontsize{6.5}{7.6}\selectfont] at (16.78,\ly) {add};
 \end{tikzpicture}
 \end{document}
