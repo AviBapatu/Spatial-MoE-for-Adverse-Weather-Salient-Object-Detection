@@ -1,0 +1,3 @@
+figure	value	source	match
+7	full arm real-test MAE=0.0195	results/EXP_B4_E8_K2_S32_R1_L3_M_SPARSE_REPRO/eval_results/best/test_real/hflip/metrics_test_real_20260924_044224.json	match
+7	none arm real-test MAE=0.0195	results/EXP_B4_E4_K2_S32_R1_L3_M_NONE_E4_NONECTRL/eval_results/best/test_real/hflip/metrics_test_real_20260926_040401.json	match
