@@ -1,0 +1,39 @@
+figure	value	source	match
+A	MINet/synthetic MAE=0.0775 S=0.7403	BENCHMARK_RESULTS.md:synthetic	match
+A	FSMINet/synthetic MAE=0.0473 S=0.8306	BENCHMARK_RESULTS.md:synthetic	match
+A	ADMNet/synthetic MAE=0.0770 S=0.7497	BENCHMARK_RESULTS.md:synthetic	match
+A	TRACER/synthetic MAE=0.0280 S=0.8898	BENCHMARK_RESULTS.md:synthetic	match
+A	SEANet/synthetic MAE=0.0332 S=0.8694	BENCHMARK_RESULTS.md:synthetic	match
+A	CorrNet/synthetic MAE=0.0613 S=0.7652	BENCHMARK_RESULTS.md:synthetic	match
+A	A3Net/synthetic MAE=0.0327 S=0.8784	BENCHMARK_RESULTS.md:synthetic	match
+A	HDNet/synthetic MAE=0.0397 S=0.8537	BENCHMARK_RESULTS.md:synthetic	match
+A	AESINet/synthetic MAE=0.0337 S=0.8618	BENCHMARK_RESULTS.md:synthetic	match
+A	ICONet/synthetic MAE=0.0433 S=0.8411	BENCHMARK_RESULTS.md:synthetic	match
+A	DCNet/synthetic MAE=0.0320 S=0.8792	BENCHMARK_RESULTS.md:synthetic	match
+A	MEANet/synthetic MAE=0.0332 S=0.8772	BENCHMARK_RESULTS.md:synthetic	match
+A	SAFINet/synthetic MAE=0.0384 S=0.8643	BENCHMARK_RESULTS.md:synthetic	match
+A	MSRMNet/synthetic MAE=0.0275 S=0.8895	BENCHMARK_RESULTS.md:synthetic	match
+A	TCGNet/synthetic MAE=0.0317 S=0.8832	BENCHMARK_RESULTS.md:synthetic	match
+A	GeleNet/synthetic MAE=0.0239 S=0.9038	BENCHMARK_RESULTS.md:synthetic	match
+A	GPONet/synthetic MAE=0.0266 S=0.8962	BENCHMARK_RESULTS.md:synthetic	match
+A	WFANet/synthetic MAE=0.0229 S=0.9051	BENCHMARK_RESULTS.md:synthetic	match
+A	Ours/synthetic MAE=0.0192 S=0.9140	results/legacy_8expert_best + Table 14	match
+A	MINet/real MAE=0.0549 S=0.7710	BENCHMARK_RESULTS.md:real	match
+A	FSMINet/real MAE=0.0264 S=0.8869	BENCHMARK_RESULTS.md:real	match
+A	ADMNet/real MAE=0.0544 S=0.7839	BENCHMARK_RESULTS.md:real	match
+A	TRACER/real MAE=0.0227 S=0.8961	BENCHMARK_RESULTS.md:real	match
+A	SEANet/real MAE=0.0239 S=0.8978	BENCHMARK_RESULTS.md:real	match
+A	CorrNet/real MAE=0.0534 S=0.7674	BENCHMARK_RESULTS.md:real	match
+A	A3Net/real MAE=0.0263 S=0.8909	BENCHMARK_RESULTS.md:real	match
+A	HDNet/real MAE=0.0266 S=0.8938	BENCHMARK_RESULTS.md:real	match
+A	AESINet/real MAE=0.0251 S=0.8845	BENCHMARK_RESULTS.md:real	match
+A	ICONet/real MAE=0.0327 S=0.8619	BENCHMARK_RESULTS.md:real	match
+A	DCNet/real MAE=0.0215 S=0.9058	BENCHMARK_RESULTS.md:real	match
+A	MEANet/real MAE=0.0236 S=0.9063	BENCHMARK_RESULTS.md:real	match
+A	SAFINet/real MAE=0.0217 S=0.9050	BENCHMARK_RESULTS.md:real	match
+A	MSRMNet/real MAE=0.0198 S=0.9091	BENCHMARK_RESULTS.md:real	match
+A	TCGNet/real MAE=0.0185 S=0.9185	BENCHMARK_RESULTS.md:real	match
+A	GeleNet/real MAE=0.0192 S=0.9186	BENCHMARK_RESULTS.md:real	match
+A	GPONet/real MAE=0.0188 S=0.9098	BENCHMARK_RESULTS.md:real	match
+A	WFANet/real MAE=0.0159 S=0.9248	BENCHMARK_RESULTS.md:real	match
+A	Ours/real MAE=0.0168 S=0.9151	results/legacy_8expert_best + Table 14	match
