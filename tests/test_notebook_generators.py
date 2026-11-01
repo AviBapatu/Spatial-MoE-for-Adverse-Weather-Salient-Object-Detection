@@ -43,6 +43,10 @@ GENERATORS = [
      ["notebooks/evaluate/moe-of-sod__legacy_eval.ipynb"]),
     ("notebooks/generators/generate_notebook_paper_figures.py",
      ["notebooks/figures/moe-of-sod__paper_figures.ipynb"]),
+    ("notebooks/generators/generate_notebook_router_staticness.py",
+     ["notebooks/statistics/moe-of-sod__router_staticness.ipynb"]),
+    ("notebooks/generators/generate_notebook_oracle_routing.py",
+     ["notebooks/training/moe-of-sod__oracle_routing.ipynb"]),
 ]
 
 
