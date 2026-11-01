@@ -1,0 +1,32 @@
+{
+  "rule": "three real-test images with the highest per-image MAE",
+  "prediction_source": "results/legacy/legacy_8expert/evaluation/best_new_1/test_real/none",
+  "recomputed_global_mae": 0.016841,
+  "table8_global_mae": 0.0168,
+  "picks": [
+    {
+      "stem": "0056_dark",
+      "mae": 0.315145,
+      "condition": "dark",
+      "gt_area_frac": 0.05222,
+      "pred_area_frac": 0.36315,
+      "iou": 0.1368
+    },
+    {
+      "stem": "0272_light",
+      "mae": 0.250352,
+      "condition": "light",
+      "gt_area_frac": 0.57079,
+      "pred_area_frac": 0.32655,
+      "iou": 0.56606
+    },
+    {
+      "stem": "0155_fog",
+      "mae": 0.194618,
+      "condition": "fog",
+      "gt_area_frac": 0.07136,
+      "pred_area_frac": 0.12337,
+      "iou": 0.0
+    }
+  ]
+}
