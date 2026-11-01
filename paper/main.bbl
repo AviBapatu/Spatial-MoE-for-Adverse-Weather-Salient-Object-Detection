@@ -1,5 +1,18 @@
 \begin{thebibliography}{10}
 
+\bibitem{wang2022sodsurvey}
+Wenguan Wang, Qiuxia Lai, Huazhu Fu, Jianbing Shen, Haibin Ling, and Ruigang
+  Yang.
+\newblock Salient object detection in the deep learning era: An in-depth
+  survey.
+\newblock {\em IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  44(6):3239--3259, 2022.
+
+\bibitem{borji2015sodbenchmark}
+Ali Borji, Ming-Ming Cheng, Huaizu Jiang, and Jia Li.
+\newblock Salient object detection: A benchmark.
+\newblock {\em IEEE Transactions on Image Processing}, 24(12):5706--5722, 2015.
+
 \bibitem{nifm2025}
 Quan Chen, Xiaokai Yang, Tingyu Wang, Rongfeng Lu, Xichun Sheng, Yaoqi Sun, and
   Bolun Zheng.
@@ -42,6 +55,29 @@ Nikoli Dryden and Torsten Hoefler.
   2022.
 \newblock arXiv:2211.13491.
 
+\bibitem{shazeer2017moe}
+Noam Shazeer, Azalia Mirhoseini, Krzysztof Maziarz, Andy Davis, Quoc Le,
+  Geoffrey Hinton, and Jeff Dean.
+\newblock Outrageously large neural networks: The sparsely-gated
+  mixture-of-experts layer.
+\newblock In {\em International Conference on Learning Representations (ICLR)},
+  2017.
+\newblock arXiv:1701.06538.
+
+\bibitem{hendrycks2019corruptions}
+Dan Hendrycks and Thomas Dietterich.
+\newblock Benchmarking neural network robustness to common corruptions and
+  perturbations.
+\newblock In {\em International Conference on Learning Representations (ICLR)},
+  2019.
+
+\bibitem{sakaridis2021acdc}
+Christos Sakaridis, Dengxin Dai, and Luc Van~Gool.
+\newblock {ACDC}: The adverse conditions dataset with correspondences for
+  semantic driving scene understanding.
+\newblock In {\em Proceedings of the IEEE/CVF International Conference on
+  Computer Vision (ICCV)}, 2021.
+
 \bibitem{wxsod2025}
 Quan Chen, Xiong Yang, Rongfeng Lu, Qianyu Zhang, Yu~Liu, Xiaofei Zhou, and
   Bolun Zheng.
@@ -50,6 +86,53 @@ Quan Chen, Xiong Yang, Rongfeng Lu, Qianyu Zhang, Yu~Liu, Xiaofei Zhou, and
 \newblock {\em Pattern Recognition}, 170:114003, 2026.
 \newblock Dataset repository: \url{https://github.com/C-water/WXSOD}.
 
+\bibitem{valanarasu2022transweather}
+Jeya Maria~Jose Valanarasu, Rajeev Yasarla, and Vishal~M. Patel.
+\newblock {TransWeather}: Transformer-based restoration of images degraded by
+  adverse weather conditions.
+\newblock In {\em Proceedings of the IEEE/CVF Conference on Computer Vision and
+  Pattern Recognition (CVPR)}, 2022.
+
+\bibitem{li2020allinone}
+Ruoteng Li, Robby~T. Tan, and Loong-Fah Cheong.
+\newblock All in one bad weather removal using architectural search.
+\newblock In {\em Proceedings of the IEEE/CVF Conference on Computer Vision and
+  Pattern Recognition (CVPR)}, 2020.
+
+\bibitem{pavlitskaya2020moeseg}
+Svetlana Pavlitskaya, Christian Hubschneider, Michael Weber, Ruby Moritz,
+  Fabian H{\"u}ger, Peter Schlicht, and J.~Marius Z{\"o}llner.
+\newblock Using mixture of expert models to gain insights into semantic
+  segmentation.
+\newblock In {\em CVPR Workshops}, 2020.
+
+\bibitem{liang2022m3vit}
+Hanxue Liang, Zhiwen Fan, Rishov Sarkar, Ziyu Jiang, Tianlong Chen, Kai Zou,
+  Yu~Cheng, Cong Hao, and Zhangyang Wang.
+\newblock {M$^3$ViT}: Mixture-of-experts vision transformer for efficient
+  multi-task learning with model-accelerator co-design.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)},
+  volume~35, 2022.
+
+\bibitem{chen2023modsquad}
+Zitian Chen, Yikang Shen, Mingyu Ding, Zhenfang Chen, Hengshuang Zhao, Erik
+  Learned-Miller, and Chuang Gan.
+\newblock {Mod-Squad}: Designing mixtures of experts as modular multi-task
+  learners.
+\newblock In {\em Proceedings of the IEEE/CVF Conference on Computer Vision and
+  Pattern Recognition (CVPR)}, 2023.
+
+\bibitem{m4sam2026}
+Jiyuan Liu, Jia Lin, Xiaofei Zhou, Runmin Cong, Deyang Liu, and Zhi Liu.
+\newblock {M$^4$-SAM}: Multi-modal mixture-of-experts with memory-augmented
+  {SAM} for {RGB-D} video salient object detection.
+\newblock {\em arXiv preprint arXiv:2605.11760}, 2026.
+
+\bibitem{jacobs1991mixtures}
+Robert~A. Jacobs, Michael~I. Jordan, Steven~J. Nowlan, and Geoffrey~E. Hinton.
+\newblock Adaptive mixtures of local experts.
+\newblock {\em Neural Computation}, 3(1):79--87, 1991.
+
 \bibitem{v-moe2021}
 Carlos Riquelme, Joan Puigcerver, Basil Mustafa, Maxim Neumann, Rodolphe
   Jenatton, Andre Susano~Pinto, Daniel Keysers, and Neil Houlsby.
@@ -57,11 +140,88 @@ Carlos Riquelme, Joan Puigcerver, Basil Mustafa, Maxim Neumann, Rodolphe
 \newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)},
   volume~34, 2021.
 
+\bibitem{lepikhin2021gshard}
+Dmitry Lepikhin, HyoukJoong Lee, Yuanzhong Xu, Dehao Chen, Orhan Firat, Yanping
+  Huang, Maxim Krikun, Noam Shazeer, and Zhifeng Chen.
+\newblock {GShard}: Scaling giant models with conditional computation and
+  automatic sharding.
+\newblock In {\em International Conference on Learning Representations (ICLR)},
+  2021.
+
+\bibitem{fedus2022switch}
+William Fedus, Barret Zoph, and Noam Shazeer.
+\newblock Switch transformers: Scaling to trillion parameter models with simple
+  and efficient sparsity.
+\newblock {\em Journal of Machine Learning Research}, 23(120):1--39, 2022.
+
+\bibitem{zoph2022stmoe}
+Barret Zoph, Irwan Bello, Sameer Kumar, Nan Du, Yanping Huang, Jeff Dean, Noam
+  Shazeer, and William Fedus.
+\newblock {ST-MoE}: Designing stable and transferable sparse expert models.
+\newblock {\em arXiv preprint arXiv:2202.08906}, 2022.
+
+\bibitem{jiang2024mixtral}
+Albert~Q. Jiang et~al.
+\newblock Mixtral of experts.
+\newblock {\em arXiv preprint arXiv:2401.04088}, 2024.
+
 \bibitem{pvtv2}
 Wenhai Wang, Enze Xie, Xiang Li, Deng-Ping Fan, Kaitao Song, Ding Liang, Tong
   Lu, Ping Luo, and Ling Shao.
 \newblock {PVT} v2: Improved baselines with pyramid vision transformer.
 \newblock {\em Computational Visual Media}, 8(3):415--424, 2022.
+
+\bibitem{vaswani2017attention}
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones,
+  Aidan~N. Gomez, {\L}ukasz Kaiser, and Illia Polosukhin.
+\newblock Attention is all you need.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)},
+  volume~30, 2017.
+
+\bibitem{liu2021swin}
+Ze~Liu, Yutong Lin, Yue Cao, Han Hu, Yixuan Wei, Zheng Zhang, Stephen Lin, and
+  Baining Guo.
+\newblock Swin transformer: Hierarchical vision transformer using shifted
+  windows.
+\newblock In {\em Proceedings of the IEEE/CVF International Conference on
+  Computer Vision (ICCV)}, 2021.
+
+\bibitem{wu2018groupnorm}
+Yuxin Wu and Kaiming He.
+\newblock Group normalization.
+\newblock In {\em Proceedings of the European Conference on Computer Vision
+  (ECCV)}, 2018.
+
+\bibitem{wang2004ssim}
+Zhou Wang, Alan~C. Bovik, Hamid~R. Sheikh, and Eero~P. Simoncelli.
+\newblock Image quality assessment: From error visibility to structural
+  similarity.
+\newblock {\em IEEE Transactions on Image Processing}, 13(4):600--612, 2004.
+
+\bibitem{qin2019basnet}
+Xuebin Qin, Zichen Zhang, Chenyang Huang, Chao Gao, Masood Dehghan, and Martin
+  Jagersand.
+\newblock {BASNet}: Boundary-aware salient object detection.
+\newblock In {\em Proceedings of the IEEE/CVF Conference on Computer Vision and
+  Pattern Recognition (CVPR)}, pages 7479--7489, 2019.
+
+\bibitem{lee2015dsn}
+Chen-Yu Lee, Saining Xie, Patrick Gallagher, Zhengyou Zhang, and Zhuowen Tu.
+\newblock Deeply-supervised nets.
+\newblock In {\em International Conference on Artificial Intelligence and
+  Statistics (AISTATS)}, 2015.
+
+\bibitem{loshchilov2019adamw}
+Ilya Loshchilov and Frank Hutter.
+\newblock Decoupled weight decay regularization.
+\newblock In {\em International Conference on Learning Representations (ICLR)},
+  2019.
+
+\bibitem{loshchilov2017sgdr}
+Ilya Loshchilov and Frank Hutter.
+\newblock {SGDR}: Stochastic gradient descent with warm restarts.
+\newblock In {\em International Conference on Learning Representations (ICLR)},
+  2017.
 
 \bibitem{struct-measure}
 Deng-Ping Fan, Ming-Ming Cheng, Yun Liu, Tao Li, and Ali Borji.
@@ -80,6 +240,21 @@ Ran Margolin, Lihi Zelnik-Manor, and Ayellet Tal.
 \newblock How to evaluate foreground maps?
 \newblock In {\em Proceedings of the IEEE Conference on Computer Vision and
   Pattern Recognition (CVPR)}, pages 248--255, 2014.
+
+\bibitem{perazzi2012saliency}
+Federico Perazzi, Philipp Kr{\"a}henb{\"u}hl, Yael Pritch, and Alexander
+  Hornung.
+\newblock Saliency filters: Contrast based filtering for salient region
+  detection.
+\newblock In {\em Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition (CVPR)}, 2012.
+
+\bibitem{achanta2009frequency}
+Radhakrishna Achanta, Sheila Hemami, Francisco Estrada, and Sabine
+  S{\"u}sstrunk.
+\newblock Frequency-tuned salient region detection.
+\newblock In {\em Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition (CVPR)}, 2009.
 
 \bibitem{minet}
 K.~Shen, X.~Zhou, and Z.~Liu.
@@ -149,12 +324,138 @@ Y.~Yi, N.~Zhang, W.~Zhou, Y.~Shi, G.~Xie, and J.~Wang.
   salient object detection.
 \newblock {\em Pattern Recognition}, 150:110330, 2024.
 
-\bibitem{artifact2026}
-Avinash~Reddy Bapatu.
-\newblock {SpatialMoE-SOD}: Source code, configurations and per-run evaluation
-  artifacts.
-\newblock
-  \url{https://github.com/AviBapatu/Spatial-MoE-for-Adverse-Weather-Salient-Object-Detection},
-  2026.
+\bibitem{corrnet}
+Gongyang Li, Zhi Liu, Zhen Bai, Weisi Lin, and Haibin Ling.
+\newblock Lightweight salient object detection in optical remote sensing images
+  via feature correlation.
+\newblock {\em IEEE Transactions on Geoscience and Remote Sensing}, 2022.
+
+\bibitem{iconet}
+Mingchen Zhuge, Deng-Ping Fan, Nian Liu, Dingwen Zhang, Dong Xu, and Ling Shao.
+\newblock Salient object detection via integrity learning.
+\newblock {\em IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  45(3), 2023.
+
+\bibitem{hdnet}
+Xiaoqiang Lu, Yuan Yuan, Xinyu Liu, Liang Wang, Xiaofei Zhou, and Yang Yang.
+\newblock Low-light salient object detection by learning to highlight the
+  foreground objects.
+\newblock {\em IEEE Transactions on Circuits and Systems for Video Technology},
+  2024.
+
+\bibitem{fsminet}
+K.~Shen, X.~Zhou, B.~Wan, R.~Shi, and J.~Zhang.
+\newblock Fully squeezed multiscale inference network for fast and accurate
+  saliency detection in optical remote-sensing images.
+\newblock {\em IEEE Geoscience and Remote Sensing Letters}, 19, 2022.
+
+\bibitem{aesinet}
+X.~Zeng, M.~Xu, Y.~Hu, H.~Tang, Y.~Hu, and L.~Nie.
+\newblock Adaptive edge-aware semantic interaction network for salient object
+  detection in optical remote sensing images.
+\newblock {\em IEEE Transactions on Geoscience and Remote Sensing}, 61, 2023.
+
+\bibitem{meanet}
+B.~Liang and H.~Luo.
+\newblock {MEANet}: An effective and lightweight solution for salient object
+  detection in optical remote sensing images.
+\newblock {\em Expert Systems with Applications}, 238, 2024.
+
+\bibitem{efron1993bootstrap}
+Bradley Efron and Robert~J. Tibshirani.
+\newblock {\em An Introduction to the Bootstrap}.
+\newblock Chapman \& Hall, 1993.
+
+\bibitem{schuirmann1987tost}
+Donald~J. Schuirmann.
+\newblock A comparison of the two one-sided tests procedure and the power
+  approach for assessing the equivalence of average bioavailability.
+\newblock {\em Journal of Pharmacokinetics and Biopharmaceutics},
+  15(6):657--680, 1987.
+
+\bibitem{lakens2017equivalence}
+Dani{\"e}l Lakens.
+\newblock Equivalence tests: A practical primer for $t$ tests, correlations,
+  and meta-analyses.
+\newblock {\em Social Psychological and Personality Science}, 8(4):355--362,
+  2017.
+
+\bibitem{roller2021hash}
+Stephen Roller, Sainbayar Sukhbaatar, Arthur Szlam, and Jason Weston.
+\newblock Hash layers for large sparse models.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)},
+  volume~34, 2021.
+
+\bibitem{zuo2022thor}
+Simiao Zuo, Xiaodong Liu, Jian Jiao, Young~Jin Kim, Hany Hassan, Ruofei Zhang,
+  Tuo Zhao, and Jianfeng Gao.
+\newblock Taming sparsely activated transformer with stochastic experts.
+\newblock In {\em International Conference on Learning Representations (ICLR)},
+  2022.
+
+\bibitem{chi2022repcollapse}
+Zewen Chi, Li~Dong, Shaohan Huang, Damai Dai, Shuming Ma, Barun Patra, Saksham
+  Singhal, Payal Bajaj, Xia Song, Xian-Ling Mao, Heyan Huang, and Furu Wei.
+\newblock On the representation collapse of sparse mixture of experts.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)},
+  volume~35, 2022.
+
+\bibitem{dai2024deepseekmoe}
+Damai Dai et~al.
+\newblock {DeepSeekMoE}: Towards ultimate expert specialization in
+  mixture-of-experts language models.
+\newblock In {\em Proceedings of the Annual Meeting of the Association for
+  Computational Linguistics (ACL)}, 2024.
+\newblock arXiv:2401.06066.
+
+\bibitem{zhou2022expertchoice}
+Yanqi Zhou, Tao Lei, Hanxiao Liu, Nan Du, Yanping Huang, Vincent Zhao,
+  Andrew~M. Dai, Zhifeng Chen, Quoc~V. Le, and James Laudon.
+\newblock Mixture-of-experts with expert choice routing.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)},
+  volume~35, 2022.
+
+\bibitem{komatsuzaki2023upcycling}
+Aran Komatsuzaki, Joan Puigcerver, James Lee-Thorp, Carlos Riquelme~Ruiz, Basil
+  Mustafa, Joshua Ainslie, Yi~Tay, Mostafa Dehghani, and Neil Houlsby.
+\newblock Sparse upcycling: Training mixture-of-experts from dense checkpoints.
+\newblock In {\em International Conference on Learning Representations (ICLR)},
+  2023.
+
+\bibitem{chen2022understandingmoe}
+Zixiang Chen, Yihe Deng, Yue Wu, Quanquan Gu, and Yuanzhi Li.
+\newblock Towards understanding the mixture-of-experts layer in deep learning.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)},
+  volume~35, 2022.
+
+\bibitem{dai2022stablemoe}
+Damai Dai, Li~Dong, Shuming Ma, Bo~Zheng, Zhifang Sui, Baobao Chang, and Furu
+  Wei.
+\newblock {StableMoE}: Stable routing strategy for mixture of experts.
+\newblock In {\em Proceedings of the Annual Meeting of the Association for
+  Computational Linguistics (ACL)}, 2022.
+
+\bibitem{bouthillier2021variance}
+Xavier Bouthillier et~al.
+\newblock Accounting for variance in machine learning benchmarks.
+\newblock In {\em Proceedings of Machine Learning and Systems (MLSys)}, 2021.
+
+\bibitem{picard2021seed}
+David Picard.
+\newblock {Torch.manual\_seed(3407)} is all you need: On the influence of
+  random seeds in deep learning architectures for computer vision.
+\newblock {\em arXiv preprint arXiv:2109.08203}, 2021.
+
+\bibitem{melis2018state}
+G{\'a}bor Melis, Chris Dyer, and Phil Blunsom.
+\newblock On the state of the art of evaluation in neural language models.
+\newblock In {\em International Conference on Learning Representations (ICLR)},
+  2018.
+
+\bibitem{lipton2019troubling}
+Zachary~C. Lipton and Jacob Steinhardt.
+\newblock Troubling trends in machine learning scholarship.
+\newblock {\em ACM Queue}, 17(1), 2019.
+\newblock arXiv:1807.03341.
 
 \end{thebibliography}
