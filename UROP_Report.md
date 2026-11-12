@@ -32,13 +32,11 @@ for the partial fulfillment of the requirements to award the degree of
 
 ### Submitted by
 
-| Avinash Reddy Bapatu | Lalith Madhav Chundi | Anudeep Chowdary Muppalla | Sahadeb Shit |
-|---|---|---|---|
-| avinashreddy_bapatu@srmap.edu.in | lalithmadhav_chundi@srmap.edu.in | anudeep_muppalla@srmap.edu.in | sahadeb.s@srmap.edu.in |
-| SRM University – AP | SRM University – AP | SRM University – AP | SRM University – AP |
+**Avinash Reddy Bapatu¹, Lalith Madhav Chundi¹, Anudeep Chowdary Muppalla¹, Sahadeb Shit¹\***
 
-Department of Computer Science and Engineering, School of Engineering and Sciences,
-SRM University – AP, Neerukonda, Mangalagiri, Guntur, Andhra Pradesh 522 240, India.
+¹Department of Computer Science and Engineering, SRM University – AP, Neerukonda, Mangalagiri, Guntur, Andhra Pradesh 522 240, India
+
+\*Corresponding Authors: sahadeb.s@srmap.edu.in
 
 *(Roll number AP23110011266 — see the certificate.)*
 
