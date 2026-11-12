@@ -13,26 +13,43 @@ src/
   loss.py                 # BCE + IoU + load-balance + importance + deep supervision
   metrics.py              # MAE / F-beta / S-score evaluation
   dataset.py              # WXSOD dataset loading + augmentation
+  boundary.py             # Boundary-target generation for the boundary head
   config.py               # ExperimentConfig dataclass
   experiment.py           # Run-directory + registry management
   optimization.py         # WarmupCosine + backbone freeze/unfreeze
   log.py                  # Rank-aware logging (centralized)
+  train_ddp.py            # Training entrypoint (torchrun -m src.train_ddp)
+  smoke_test.py           # Pre-flight smoke tests (1-GPU and DDP modes)
+  evaluate.py             # Batch evaluation + prediction export
+  ablations.py            # Ablation-config generators (library; exercised by tests)
+  run_moe_diagnostics.py  # Routing-diagnostics runner
+  diagnose_padding.py     # Padding / geometry diagnostic
+  upload_diagnostics.py   # Diagnostic artifact upload
   training/
-    cli.py                # Argument parsing + main loop
+    cli.py                # Argument parsing + main loop (canonical entrypoint)
     setup.py              # Model/optimizer/dataloader construction + resume
     loop.py               # Per-epoch validation + diagnostics
     epoch.py              # Per-epoch training batches
     checkpoint.py         # Save/load/resume + HF enqueue
     distributed.py        # Process-group lifecycle + monitored barrier
   diagnostics/            # Routing stats, expert similarity, weather analysis
-  evaluate.py             # Batch evaluation + prediction export
   hf_sync/                # HF Hub sync (code + checkpoint push/pull)
+  presets/                # JSON presets (baseline.json)
+  utils/                  # Shared helpers (naming.py)
+train.py                  # Thin CLI shim over src.training.cli
 experiments/              # Config JSONs (baseline_v1.json, smoke_test_config.json, ...)
 tests/                    # Unit + integration tests
+notebooks/                # Generated Kaggle notebooks + their generators (see notebooks/README.md)
+paper/                    # Journal manuscript, figures and figure scripts
 docs/research/            # Persistent research knowledge base
 data/WXSDO_data/          # WXSOD dataset (train_sys, test_sys, test_real splits)
-checkpoints/              # Model weight files (.pth)
+checkpoints/              # Model weights (.pth; gitignored, pulled from the Hub)
 results/                  # Evaluation results, routing statistics, legacy artifacts
+analysis_results/         # Review-response artifacts (bootstrap/TOST, extra arms)
+app.py                    # FastAPI inference server (serves frontend/)
+frontend/                 # Static web UI (index.html, script.js, style.css)
+scripts/                  # Ops scripts (results-doc generator, downloads, smoke shell)
+package_project.py        # Builds the code zip the notebooks pull from the Hub
 ```
 
 ## Environment Setup
@@ -99,6 +116,7 @@ are the editable source. Each notebook uses `RUN_MODE` to control behaviour:
 | `--max_optimizer_steps N` | Stop after N optimizer steps |
 | `--max_epochs N` | Cap maximum training epochs |
 | `--smoke_test` | Legacy flag; inert (run `uv run python -m src.smoke_test` instead) |
+| `--ddp_test` | Run the distributed correctness tests (`tests/test_moe_ddp.py`) |
 | `--calibration` | Memory calibration mode |
 
 ## Experiment Configs
@@ -111,10 +129,12 @@ top-k, effective batch, router and loss variants, MoE type, plus an optional `va
 That ID names the output directory and every artifact on the Hub, so **a different
 recipe needs a different `variant`**, or two runs will overwrite each other's
 checkpoints. `docs/research/EXPERIMENTS.md` has the rule and the current run set.
-```bash
-# Generate ablation configs
-uv run python -m src.ablations
 
+Ablation configs (`experiments/ablation_*.json`, `experiments/v_*.json`) are committed by hand.
+`src/ablations.py` is a library of config-generator helpers (exercised by the tests); its
+`export_ablation_tables()` flattens the registry's completed, batch-matched rows into
+`experiments/ablation_results.csv`.
+```bash
 # List all registered experiments
 cat experiments/registry.csv
 ```
@@ -125,8 +145,9 @@ cat experiments/registry.csv
 uv run python -m src.evaluate --checkpoint checkpoints/best.pth --dataset both
 ```
 
-Results go under `results/<experiment_id>/eval_results/`, with a dataset and TTA subfolder.
-Flip-average TTA is on by default for new runs and keeps its results separate.
+Results go under `results/<experiment_id>/eval_results/<checkpoint>/<dataset>/<tta>/`, where
+`<checkpoint>` is the checkpoint stem (e.g. `best`). Test-time augmentation is opt-in: `--tta none`
+is the default, and `--tta hflip` writes its results to a separate `hflip/` subfolder.
 
 ## Testing
 
