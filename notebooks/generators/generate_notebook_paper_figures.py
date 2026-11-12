@@ -148,7 +148,7 @@ The arm → experiment-id map duplicates the canonical list in
         r'''from huggingface_hub import HfApi
 
 ARM_EXP = {
-    "Ref": "EXP_B4_E8_K2_S32_R1_L3_M_SPARSE_REPRO",
+    "A0":  "EXP_B4_E8_K2_S32_R1_L3_M_SPARSE_REPRO",
     "A1":  "EXP_B4_E8_K2_S32_R1_L3_M_SPARSE_REPRO_E14",
     "A2":  "EXP_B4_E2_K2_S32_R1_L3_M_SPARSE",
     "A3":  "EXP_B4_E4_K1_S32_R1_L3_M_SPARSE",
@@ -165,7 +165,7 @@ ARM_EXP = {
 # Column headers for the arm grid: arm code -> short configuration label.
 ARM_LABEL = {
     "R":   "R\nE8 k2, 14 ep",
-    "Ref": "Ref\nE8 k2, 8 ep",
+    "A0":  "A0\nE8 k2, 8 ep",
     "A1":  "A1\n14 epochs",
     "A2":  "A2\nE=2",
     "A3":  "A3\nk=1",
@@ -174,7 +174,7 @@ ARM_LABEL = {
     "A7":  "A7\ndense gate",
 }
 # The eight arms the paper's Fig. 4 shows, widest architectural spread first.
-SHOWCASE = ["R", "Ref", "A1", "A2", "A3", "A5", "A6", "A7"]
+SHOWCASE = ["R", "A0", "A1", "A2", "A3", "A5", "A6", "A7"]
 # Conditions shown as rows, using the dataset's own label strings.
 #
 # These are all five real-world test labels, in the order the paper's weather-wise
@@ -217,7 +217,7 @@ def pred_dir(arm):
 PRED_DIR = {a: pred_dir(a) for a in ["R"] + list(ARM_EXP)}
 
 INTERVENTION_DIR = {}
-_base = f"analysis_results/{ARM_EXP['Ref']}/proxy_ablations"
+_base = f"analysis_results/{ARM_EXP['A0']}/proxy_ablations"
 for variant in ("full_model", "no_entropy_fusion", "forced_expert_scale4",
                 "random_routing_seed42", "random_routing_seed7"):
     if dir_has_files(f"{_base}/{variant}"):
@@ -243,7 +243,7 @@ for arm in ["R"] + list(ARM_EXP):
     n = len(stems_in(PRED_DIR[arm]))
     print(f"  {arm:<4} {'OK ' if n else 'MISSING'} {n:5d} predictions   {PRED_DIR[arm] or '-'}")
 
-print("\n--- inference-time interventions available (arm Ref) ---")
+print("\n--- inference-time interventions available (arm A0) ---")
 for v, d in INTERVENTION_DIR.items():
     print(f"  {v:<24} {len(stems_in(d)):5d}  {d}")
 
