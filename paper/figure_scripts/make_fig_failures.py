@@ -39,8 +39,12 @@ OUT_TSV = Path(__file__).resolve().parent / "verification_figD.tsv"
 
 TABLE8_REAL_GLOBAL = 0.0168
 PANEL_W = 300
-STRIP_H = 17
 ROW_LABEL_W = 150
+HEADER_H = 26
+LETTER_H = 18
+GUTTER = 8   # white margin shared by neighbouring cells, so cells stay separate
+OUTER = 6    # white margin around the whole figure
+COLUMNS = ("Input", "Ground truth", "Prediction (>= 0.5)", "Error |p - g|")
 
 
 def magick(*args: str) -> None:
@@ -67,40 +71,65 @@ def clut_png(dst: Path) -> None:
         magick(str(a), str(b), "+append", str(dst))
 
 
-def panel(src: Path, label: str, dst: Path, *, threshold: bool = False,
-          error_of: Path | None = None) -> None:
-    """One panel: optional pixel operation, fixed width, caption strip on top."""
-    args = [str(src)]
-    if error_of is not None:
-        with tempfile.TemporaryDirectory() as td:
-            p, g, clut = Path(td) / "p.pgm", Path(td) / "g.pgm", Path(td) / "c.png"
-            gray_pgm(src, p)
-            gray_pgm(error_of, g)
-            clut_png(clut)
-            magick(str(p), str(g), "-compose", "difference", "-composite",
-                   "-auto-level", str(clut), "-clut", str(Path(td) / "e.png"))
-            args = [str(Path(td) / "e.png")]
-            args += ["-resize", f"{PANEL_W}x"]
-            if label:
-                args += ["-bordercolor", "black", "-border", "1",
-                         "-background", "white", "-splice", f"0x{STRIP_H}",
-                         "-gravity", "north", "-pointsize", "12", "-annotate", "+0+1", label]
-            magick(*args, str(dst))
-        return
-    args += ["-resize", f"{PANEL_W}x"]
+def white(dst: Path, width: int, height: int) -> Path:
+    """Blank cell of a fixed size."""
+    magick("-size", f"{width}x{height}", "xc:white", str(dst))
+    return dst
+
+
+def grey_frame(src: Path, dst: Path) -> Path:
+    """One hairline frame round a cell, matching the arm grid's 70%-grey spines."""
+    magick(str(src), "-bordercolor", "gray70", "-border", "1", str(dst))
+    return dst
+
+
+def centred_text(text: str, dst: Path, width: int, height: int,
+                 pointsize: int = 12) -> Path:
+    """Cell holding centred text (the header labels and the row labels)."""
+    magick("-background", "white", "-fill", "black", "-pointsize", str(pointsize),
+           "-gravity", "center", "-size", f"{width}x{height}", f"caption:{text}", str(dst))
+    return dst
+
+
+def guttered(src: Path, dst: Path) -> Path:
+    """Add this cell's half of the gutter, so adjacent cells end up GUTTER apart."""
+    magick(str(src), "-bordercolor", "white", "-border", str(GUTTER // 2), str(dst))
+    return dst
+
+
+def error_map(pred: Path, gt: Path, dst: Path) -> None:
+    """Absolute-error panel ``|p - g|``, auto-levelled through a colour ramp."""
+    with tempfile.TemporaryDirectory() as td:
+        p, g, clut = Path(td) / "p.pgm", Path(td) / "g.pgm", Path(td) / "clut.png"
+        gray_pgm(pred, p)
+        gray_pgm(gt, g)
+        clut_png(clut)
+        magick(str(p), str(g), "-compose", "difference", "-composite",
+               "-auto-level", str(clut), "-clut", "-resize", f"{PANEL_W}x", str(dst))
+
+
+def image_cell(src: Path, dst: Path, *, threshold: bool = False) -> None:
+    """One image cell, resized to the column width."""
+    args = [str(src), "-resize", f"{PANEL_W}x"]
     if threshold:
         args += ["-threshold", "50%"]
-    if label:
-        args += ["-bordercolor", "black", "-border", "1",
-                 "-background", "white", "-splice", f"0x{STRIP_H}",
-                 "-gravity", "north", "-pointsize", "12", "-annotate", "+0+1", label]
     magick(*args, str(dst))
 
 
-def row_label(lines: list[str], dst: Path, *, width: int = ROW_LABEL_W) -> None:
-    text = "\n".join(lines) if lines else " "
-    magick("-background", "white", "-fill", "black", "-pointsize", "12",
-           "-gravity", "center", "-size", f"{width}x250", f"caption:{text}", str(dst))
+def size_of(src: Path) -> tuple[int, int]:
+    """Pixel size of an image, read through ImageMagick (this script avoids PIL)."""
+    out = subprocess.run(["magick", "identify", "-format", "%w %h", str(src)],
+                         check=True, capture_output=True, text=True).stdout.split()
+    return int(out[0]), int(out[1])
+
+
+def panels_for(td: Path, stem: str, row: int) -> list[tuple[Path, str]]:
+    """Render one image's four panels into *td*, returning (path, tag) pairs."""
+    image_cell(IN_DIR / f"{stem}.jpg", td / f"i{row}.png")
+    image_cell(GT_DIR / f"{stem}.jpg", td / f"g{row}.png")
+    image_cell(PRED_DIR / f"{stem}.png", td / f"p{row}.png", threshold=True)
+    error_map(PRED_DIR / f"{stem}.png", GT_DIR / f"{stem}.jpg", td / f"e{row}.png")
+    return [(td / f"{name}{row}.png", f"{name}{row}") for name in ("i", "g", "p", "e")]
 
 
 def main() -> int:
@@ -156,38 +185,62 @@ def main() -> int:
 
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
-        row_files = []
-        for r, pick in enumerate([None] + picks):
+
+        def framed(src: Path, tag: str) -> Path:
+            """An image cell: hairline frame plus this cell's gutter."""
+            return guttered(grey_frame(src, td / f"fr_{tag}.png"), td / f"pd_{tag}.png")
+
+        def text_box(text: str, tag: str, width: int, height: int,
+                     pointsize: int = 12) -> Path:
+            """A plain text cell (header labels, row labels, panel letters)."""
+            cell = centred_text(text, td / f"tx_{tag}.png", width, height, pointsize)
+            return guttered(cell, td / f"pd_{tag}.png")
+
+        # the archived images are not square and not all the same shape, so every
+        # panel is padded to the tallest with white before framing: the rows then
+        # have one height, and the row label is sized from the rendered panels.
+        raw = [panels_for(td, pick["stem"], r) for r, pick in enumerate(picks)]
+        tall = max(size_of(cell)[1] for row in raw for cell, _ in row)
+        data = []
+        for r, row in enumerate(raw):
             cells = []
-            if pick is None:
-                magick("-size", f"{ROW_LABEL_W}x34", "xc:white", str(td / "l.png"))
-                cells.append(td / "l.png")
-                for name in ("Input", "Ground truth", "Prediction ($\\geq0.5$)",
-                             "Error $|p-g|$"):
-                    dst = td / f"h_{len(cells)}.png"
-                    shown = name.replace("$\\geq0.5$", ">= 0.5").replace(
-                        "$|p-g|$", "|p - g|")
-                    magick("-background", "white", "-fill", "black", "-pointsize", "13",
-                           "-gravity", "center", "-size", f"{PANEL_W}x34",
-                           f"caption:{shown}", str(dst))
-                    cells.append(dst)
-            else:
-                stem = pick["stem"]
-                row_label([stem, f"MAE {pick['mae']:.4f}", pick["condition"]], td / "l.png")
-                cells.append(td / "l.png")
-                panel(IN_DIR / f"{stem}.jpg", f"input ({pick['condition']})", td / "i.png")
-                panel(GT_DIR / f"{stem}.jpg", "ground truth", td / "g.png")
-                panel(PRED_DIR / f"{stem}.png", "prediction $\\geq 0.5$".replace("$\\geq 0.5$", ">= 0.5"),
-                      td / "p.png", threshold=True)
-                panel(PRED_DIR / f"{stem}.png", "|error|",
-                      td / "e.png", error_of=GT_DIR / f"{stem}.jpg")
-                cells += [td / "i.png", td / "g.png", td / "p.png", td / "e.png"]
-            row = td / f"row{r}.png"
-            magick(*[str(c) for c in cells], "-gravity", "north", "+append",
-                   "-background", "white", "-bordercolor", "white", "-border", "3", str(row))
-            row_files.append(row)
-        magick(*[str(p) for p in row_files], "-append",
-               "-bordercolor", "white", "-border", "6", str(OUT_PNG))
+            for cell, tag in row:
+                padded = td / f"ex_{tag}.png"
+                magick(str(cell), "-background", "white", "-gravity", "center",
+                       "-extent", f"{PANEL_W}x{tall}", str(padded))
+                cells.append(framed(padded, tag))
+            data.append(cells)
+        cell_h = tall + 2            # 1 px hairline frame per side
+        col_w = PANEL_W + 2          # matches a framed panel, so columns line up
+
+        rows: list[list[Path]] = []
+
+        # header: the column labels, once, across the top; no corner box
+        header = [text_box(" ", "corner", ROW_LABEL_W, HEADER_H - 2)]
+        for i, name in enumerate(COLUMNS):
+            header.append(text_box(name, f"h{i}", col_w, HEADER_H - 2, pointsize=13))
+        rows.append(header)
+
+        # one row per selected image: row label, then the four panels
+        for r, (pick, cells) in enumerate(zip(picks, data)):
+            label = text_box(f"{pick['condition']}\nMAE {pick['mae']:.4f}", f"l{r}",
+                             ROW_LABEL_W, cell_h)
+            rows.append([label] + cells)
+
+        # (a)-(d) under the columns, as the arm grid labels its panels
+        letters = [text_box(" ", "lc", ROW_LABEL_W, LETTER_H - 2)]
+        for i in range(len(COLUMNS)):
+            letters.append(text_box(f"({chr(97 + i)})", f"a{i}", col_w, LETTER_H - 2,
+                                    pointsize=11))
+        rows.append(letters)
+
+        row_files = []
+        for i, row in enumerate(rows):
+            row_file = td / f"row{i}.png"
+            magick(*[str(c) for c in row], "+append", str(row_file))
+            row_files.append(row_file)
+        magick(*[str(f) for f in row_files], "-append",
+               "-bordercolor", "white", "-border", str(OUTER), str(OUT_PNG))
     print(f"wrote {OUT_PNG.relative_to(ROOT)}")
 
     ok = abs(global_mae - TABLE8_REAL_GLOBAL) <= 0.0005

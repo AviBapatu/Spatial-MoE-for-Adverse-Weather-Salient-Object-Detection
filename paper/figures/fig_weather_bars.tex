@@ -2,60 +2,36 @@
 % Data: paper/figure_scripts sources listed in that script (metrics JSONs behind Table 8). DO NOT EDIT BY HAND.
 \begin{tikzpicture}
 \begin{axis}[
-  iopaxis, xbar, bar shift=0pt, bar width=7pt,
-  title={(a) Real test (554 images, 5 conditions)}, title style={font=\small},
-  width=0.47\textwidth, height=52mm,
+  iopaxis, xbar, bar width=6.4pt,
+  width=0.80\textwidth, height=64mm,
   scaled x ticks=false,
   xticklabel style={/pgf/number format/.cd,fixed,fixed zerofill,precision=3},
-  xlabel={MAE $\downarrow$}, xlabel style={font=\small},
+  xlabel={MAE $\downarrow$ (one shared axis, both splits from $0$)}, xlabel style={font=\small},
   xmin=0, xmax=0.028,
-  symbolic y coords={R5,R4,R3,R2,R1},
-  ytick={R5,R4,R3,R2,R1},
-  yticklabels={Light ($N{=}93$),Dark ($N{=}125$),Rain ($N{=}120$),Fog ($N{=}126$),Snow ($N{=}90$)},
-  yticklabel style={font=\fontsize{6.4}{7.4}\selectfont},
+  symbolic y coords={C9,C8,C7,C6,C5,C4,C3,C2,C1},
+  ytick={C9,C8,C7,C6,C5,C4,C3,C2,C1},
+  yticklabels={Rain+fog$^{\ast}$ ($N$ 172 syn),Light ($N$ 166 syn, 93 real),Rain ($N$ 179 syn, 120 real),Dark ($N$ 156 syn, 125 real),Rain+snow$^{\ast}$ ($N$ 166 syn),Snow+fog$^{\ast}$ ($N$ 156 syn),Snow ($N$ 172 syn, 90 real),Fog ($N$ 166 syn, 126 real),Clean$^{\ast}$ ($N$ 167 syn)},
+  yticklabel style={font=\fontsize{6}{7}\selectfont},
   xtick={0,0.01,0.02},
-  enlarge y limits=0.08,
-  nodes near coords, point meta=explicit symbolic,
-  every node near coord/.append style={font=\fontsize{5.2}{6.2}\selectfont, anchor=west, xshift=1.0pt},
+  enlarge y limits=0.1,
 ]
-\addplot[fill=teal!25, draw=teal!60, line width=0.3pt] coordinates {
-  (0.0094,R1) [0.0094]
-  (0.0148,R2) [0.0148]
-  (0.0165,R3) [0.0165]
-  (0.0191,R4) [0.0191]
-  (0.0243,R5) [0.0243]
+\addplot[fill=teal!80, draw=teal!95, line width=0.3pt, bar shift=3.2pt] coordinates {
+  (0.0142,C1)
+  (0.0166,C2)
+  (0.0189,C3)
+  (0.0189,C4)
+  (0.0194,C5)
+  (0.0199,C6)
+  (0.0200,C7)
+  (0.0215,C8)
+  (0.0237,C9)
 };
-\end{axis}
-\end{tikzpicture}
-\hfill
-\begin{tikzpicture}
-\begin{axis}[
-  iopaxis, xbar, bar shift=0pt, bar width=7pt,
-  title={(b) Synthetic test (1{,}500 images, 9 conditions)}, title style={font=\small},
-  width=0.47\textwidth, height=52mm,
-  scaled x ticks=false,
-  xticklabel style={/pgf/number format/.cd,fixed,fixed zerofill,precision=3},
-  xlabel={MAE $\downarrow$}, xlabel style={font=\small},
-  xmin=0, xmax=0.028,
-  symbolic y coords={S9,S8,S7,S6,S5,S4,S3,S2,S1},
-  ytick={S9,S8,S7,S6,S5,S4,S3,S2,S1},
-  yticklabels={Rain+fog ($N{=}172$),Light ($N{=}166$),Rain ($N{=}179$),Dark ($N{=}156$),Rain+snow ($N{=}166$),Snow+fog ($N{=}156$),Snow ($N{=}172$),Fog ($N{=}166$),Clean ($N{=}167$)},
-  yticklabel style={font=\fontsize{6.4}{7.4}\selectfont},
-  xtick={0,0.01,0.02},
-  enlarge y limits=0.08,
-  nodes near coords, point meta=explicit symbolic,
-  every node near coord/.append style={font=\fontsize{5.2}{6.2}\selectfont, anchor=west, xshift=1.0pt},
-]
-\addplot[fill=teal!25, draw=teal!60, line width=0.3pt] coordinates {
-  (0.0142,S1) [0.0142]
-  (0.0166,S2) [0.0166]
-  (0.0189,S3) [0.0189]
-  (0.0189,S4) [0.0189]
-  (0.0194,S5) [0.0194]
-  (0.0199,S6) [0.0199]
-  (0.0200,S7) [0.0200]
-  (0.0215,S8) [0.0215]
-  (0.0237,S9) [0.0237]
+\addplot[fill=teal!45, draw=teal!80, line width=0.3pt, bar shift=-3.2pt] coordinates {
+  (0.0148,C2)
+  (0.0094,C3)
+  (0.0191,C6)
+  (0.0165,C7)
+  (0.0243,C8)
 };
 \end{axis}
 \end{tikzpicture}

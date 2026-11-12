@@ -9,7 +9,7 @@ ps.apply()
 # (label, real MAE, family, entropy/logE at 1/4, 1/8, 1/16)  None = no router at that scale.
 arms = [
     ("R (reported, 14 ep.)",     0.0168, "R",   (0.9997, 0.9997, 0.9982)),
-    ("Ref",                      0.0195, "A",   (0.9996, 0.9997, 0.9980)),
+    ("A0  reference",            0.0195, "A",   (0.9996, 0.9997, 0.9980)),
     ("A1  14 epochs",            0.0174, "A",   (0.9996, 0.9998, 0.9972)),
     ("A2  2 experts",            0.0193, "A",   (0.9994, 0.9993, 0.9923)),
     ("A3  4 experts, top-1",     0.0212, "A",   (0.9983, 0.9766, 0.9933)),
@@ -23,7 +23,7 @@ arms = [
     ("B1  batch 40",             0.0199, "B",   (1.0000, 1.0000, 0.9979)),
     ("B2  batch 40, dense gate", 0.0197, "B",   (1.0000, 1.0000, 0.9974)),
 ]
-seed_lo, seed_hi = 0.0191, 0.0199      # Table 10, three seeds of Ref
+seed_lo, seed_hi = 0.0191, 0.0199      # Table 10, three seeds of A0
 n = len(arms)
 ys = np.arange(n)[::-1]
 col = {"R": ps.C_OURS, "A": ps.C_EQUIV, "B": ps.C_SEED}

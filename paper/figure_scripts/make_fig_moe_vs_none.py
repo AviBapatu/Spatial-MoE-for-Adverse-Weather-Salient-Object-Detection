@@ -10,11 +10,14 @@ column to an 8-epoch arm.  This script instead composes a *matched* pair, both
   full MoE : results/EXP_B4_E8_K2_S32_R1_L3_M_SPARSE_REPRO/qualitative/qualitative_grid.png
   no MoE   : results/EXP_B4_E4_K2_S32_R1_L3_M_NONE_E4_NONECTRL/qualitative/qualitative_grid.png
 
-Each source grid is 3x3 (rows = the same three real-world scenes; columns =
-input, ground truth, prediction).  We take input + ground truth + prediction
-from the full-MoE grid and the prediction column from the no-MoE grid, and
-assert the two arms' real-test MAE against their own metrics JSONs before
-writing anything.
+Each source grid stacks the same three real-world scenes; within a scene the
+evaluation tool draws its own title above a narrower image, so a fixed 800-px
+crop pulls a *neighbouring* scene's title into the cell.  We detect the three
+image bands from the pixels, crop them label-free, and label the columns once in
+a header row --- (a) input, (b) ground truth, (c) full MoE, (d) no MoE.  We take
+the first three columns from the full-MoE grid and the prediction column from
+the no-MoE grid, and assert both arms' real-test MAE against their own metrics
+JSONs before writing anything.
 
 Outputs: paper/figures/fig_moe_vs_none_matched.png
          paper/figure_scripts/verification_fig7.tsv
@@ -24,6 +27,7 @@ Usage:   python3 paper/figure_scripts/make_fig_moe_vs_none.py
 from __future__ import annotations
 
 import json
+import numpy as np
 import subprocess
 import sys
 import tempfile
@@ -45,7 +49,12 @@ ARMS = {
                    "metrics_test_real_20260926_040401.json",
     },
 }
-HEADERS = ["Input", "Ground truth", "Full MoE", "No MoE"]
+HEADERS = ["(a) Input", "(b) Ground truth", "(c) Full MoE", "(d) No MoE"]
+GRID_PX = 2400          # the source grids are square
+CELL_PX = GRID_PX // 3  # each scene takes one third of the width
+WHITE = 248             # a pixel at least this bright counts as white
+COVERAGE = 400          # non-white pixels in a row that mark it as image, not title
+GAP = 12                # px of near-white inside a bright image that still belongs to it
 
 
 def magick(*args: str) -> None:
@@ -54,6 +63,37 @@ def magick(*args: str) -> None:
 
 def real_mae(path: str) -> float:
     return float(json.loads((ROOT / path).read_text())["global"]["MAE"])
+
+
+def scene_bands(grid: Path) -> list[tuple[int, int]]:
+    """Top and bottom row of each stacked scene's image inside ``grid``.
+
+    The tool's title is narrow and centred, so a row counts as image only once
+    it carries content across the panel's width; short near-white gaps inside a
+    bright image are merged back into the band they belong to.
+    """
+    raw = subprocess.run(["magick", str(grid), "-colorspace", "gray", "-depth", "8", "gray:-"],
+                         check=True, capture_output=True).stdout
+    gray = np.frombuffer(raw, dtype=np.uint8).reshape(GRID_PX, GRID_PX)
+    rows = (gray[:, :CELL_PX] <= WHITE).sum(axis=1) > COVERAGE
+    bands: list[tuple[int, int]] = []
+    start: int | None = None
+    for y in range(GRID_PX + 1):
+        solid = bool(rows[y]) if y < GRID_PX else False
+        if solid and start is None:
+            start = y
+        elif not solid and start is not None:
+            bands.append((start, y - 1))
+            start = None
+    merged: list[tuple[int, int]] = []
+    for lo, hi in bands:
+        if merged and lo - merged[-1][1] <= GAP:
+            merged[-1] = (merged[-1][0], hi)
+        else:
+            merged.append((lo, hi))
+    if len(merged) != 3:
+        raise SystemExit(f"expected 3 scene bands in {grid.name}, found {len(merged)}: {merged}")
+    return merged
 
 
 def main() -> int:
@@ -77,19 +117,20 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
         grids = {k: ROOT / v["grid"] for k, v in ARMS.items()}
-        # crop 3x3 cells (800 px each) from each source grid
+        # crop each scene's image band, dropping the tool's own title strip
+        bands = {k: scene_bands(src) for k, src in grids.items()}
         for k, src in grids.items():
-            for r in range(3):
+            for r, (top, bottom) in enumerate(bands[k]):
                 for c in range(3):
-                    magick(str(src), "-crop", "800x800+%d+%d" % (c * 800, r * 800),
+                    magick(str(src), "-crop", "%dx%d+%d+%d" % (CELL_PX, bottom - top + 1,
+                                                               c * CELL_PX, top),
                            "+repage", str(td / f"{k}_{r}_{c}.png"))
-        # header strips: short labels only (the epochs and MAEs live in the
-        # caption), sized large so they survive scaling to \columnwidth
+        # a single header row labels the columns; epochs and MAEs live in the caption
         widths = []
         for i, text in enumerate(HEADERS):
             dest = td / f"h{i}.png"
             magick("-background", "white", "-fill", "black", "-pointsize", "74",
-                   "-gravity", "center", "-size", "600x90", f"caption:{text}", str(dest))
+                   "-gravity", "center", "-size", "%dx90" % CELL_PX, f"caption:{text}", str(dest))
             widths.append(dest)
         cells = [widths]
         for r in range(3):

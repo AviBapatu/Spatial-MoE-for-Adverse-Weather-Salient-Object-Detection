@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-"""Generate Fig. 3 (two-panel nineteen-entry ranking) as pgfplots code.
+"""Generate Fig. 3 (nineteen-entry ranking, both splits in one axes) as pgfplots code.
 
 Data source: paper/BENCHMARK_RESULTS.md (the WXSOD paper's Tables II/III,
 transcribed) plus our measured row.  Every plotted value is cross-checked
 against the appendix table (tab:full19) in paper/main.tex; the script aborts
 on any mismatch and writes a verification table next to itself.
 
-Output: paper/figures/fig_benchmark_panels.tex (tikzpicture bodies only; the
+The figure is a single grouped-bar chart: one row per method, carrying a
+synthetic bar and a real bar on one shared axis, so the two splits can be read
+against each other instead of across two panels.
+
+Output: paper/figures/fig_benchmark_panels.tex (tikzpicture body only; the
 figure caption stays in main.tex).
 
 Usage:  python3 paper/figure_scripts/make_fig_benchmark_panels.py
@@ -102,40 +106,74 @@ def verify(tables: dict, t14: dict) -> tuple[list[dict], list[str]]:
     return rows, problems
 
 
-def panel(split: str, rows: dict[str, tuple[float, float]], xmax: float,
-          xticks: list[float], label: str) -> str:
-    ordered = sorted(rows.items(), key=lambda kv: kv[1][0])  # lowest MAE first
-    y_order = [name for name, _ in reversed(ordered)]        # best at the top
+#: (synthetic fill, synthetic draw, real fill, real draw) for each method class.
+#: The two shades of a class differ by roughly a factor of two in luminance, and
+#: the pale shade is deliberately not a near-white tint so it still reads as a
+#: filled bar on the page. Greys are mixed from black/white directly because
+#: xcolor's "gray!n" is a tint of mid-grey and so stays light at low n.
+CLASS_STYLE = {
+    "published": ("black!55", "black!80", "black!25", "black!55"),
+    "WFANet": ("orange!85", "orange!95", "orange!55", "orange!85"),
+    "Ours": ("violet!85", "violet!95", "violet!50", "violet!85"),
+}
+BAR_SHIFT = 2.2  # pt: shifts the pair apart along y; positive is the upper bar
+
+
+def style_of(name: str) -> str:
+    """Return the colour class of *name*, calling out WFANet and our own row."""
+    return name if name in ("WFANet", "Ours") else "published"
+
+
+def ylabel(name: str) -> str:
+    """Colour the two called-out row labels to match their bars."""
+    if name == "WFANet":
+        return r"\textcolor{orange!85!black}{\textbf{WFANet}}"
+    if name == "Ours":
+        return r"\textcolor{violet!85!black}{\textbf{Ours}}"
+    return name
+
+
+def combined(synthetic: dict[str, tuple[float, float]],
+             real: dict[str, tuple[float, float]]) -> str:
+    """Emit one axes holding both splits as paired horizontal bars.
+
+    Rows are ordered by synthetic MAE (best at the top), which is the split the
+    paper leads on; the real bars therefore are not rank-ordered.
+    """
+    ordered = sorted(synthetic.items(), key=lambda kv: kv[1][0])  # lowest MAE first
+    y_order = [name for name, _ in reversed(ordered)]             # best at the top
     lines = [
         "\\begin{tikzpicture}",
         "\\begin{axis}[",
-        "  iopaxis, xbar, bar shift=0pt, bar width=5pt,",
-        "  width=0.47\\textwidth, height=84mm,",
+        "  iopaxis, xbar, bar width=4.4pt,",
+        "  width=0.88\\textwidth, height=105mm,",
         "  scaled x ticks=false,",
         "  xticklabel style={/pgf/number format/.cd,fixed,fixed zerofill,precision=3},",
-        f"  xlabel={{{label}}},",
+        "  xlabel={MAE $\\downarrow$ (one shared axis, both splits from $0$)},",
         "  xlabel style={font=\\small},",
-        f"  xmin=0, xmax={xmax},",
+        "  xmin=0, xmax=0.098,",
         "  symbolic y coords={" + ",".join(y_order) + "},",
         "  ytick={" + ",".join(y_order) + "},",
+        "  yticklabels={" + ",".join(ylabel(name) for name in y_order) + "},",
         "  yticklabel style={font=\\fontsize{5.6}{6.4}\\selectfont},",
-        "  xtick={" + ",".join(f"{t:g}" for t in xticks) + "},",
-        "  enlarge y limits=0.03,",
-        "  nodes near coords, point meta=explicit symbolic,",
-        "  every node near coord/.append style={font=\\fontsize{4.8}{5.6}\\selectfont,"
-        " anchor=west, xshift=1.0pt},",
+        "  xtick={0.02,0.04,0.06,0.08},",
+        # relative enlargement: 0.05 of the 18-unit range is ~1 row, which is what
+        # it takes to clear the outer bar pairs from the top and bottom frame lines
+        "  enlarge y limits=0.05,",
         "]",
     ]
-    grey = [(n, v[0]) for n, v in ordered if n not in ("WFANet", "Ours")]
-    lines.append("\\addplot[fill=gray!35, draw=gray!60, line width=0.3pt] coordinates {")
-    lines += [f"  ({mae:.4f},{name}) [{mae:.4f}]" for name, mae in grey]
-    lines.append("};")
-    for name, style in (("WFANet", "orange!60, draw=orange!85"),
-                        ("Ours", "violet!50, draw=violet!75")):
-        mae = rows[name][0]
-        lines.append(f"\\addplot[fill={style}, line width=0.3pt] coordinates {{")
-        lines.append(f"  ({mae:.4f},{name}) [{mae:.4f}]")
-        lines.append("};")
+    for split, values, shift in (("synthetic", synthetic, BAR_SHIFT),
+                                 ("real", real, -BAR_SHIFT)):
+        idx = 0 if split == "synthetic" else 2
+        for cls in ("published", "WFANet", "Ours"):
+            members = [name for name in y_order if style_of(name) == cls]
+            if not members:
+                continue
+            fill, draw = CLASS_STYLE[cls][idx], CLASS_STYLE[cls][idx + 1]
+            lines.append(f"\\addplot[fill={fill}, draw={draw}, line width=0.3pt,"
+                         f" bar shift={shift:g}pt] coordinates {{")
+            lines += [f"  ({values[name][0]:.4f},{name})" for name in members]
+            lines.append("};")
     lines += ["\\end{axis}", "\\end{tikzpicture}"]
     return "\n".join(lines)
 
@@ -160,11 +198,7 @@ def main() -> int:
               "% DO NOT EDIT BY HAND.\n")
     syn = dict(tables["synthetic"], Ours=OURS["synthetic"])
     real = dict(tables["real"], Ours=OURS["real"])
-    left = panel("synthetic", syn, 0.098, [0.02, 0.04, 0.06, 0.08],
-                 "MAE on synthetic test (1{,}500 images) $\\downarrow$")
-    right = panel("real", real, 0.068, [0.02, 0.04, 0.06],
-                  "MAE on real test (554 images) $\\downarrow$")
-    OUT.write_text(header + left + "\n\\hfill\n" + right + "\n")
+    OUT.write_text(header + combined(syn, real) + "\n")
     print(f"wrote {OUT.relative_to(ROOT)}")
     return 0
 

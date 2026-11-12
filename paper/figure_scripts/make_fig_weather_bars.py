@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Generate Fig. 6 (weather-wise MAE bars) as pgfplots code.
+"""Generate Fig. 8 (weather-wise MAE bars, both splits in one axes) as pgfplots code.
 
 Source: the per-condition metrics JSONs of the reported model ---
   real: results/legacy_8expert_best/none/legacy_best/test_real/none/metrics_test_real_20260925_193945.json
   sys:  results/legacy_8expert_best/none/legacy_best/test_sys/none/metrics_test_sys_20260925_194231.json
 These are the artifacts behind Table 8 (tab:weather); every plotted value is
 cross-checked against that table and the script aborts on mismatch.
+
+The figure is one grouped-bar chart rather than two panels: each row is a
+condition of the synthetic split and carries the real split's bar for that same
+condition where it exists (the real split has no compound conditions).
 
 Output: paper/figures/fig_weather_bars.tex
 Usage:  python3 paper/figure_scripts/make_fig_weather_bars.py
@@ -33,6 +37,8 @@ DISPLAY = {"rainafog": "Rain${+}$fog", "rainasnow": "Rain${+}$snow",
 # Table 8 spells the compound conditions "Rain+fog"; the metrics JSONs key them
 # as "rainafog" / "rainasnow" / "snowafog".
 ALIASES = {"rain+fog": "rainafog", "rain+snow": "rainasnow", "snow+fog": "snowafog"}
+SPLIT_TAG = {"synthetic": "syn", "real": "real"}
+BAR_SHIFT = 3.2  # pt: shifts the pair apart along y; positive is the upper bar
 
 
 def parse_table8() -> dict[str, list[tuple[str, int, float]]]:
@@ -86,40 +92,75 @@ def verify(table8: dict, metrics: dict) -> tuple[list[dict], list[str]]:
     return rows, problems
 
 
-def panel(split: str, entries: list[tuple[str, int, float]], xmax: float,
-          xticks: list[float], title: str) -> str:
-    # entries arrive in table order, best (lowest MAE) first.  pgfplots' symbolic
-    # coordinates cannot contain parentheses, so plot against bare keys and put
-    # the display text in yticklabels.
-    prefix = "R" if split == "real" else "S"
-    keys = [f"{prefix}{i + 1}" for i in range(len(entries))]
-    labels = {k: f"{lbl} ($N{{=}}{n}$)" for k, (lbl, n, _) in zip(keys, entries)}
+def merge_rows(table8: dict) -> list[dict]:
+    """Return one row per condition, each carrying whichever splits have it.
+
+    Rows follow the synthetic table order (best first), since the synthetic
+    split is the one that contains every condition; a condition that only the
+    real split has would be appended.
+    """
+    rows: list[dict] = []
+    index: dict[str, dict] = {}
+    for split in ("synthetic", "real"):
+        for label, n, mae in table8[split]:
+            key = normalise(label)
+            if key not in index:
+                index[key] = {"label": label, "synthetic": None, "real": None}
+                rows.append(index[key])
+            index[key][split] = (n, mae)
+    return rows
+
+
+def row_label(row: dict) -> str:
+    """Tick label: condition name, per-split image counts, and a no-real mark.
+
+    The real split has five conditions and no compound ones, so four rows have
+    no real counterpart at all; those carry the mark defined in the caption
+    rather than a bar.
+    """
+    counts = [f"{row[split][0]} {SPLIT_TAG[split]}" for split in ("synthetic", "real")
+              if row[split]]
+    mark = "" if row["real"] else r"$^{\ast}$"
+    return f"{row['label']}{mark} ($N$ " + ", ".join(counts) + ")"
+
+
+def chart(rows: list[dict], xmax: float, xticks: list[float]) -> str:
+    """Emit one axes holding both splits as paired horizontal bars.
+
+    pgfplots' symbolic coordinates cannot contain parentheses, so plot against
+    bare keys and put the display text in yticklabels.
+    """
+    keys = [f"C{i + 1}" for i in range(len(rows))]
+    labels = {k: row_label(r) for k, r in zip(keys, rows)}
     y_order = list(reversed(keys))                    # best entry at the top
     lines = [
         "\\begin{tikzpicture}",
         "\\begin{axis}[",
-        "  iopaxis, xbar, bar shift=0pt, bar width=7pt,",
-        f"  title={{{title}}}, title style={{font=\\small}},",
-        "  width=0.47\\textwidth, height=52mm,",
+        "  iopaxis, xbar, bar width=6.4pt,",
+        "  width=0.80\\textwidth, height=64mm,",
         "  scaled x ticks=false,",
         "  xticklabel style={/pgf/number format/.cd,fixed,fixed zerofill,precision=3},",
-        "  xlabel={MAE $\\downarrow$}, xlabel style={font=\\small},",
+        "  xlabel={MAE $\\downarrow$ (one shared axis, both splits from $0$)},"
+        " xlabel style={font=\\small},",
         f"  xmin=0, xmax={xmax},",
         "  symbolic y coords={" + ",".join(y_order) + "},",
         "  ytick={" + ",".join(y_order) + "},",
         "  yticklabels={" + ",".join(labels[k] for k in y_order) + "},",
-        "  yticklabel style={font=\\fontsize{6.4}{7.4}\\selectfont},",
+        "  yticklabel style={font=\\fontsize{6}{7}\\selectfont},",
         "  xtick={" + ",".join(f"{t:g}" for t in xticks) + "},",
-        "  enlarge y limits=0.08,",
-        "  nodes near coords, point meta=explicit symbolic,",
-        "  every node near coord/.append style={font=\\fontsize{5.2}{6.2}\\selectfont,"
-        " anchor=west, xshift=1.0pt},",
+        "  enlarge y limits=0.1,",
         "]",
-        "\\addplot[fill=teal!25, draw=teal!60, line width=0.3pt] coordinates {",
     ]
-    for key, (_, _n, mae) in zip(keys, entries):
-        lines.append(f"  ({mae:.4f},{key}) [{mae:.4f}]")
-    lines += ["};", "\\end{axis}", "\\end{tikzpicture}"]
+    for split, shift, style in (("synthetic", BAR_SHIFT, "fill=teal!80, draw=teal!95"),
+                                ("real", -BAR_SHIFT, "fill=teal!45, draw=teal!80")):
+        present = [(k, row) for k, row in zip(keys, rows) if row[split]]
+        if not present:
+            continue
+        lines.append(f"\\addplot[{style}, line width=0.3pt, bar shift={shift:g}pt]"
+                     " coordinates {")
+        lines += [f"  ({row[split][1]:.4f},{k})" for k, row in present]
+        lines.append("};")
+    lines += ["\\end{axis}", "\\end{tikzpicture}"]
     return "\n".join(lines)
 
 
@@ -140,11 +181,10 @@ def main() -> int:
     header = ("% Generated by paper/figure_scripts/make_fig_weather_bars.py\n"
               "% Data: paper/figure_scripts sources listed in that script "
               "(metrics JSONs behind Table 8). DO NOT EDIT BY HAND.\n")
-    left = panel("real", table8["real"], 0.028, [0, 0.01, 0.02],
-                 "(a) Real test (554 images, 5 conditions)")
-    right = panel("synthetic", table8["synthetic"], 0.028, [0, 0.01, 0.02],
-                  "(b) Synthetic test (1{,}500 images, 9 conditions)")
-    OUT.write_text(header + left + "\n\\hfill\n" + right + "\n")
+    rows = merge_rows(table8)
+    print(f"rows: {len(rows)} (synthetic={sum(1 for r in rows if r['synthetic'])}, "
+          f"real={sum(1 for r in rows if r['real'])})")
+    OUT.write_text(header + chart(rows, 0.028, [0, 0.01, 0.02]) + "\n")
     print(f"wrote {OUT.relative_to(ROOT)}")
     return 0
 

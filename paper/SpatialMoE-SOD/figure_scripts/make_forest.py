@@ -1,4 +1,4 @@
-"""Forest plot of Table 12: paired MAE difference of every arm against Ref."""
+"""Forest plot of Table 12: paired MAE difference of every arm against A0."""
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import paper_style as ps
@@ -12,9 +12,9 @@ rows = [
     ("Routing at $1/4$ only (A8)",     -0.000117, -0.000562, +0.000354, 0.0001, "eq"),
     ("No load-balance loss (A4)",      +0.000118, -0.000282, +0.000506, 0.0000, "eq"),
     ("2 experts (A2)",                 -0.000173, -0.000473, +0.000124, 0.0000, "eq"),
-    ("Seed 43 (Ref)",                  +0.000462, -0.000153, +0.001172, 0.0566, "seed"),
+    ("Seed 43 (A0)",                   +0.000462, -0.000153, +0.001172, 0.0566, "seed"),
     ("Dense expert (A5)",              -0.000488, -0.001231, +0.000204, 0.0828, "unres"),
-    ("Seed 44 (Ref)",                  -0.000497, -0.001115, +0.000087, 0.0510, "seed"),
+    ("Seed 44 (A0)",                  -0.000497, -0.001115, +0.000087, 0.0510, "seed"),
     ("Top-1, 4 experts (A3)",          +0.001599, +0.001034, +0.002125, 0.9808, "sep"),
     ("14 epochs (A1)",                 -0.002224, -0.002788, -0.001690, 1.0000, "sep"),
 ]
@@ -52,7 +52,7 @@ ax.set_xlim(-3.1, 4.0)
 ax.set_xticks([-3, -2, -1, 0, 1, 2])
 ax.spines["left"].set_visible(False)
 ax.tick_params(axis="y", length=0)
-ax.set_xlabel(r"Paired $\Delta$ real-test MAE vs. Ref  ($\times10^{-3}$;  negative = arm better)", loc="left")
+ax.set_xlabel(r"Paired $\Delta$ real-test MAE vs. A0  ($\times10^{-3}$;  negative = arm better)", loc="left")
 ax.xaxis.set_label_coords(0.0, -0.13)
 ps.light_grid(ax, "x")
 # column headers for the right-hand numbers

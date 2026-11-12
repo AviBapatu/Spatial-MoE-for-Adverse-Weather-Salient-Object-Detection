@@ -55,15 +55,6 @@ Nikoli Dryden and Torsten Hoefler.
   2022.
 \newblock arXiv:2211.13491.
 
-\bibitem{shazeer2017moe}
-Noam Shazeer, Azalia Mirhoseini, Krzysztof Maziarz, Andy Davis, Quoc Le,
-  Geoffrey Hinton, and Jeff Dean.
-\newblock Outrageously large neural networks: The sparsely-gated
-  mixture-of-experts layer.
-\newblock In {\em International Conference on Learning Representations (ICLR)},
-  2017.
-\newblock arXiv:1701.06538.
-
 \bibitem{hendrycks2019corruptions}
 Dan Hendrycks and Thomas Dietterich.
 \newblock Benchmarking neural network robustness to common corruptions and
@@ -139,6 +130,15 @@ Carlos Riquelme, Joan Puigcerver, Basil Mustafa, Maxim Neumann, Rodolphe
 \newblock Scaling vision with sparse mixture of experts.
 \newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)},
   volume~34, 2021.
+
+\bibitem{shazeer2017moe}
+Noam Shazeer, Azalia Mirhoseini, Krzysztof Maziarz, Andy Davis, Quoc Le,
+  Geoffrey Hinton, and Jeff Dean.
+\newblock Outrageously large neural networks: The sparsely-gated
+  mixture-of-experts layer.
+\newblock In {\em International Conference on Learning Representations (ICLR)},
+  2017.
+\newblock arXiv:1701.06538.
 
 \bibitem{lepikhin2021gshard}
 Dmitry Lepikhin, HyoukJoong Lee, Yuanzhong Xu, Dehao Chen, Orhan Firat, Yanping
