@@ -9,7 +9,8 @@ contradict them, and every number must be traceable to a file named in them.
 To have the paper written from these documents, give the writer:
 
 - `docs/research/RESEARCH_TRUTH.md`
-- everything in `docs/research/`
+- everything in `docs/research/` **except** the historical files listed under
+  *Historical — do not cite* below
 - `paper/FINAL_PAPER_PLAN.md` and `paper/main.tex`
 
 Do **not** give the historical audits listed under "Historical — do not cite" as sources;
@@ -71,7 +72,7 @@ expert specialisation by weather, and no causal claim about any design choice.
 | `docs/research/DATASETS.md` | WXSOD structure, splits, geometry, augmentation, targets |
 | `docs/research/EXPERIMENTS.md` | Config system, ID rules, the current experiment set, protocols, what is missing |
 | `docs/research/ABLATIONS.md` | What has been ablated and what has not, including comparisons that are currently meaningless |
-| `docs/research/RESULTS_NARRATIVE.md` | Interpretation of the legacy results, plus a provenance note on which evaluation is canonical |
+| `docs/research/RESULTS_NARRATIVE.md` | Interpretation of the legacy results, plus a provenance note on which evaluation is canonical. **Superseded 2026-10-03** — read it as the single-model-era interpretation, not as current numbers |
 | `docs/research/PROJECT_OVERVIEW.md` | Problem, claimed novelty, system summary, repository map |
 
 ## Literature
@@ -81,11 +82,18 @@ expert specialisation by weather, and no causal claim about any design choice.
 | `docs/research/RELATED_WORK.md` | Closest prior work, where this project differs, which claims survive, which must be qualified, and the experiments each claim still needs |
 | `docs/research/LITERATURE_DATABASE.md` | The underlying citation records, keyed `DB-nn` |
 
+## Sources
+
+| File | Covers |
+|---|---|
+| `docs/research/sources/` | The raw inputs behind `LITERATURE_DATABASE.md`: design notes on the MoE formulation and routing, literature search summaries, and the elicit CSVs. Reference material, not claims. |
+
 ## Paper
 
 | File | Covers |
 |---|---|
 | `paper/main.tex` | The manuscript (journal revision, no page limit), and the reference for any rewrite |
+| `paper/BENCHMARK_RESULTS.md` | WXSOD's published Tables II and III, transcribed, alongside this project's own numbers |
 | `paper/FINAL_PAPER_PLAN.md` | Structure, figure and table plan for the earlier 6-page conference version |
 | `paper/REDESIGN_PLAN.md` | The (applied) 6-page redesign plan, also conference-era |
 | `paper/make_figtest.py` | Regenerates `paper/_figtest.tex`, a standalone harness for the two TikZ diagrams |

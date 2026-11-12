@@ -215,7 +215,7 @@ Not supported by any evidence in this repository. Do not write them.
 |---|---|
 | `config.model.backbone` is never passed to the model | backbone ablations are meaningless as configured |
 | `router_variant` is consumed only by the experiment-ID builder | the three router variants train the same router |
-| No matched no-MoE control at the **reported** recipe | the headline model R was never re-run against a null control; the equivalence result rests on single-seed family arms whose reference (Ref) is a different recipe |
+| No matched no-MoE control at the **reported** recipe | the headline model R was never re-run against a null control; the equivalence result rests on single-seed family arms whose reference (A0) is a different recipe |
 | No oracle-routing positive control | routing forced by weather class has not been run, so nothing shows the architecture could help if the router were given a signal |
 | Single seed per configuration (except the repeats) | no variance estimate |
 | `src/ablations.py` `# A: PVT-B2` arm would train B4 | a fabricated backbone comparison if ever run |

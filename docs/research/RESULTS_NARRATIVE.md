@@ -51,7 +51,7 @@ The weather-wise breakdown reveals that the model's performance is **not uniform
 
 Forcing all tokens at scale 4 to expert 0 (bypassing the router) barely moves the global
 metrics. In the tracked proxy file
-(`results/legacy/legacy_8expert/eval_results/proxy_ablation_results.json`) MAE goes from
+(`results/legacy/legacy_8expert/evaluation_results/proxy_ablation_results.json`) MAE goes from
 0.016841 to 0.016923 (+0.0001, +0.5%) and S_measure from 0.915091 to 0.914655
 (-0.0004, -0.05%). The per-condition breakdown of the forced run is not present in the
 tracked result files, so no weather-wise claim about it is made here. (The manuscript quotes
