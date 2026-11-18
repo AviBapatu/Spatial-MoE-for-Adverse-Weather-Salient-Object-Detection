@@ -4,7 +4,7 @@
 %
 %  Layout re-styled after the reference article (Das et al., The Visual Computer
 %  2022): A4, two columns, Times text with bold sans-serif headings and captions,
-%  grey "ORIGINAL ARTICLE" band, full-width abstract block, running head with
+%  full-width abstract block, running head with
 %  author / short title and page number, numbered reference list.
 %  Self-contained: standard article class only (no journal .cls required).
 % ============================================================
@@ -129,7 +129,7 @@
 \DeclareMathOperator{\Var}{Var}
 
 % ---------------------------------------------------------------- figure helpers
-% \figor: a missing figure file becomes a labelled box so the manuscript still compiles.
+% \figor: a missing figure file becomes a labeled box so the manuscript still compiles.
 \newcommand{\figor}[2]{%
   \IfFileExists{figures/#1}%
     {\includegraphics[width=#2]{figures/#1}}%
@@ -167,8 +167,6 @@
 \begin{document}
 \twocolumn[{%
 \begin{@twocolumnfalse}
-\noindent\rule{\textwidth}{0.7pt}\par\nointerlineskip
-\noindent\colorbox{black!20}{\hspace{0.4em}\parbox{0.40\textwidth}{\sffamily\bfseries\fontsize{8.5}{11}\selectfont\vphantom{Ag}ORIGINAL ARTICLE}}\par
 \vspace{16pt}
 {\raggedright\sffamily\bfseries\fontsize{17}{20.5}\selectfont
 SpatialMoE-SOD: Weather-Label-Free Salient Object Detection with Spatial Token-Level Expert Routing\par}
@@ -187,12 +185,10 @@ Neerukonda, Mangalagiri, Guntur, Andhra Pradesh 522\,240, India\par}
 {\sffamily\bfseries\fontsize{9}{11}\selectfont Abstract\par}
 \vspace{3pt}
 {\fontsize{8.7}{10.6}\selectfont\noindent
-Salient object detection (SOD) degrades under adverse weather. We ask whether a weather-label-free model can match weather-supervised SOD, and answer with a single-RGB architecture built around spatial token-level mixture-of-experts (MoE) routing that uses no weather labels at training or inference. On WXSOD the model reaches MAE $0.0192$ on the 1{,}500 synthetic test images, the lowest of the 18 published entries (19 with ours), including the weather-supervised WFANet ($0.0229$), and the highest synthetic $S_\phi$ ($0.9140$). On the 554 real test images its MAE of $0.0168$ is a close second, within $0.0009$ of WFANet ($0.0159$). An ablation study shows the performance is stable under removal or reduction of the mixture: the no-MoE, one-scale and no-load-balance variants are statistically equivalent to the reference (TOST, $\pm0.001$ MAE), although the arms are single-seed and differ in expert count. Routing entropy is near its ceiling (at least $99.2\%$ in every functional arm but one) while the hard assignment is strongly skewed; Section~\ref{sec:why} ranks three hypotheses for this, none yet tested directly. The backbone and decoder were not ablated; results are for one backbone, one dataset and one seed.\par}
+Salient object detection (SOD) degrades under adverse weather, and the strongest existing remedies depend on weather labels: WFANet trains a weather classifier, and NIFM needs weather-type metadata at inference. We ask whether a weather-label-free model can match weather-supervised SOD. To answer this, we propose SpatialMoE-SOD, a single-RGB architecture that uses no weather labels at training or inference. It combines a PVTv2-B4 backbone with spatial token-level mixture-of-experts (MoE) routing: independent routers at three pyramid scales assign each token to the top 2 of 8 experts, and the resulting routing entropy is fused into a cross-attention decoder. On WXSOD, the model reaches an MAE of $0.0192$ on the 1{,}500 synthetic test images, the lowest of the 18 published entries and ahead of the weather-supervised WFANet ($0.0229$), together with the highest synthetic $S_\phi$ ($0.9140$). On the 554 real test images, its MAE of $0.0168$ is a close second, within $0.0009$ of WFANet ($0.0159$). To test what drives this performance, we run an ablation and inference-time intervention study. The no-MoE, one-scale and no-load-balance variants are statistically equivalent to the reference (TOST, $\pm0.001$ MAE; one seed per arm, three for the reference). Routing entropy stays near its ceiling (at least $99.2\%$ in every functional arm but one) while the hard assignment is strongly skewed, and we rank three hypotheses for this. The backbone and decoder were not ablated, so the results are for one architecture on one dataset, and the gains cannot be attributed to the mixture itself.\par}
 \vspace{7pt}
 \noindent{\fontsize{8.7}{10.6}\selectfont{\sffamily\bfseries Keywords}\hspace{0.8em}salient object detection $\cdot$ mixture-of-experts $\cdot$ adverse weather $\cdot$ sparse routing $\cdot$ cross-attention decoder\par}
-\vspace{6pt}
-\noindent\rule{\textwidth}{0.4pt}
-\vspace{10pt}
+\vspace{16pt}
 \end{@twocolumnfalse}
 }]
 \thispagestyle{plain}
@@ -210,64 +206,62 @@ supervision, and the question this paper asks is whether a weather-label-free si
 model can match weather-supervised SOD. Sparse MoE has been
 studied in dense prediction: MoE-SPNet routes at the scene level~\cite{moespnet}, token-level
 routing has been applied to medical segmentation (SegMoTE~\cite{segmote}), and Pavlitska et
-al.\ examine the behaviour of sparse MoE layers in CNN segmentation~\cite{sparsemoecnn}, and
+al.\ examine the behavior of sparse MoE layers in CNN segmentation~\cite{sparsemoecnn}, and
 spatial MoE (SMoE) was introduced for dense regression on spatially-structured scientific data,
 such as weather and climate fields~\cite{smoe}. None of these addresses
 adverse-weather SOD with a single RGB input.
 
-The answer is yes on the synthetic split and a close second on the real one. The model
-reaches MAE $0.0192$ on the 1{,}500 synthetic test images --- the lowest of the 18 published
-entries (19 with ours), including the weather-supervised WFANet ($0.0229$) ---
-and its synthetic $S_\phi$ ($0.9140$) is likewise the highest of the nineteen, ours
-included, against $0.9051$ for WFANet. On the 554 real test images it is a close second --- MAE $0.0168$,
-within $0.0009$ of WFANet's $0.0159$ --- without ever seeing a weather label at training or
-inference. To analyse what drives this performance, we
+The model matches weather-supervised SOD on the synthetic split and is a close second on the real split. It
+reaches the lowest synthetic MAE among the 18 published entries ($0.0192$) on the 1{,}500 synthetic test images, ahead of the
+weather-supervised WFANet ($0.0229$). Its synthetic $S_\phi$ ($0.9140$) is also the highest of
+the nineteen, ours included, against $0.9051$ for WFANet. On the 554 real test images it is a
+close second, with MAE $0.0168$ within $0.0009$ of WFANet's $0.0159$, without ever seeing a
+weather label at training or
+inference. To analyze what drives this performance, we
 ablate the design: eleven arms of one ablation family, plus the reported model and three
-earlier-recipe arms, and three inference-time interventions show that the
-mixture-of-experts, its routing and its entropy channel can each be removed,
-randomised or short-circuited with no effect larger than the seed-variance floor
+earlier-recipe arms, and three inference-time interventions show that performance is
+unchanged when the mixture is removed or reduced: the mixture-of-experts, its routing and its
+entropy channel can each be removed,
+randomized or short-circuited, and the resulting change is no larger than the seed-variance floor
 (Sections~\ref{sec:ablations} and~\ref{sec:proxy}). We report the architecture and its
 weather-label-free numbers together with this analysis of what drives them.
 
 Our contributions are:
 \begin{enumerate}[leftmargin=*,nosep,label=\arabic*)]
-  \item An architecture for weather-label-free single-RGB salient object detection --- a
-        token-level spatial router that assigns each token to top-$K{=}2$ experts from 8 per
+  \item An architecture for weather-label-free single-RGB salient object detection. A
+        token-level spatial router assigns each token to the top $K{=}2$ of 8 experts per
         scale, using depthwise-convolutional context, noisy top-$K$ gating and
-        true sparse dispatch; three independent routers at scales $1/4$, $1/8$, $1/16$
-        with a separate expert pool each; and routing entropy over the full expert
-        distribution, normalized by $\log E$ for $E{=}8$, injected as an explicit decoder
-        feature via learnable additive fusion --- together with its weather-label-free
-        results: MAE $0.0192$ on the synthetic split (lowest of the 18 published entries,
-        19 with ours) and $0.0168$ on the real split (second of nineteen, ours included),
-        with no weather labels at training or
+        true sparse dispatch. Three independent routers at scales $1/4$, $1/8$ and $1/16$
+        each have a separate expert pool. Routing entropy over the full expert
+        distribution, normalized by $\log E$ for $E{=}8$, is added to the decoder feature
+        through learnable additive fusion. The model reaches MAE $0.0192$ on the synthetic
+        split (the lowest synthetic MAE among the 18 published entries) and $0.0168$ on the real split (second of nineteen,
+        ours included), with no weather labels at training or
         inference.
   \item A comparison with the published methods of the WXSOD benchmark on both test
         splits, reported as published, placing the model first on the synthetic split on
         both MAE and $S_\phi$ and second on the real split on MAE, behind the
         weather-supervised WFANet.
   \item An ablation and inference-time intervention study (11 trained arms, 3
-        interventions) analysing what drives this performance: the result is stable under
+        interventions) analyzing what drives this performance: the result is stable under
         removal or reduction of the mixture, with the no-MoE, one-scale and
         no-load-balance variants certified equivalent to the reference by a TOST test at
         $\pm0.001$ MAE.
-  \item A candidate explanation of \emph{why} the mixture contributes so little
-        measurably, presented as
-        ranked hypotheses: noise-dominated selection at initialisation; auxiliary and Z-loss
+  \item An analysis of why the performance does not depend on the mixture, presented as
+        three ranked hypotheses: noise-dominated selection at initialization; auxiliary and Z-loss
         terms that do not reward decisiveness; and experts that are near-identical at
-        initialisation, giving the gate nothing to separate and leaving a static selector. Each
-        is stated with the evidence bearing on it and the measurement that would discriminate
-        it. We keep the equivalence result separate from the mechanism and do not claim the
-        mechanism is settled.
+        initialization, giving the gate nothing to separate and leaving a static selector. Each
+        is stated with the relevant evidence and the measurement that would discriminate
+        it.
 \end{enumerate}
 
-The rest of the paper is organised as follows.
+The rest of the paper is organized as follows.
 Section~\ref{sec:related} positions the work against adverse-weather SOD and mixture-of-experts methods.
 Section~\ref{sec:method} describes the architecture: the multi-scale backbone, the spatial router, sparse
 dispatch, the entropy-fused decoder and the training objective.
 Section~\ref{sec:exp} reports the results: the headline numbers, a comparison against published
 methods, and a controlled ablation suite.
-Section~\ref{sec:why} analyses why the ablation behaves as it does.
+Section~\ref{sec:why} analyzes why the ablation behaves as it does.
 Section~\ref{sec:limits} states what the evidence supports and what it does not.
 Data and code availability are stated at the end of the paper.
 
@@ -296,15 +290,14 @@ dataset, not as a general claim about segmentation.
 \subsection{Mixture-of-Experts in Dense Prediction}
 Within dense prediction, MoE-SPNet routes at the scene level~\cite{moespnet};
 SegMoTE applies token-level routing to medical image segmentation~\cite{segmote}; and
-Pavlitska et al.\ study the behaviour of sparse MoE layers in CNN semantic
+Pavlitska et al.\ study the behavior of sparse MoE layers in CNN semantic
 segmentation~\cite{sparsemoecnn,pavlitskaya2020moeseg}. In multi-task and multi-modal settings these routers are
 task- or modality-conditioned~\cite{liang2022m3vit,chen2023modsquad,m4sam2026}; within SOD,
-existing MoE methods explore modality-, scale- or task-level routing for multi-modal inputs
-rather than per-token routing for single-RGB imagery.
+existing MoE methods explore modality-, scale- or task-level routing for multi-modal inputs;
+per-token routing for single-RGB imagery is not addressed.
 
 \subsection{Token-Level Routing and Routing Entropy}
-Sparse MoE goes back to adaptive mixtures of local experts~\cite{jacobs1991mixtures}; token-level top-$K$ routing was established by V-MoE~\cite{v-moe2021} for classification, building on sparsely-gated MoE~\cite{shazeer2017moe} and the GShard/Switch/ST-MoE line~\cite{lepikhin2021gshard,fedus2022switch,zoph2022stmoe}, with Mixtral scaling it further~\cite{jiang2024mixtral},
-where routing entropy has also served for uncertainty estimation; we instead inject it as a
+Sparse MoE goes back to adaptive mixtures of local experts~\cite{jacobs1991mixtures}; token-level top-$K$ routing was established by V-MoE~\cite{v-moe2021} for classification, building on sparsely-gated MoE~\cite{shazeer2017moe} and the GShard/Switch/ST-MoE line~\cite{lepikhin2021gshard,fedus2022switch,zoph2022stmoe}, with Mixtral scaling it further~\cite{jiang2024mixtral}. We inject routing entropy as a
 decoder feature for dense prediction. Spatial MoE (SMoE) was introduced for dense regression
 on spatially-structured scientific data~\cite{smoe}. We apply this combination to single-RGB
 adverse-weather SOD, and the question of whether it helps is one this paper measures
@@ -325,16 +318,16 @@ We detail each component below.
 \includegraphics[width=\textwidth]{figures/fig_architecture.pdf}
 \caption{\textbf{SpatialMoE-SOD.}
 A PVTv2-B4 backbone produces features at three resolutions.
-Each scale has its \emph{own} Spatial MoE layer: a depthwise-convolutional router turns
+Each scale has its own Spatial MoE layer: a depthwise-convolutional router turns
 every token into eight logits, noisy top-$K{=}2$ sends the token to two of eight experts,
 and the experts' outputs are combined with their gate weights.
 Per-token routing entropy $\Hs_s$, taken over the full eight-way distribution and
-normalised by $\log E$, is projected and added to the routed features.
+normalized by $\log E$, is projected and added to the routed features.
 The cross-attention decoder merges the three scales coarse-to-fine, and two
 $1{\times}1$ convolutions produce the saliency and boundary maps.
 Eight loss terms are active, including deep supervision over three auxiliary
 saliency heads at the $1/16$, $1/8$ and $1/4$ scales.
-The projections are labelled $\text{Proj}_s$, $\text{Proj}_g$ and $\text{Proj}_\mathcal{H}$:
+The projections are labeled $\text{Proj}_s$, $\text{Proj}_g$ and $\text{Proj}_\mathcal{H}$:
 $\text{Proj}_s$ is the backbone channel projection, a $1{\times}1$ convolution to $C{=}256$
 (Eq.~\eqref{eq:proj}); $\text{Proj}_\mathcal{H}$ is the entropy projection, a $1{\times}1$
 convolution from $1$ to $C$ channels scaled by $\lambda_s$; and $\text{Proj}_g$ is the
@@ -344,7 +337,7 @@ decoder's global-context projection, a $1{\times}1$ convolution from $C$ to $C$ 
 \end{figure*}
 
 \subsection{Multi-Scale Features}
-A PVTv2-B4 backbone~\cite{pvtv2} pretrained on ImageNet extracts features at three scales via \texttt{out\_indices}${=}(0,1,2)$.
+A PVTv2-B4 backbone~\cite{pvtv2} pretrained on ImageNet extracts features at three pyramid scales ($1/4$, $1/8$ and $1/16$).
 Each scale is projected to $C{=}256$ via $1{\times}1$ convolution:
 \begin{equation}
   \bX_s = \text{Proj}_s(\text{Backbone}(\bX)_s) \in \reals^{C \times H_s \times W_s},
@@ -382,8 +375,8 @@ the token and passed through a two-layer MLP to give eight routing logits.
 Input-dependent Gaussian noise is added during training~\cite{shazeer2017moe}; top-$K{=}2$ then selects two
 experts, and the gate weights are a softmax over those two logits only.
 Each selected expert is a residual MLP with a $4{\times}$ channel expansion.
-Routing entropy is taken over the \emph{full} eight-way distribution, not the selected
-pair, and the normalised value is projected and added to the decoder feature.}
+Routing entropy is taken over the full eight-way distribution, not the selected
+pair, and the normalized value is projected and added to the decoder feature.}
 \label{fig:router}
 \end{figure*}
 
@@ -435,7 +428,7 @@ The normalized entropy map $\Hs_s \in \reals^{1 \times H_s \times W_s}$ is fused
   \label{eq:fusion}
 \end{equation}
 where $\text{Proj}_\mathcal{H}$ is a $1{\times}1$ convolution from 1 to $C$ channels and $\lambda_s$ is a learnable scalar initialized to 0.1.
-$\Hs_s$ is computed from the router logits and is \emph{not} detached before fusion, so the decoder is a second, direct, differentiable task-gradient path to the router, independent of the expert-difference term in Eq.~\eqref{eq:mixture}. It is weak when the gate is near-uniform, because $\partial\Hs/\partial h \to 0$ there, but it is not zero, a point that matters for the $k{=}1$ arm in Section~\ref{sec:k}.
+$\Hs_s$ is computed from the router logits and is not detached before fusion, so the decoder is a second, direct, differentiable task-gradient path to the router, independent of the expert-difference term in Eq.~\eqref{eq:mixture}. It is weak when the gate is near-uniform ($\partial\Hs/\partial h \to 0$) but nonzero, which is relevant for the $k{=}1$ arm in Section~\ref{sec:k}.
 
 \subsection{Decoder}
 \label{sec:decoder}
@@ -453,9 +446,9 @@ $\bF_8'$ is upsampled and used as queries with $\bF_4^{\text{ctx}}$ as keys and 
 \end{equation}
 Three refinement blocks (each: Conv $3{\times}3$ $\to$ GroupNorm~\cite{wu2018groupnorm} $\to$ ReLU $\to$ Conv $3{\times}3$ $\to$ GroupNorm $\to$ ReLU $\to$ residual addition) progressively upsample from $1/4$ to full resolution.
 Fig.~\ref{fig:stages} shows the progression this produces: the object is already located and
-largely outlined at the coarsest stage, and the later blocks refine its boundary rather than
-change the decision.
-Two $1{\times}1$ convolution heads produce saliency logits $\hat{\bM}_{\text{sal}}$ and boundary logits $\hat{\bM}_{\text{bnd}}$ at $384{\times}384$. The decoder additionally exposes three auxiliary saliency heads at the $1/16$, $1/8$ and $1/4$ scales ($\texttt{aux\_logits\_16}$, $\texttt{aux\_logits\_8}$, $\texttt{aux\_logits\_4}$), which the reported configuration enables through deep supervision.
+largely outlined at the coarsest stage, and the later blocks refine its boundary without
+changing the decision.
+Two $1{\times}1$ convolution heads produce saliency logits $\hat{\bM}_{\text{sal}}$ and boundary logits $\hat{\bM}_{\text{bnd}}$ at $384{\times}384$. The decoder additionally exposes three auxiliary saliency heads at the $1/16$, $1/8$ and $1/4$ scales, which the reported configuration enables through deep supervision.
 
 \subsection{Training Objective}
 The objective is a weighted sum of the eight terms that are active in the reported configuration
@@ -473,15 +466,15 @@ The objective is a weighted sum of the eight terms that are active in the report
 \end{multline}
 with $\lambda_{\text{BCE}}{=}\lambda_{\text{IoU}}{=}\lambda_{\text{SSIM}}{=}\lambda_{\text{BND}}{=}1.0$,
 $\lambda_{\text{LB}}{=}\lambda_{\text{IMP}}{=}0.01$, $\lambda_{\text{auxBND}}{=}0.5$ and $\lambda_{\text{DS}}{=}0.4$ ($\mathcal{L}_{\text{LB}}$ is the mean over the three scales).
-These weights describe the \emph{reported} model. The ablation-family arms of
+These weights describe the reported model. The ablation-family arms of
 Section~\ref{sec:ablations} share the architecture but not the router-loss configuration: they
-were re-run under the current code with per-scale load-balance weights $0.08/0.15/0.10$ ---
-one weight for each of the three scales, applied separately, rather than the single
-$\lambda_{\text{LB}}$ multiplying the mean used by the reported model ---
+were re-run under the current code with per-scale load-balance weights of $0.08$, $0.15$ and
+$0.10$ (one per scale, applied separately, unlike the single
+$\lambda_{\text{LB}}$ on the mean used by the reported model),
 $\lambda_{\text{IMP}}{=}0.05$ and $\lambda_{\text{Z}}{=}0.001$. So this Method section does not
-describe the ablation model exactly, and the difference matters for the router: the Z-loss
-penalises $\log\sum_j e^{h_j}$ and therefore pushes router logits towards zero, which drives
-the gate softmax towards uniform. That makes it a direct candidate cause of the flat routing
+describe the ablation model exactly, and the difference affects the router: the Z-loss
+penalizes $\log\sum_j e^{h_j}$ and therefore pushes router logits toward zero, which drives
+the gate softmax toward uniform. That makes it a direct candidate cause of the flat routing
 entropy examined in Section~\ref{sec:why}.
 $\mathcal{L}_{\text{BCE}}$ is binary cross-entropy with logits between predicted saliency logits and ground-truth mask.
 $\mathcal{L}_{\text{IoU}}$ is the soft IoU loss:
@@ -502,9 +495,9 @@ $\mathcal{L}_{\text{DS}}$ is the mean binary cross-entropy of the three per-scal
 We evaluate on WXSOD~\cite{wxsod2025}, which provides 12,891 training images (scene-aware 80/20 split), 1,500 synthetic test images across 9 weather categories, and 554 real-world test images across 5 categories (fog, rain, snow, dark, light).
 Images are aspect-preserving resized to $384{\times}384$; augmentations include horizontal flip ($p{=}0.5$), color jitter ($p{=}0.5$), and ImageNet normalization.
 Training uses DDP on 2 GPUs, AMP (FP16), AdamW optimizer~\cite{loshchilov2019adamw} (lr $10^{-4}$ for both newly introduced modules and the backbone, weight decay $10^{-4}$), a WarmupCosine schedule~\cite{loshchilov2017sgdr}, gradient clipping at 1.0 and effective batch size 32; the backbone is frozen during the first epoch and unfrozen from epoch 1 onward.
-Two schedules were used, and this matters for reading every comparison below. The reported model \textbf{R} was configured for a 50-epoch cosine with $1\%$ warmup and early-stopped at 14 epochs, so its learning rate had \emph{not} annealed when its numbers were taken. The ablation-family arms were configured for 8 epochs (14 for A1) with a $4\%$ warmup, so they did anneal within their own, shorter schedules. Neither is a converged 50-epoch run, and \textbf{R}'s headline numbers are not reproduced by any ablation-family arm.
+Two training schedules were used, which affects the comparisons below. The reported model \textbf{R} was configured for a 50-epoch cosine with $1\%$ warmup and early-stopped at 14 epochs, so its learning rate had not annealed when its numbers were taken. The ablation-family arms were configured for 8 epochs (14 for A1) with a $4\%$ warmup, so they did anneal within their own, shorter schedules. Neither is a converged 50-epoch run, and \textbf{R}'s headline numbers are not reproduced by any ablation-family arm.
 Model selection for \textbf{R} is by validation MAE on the scene-disjoint validation split, so no test split enters it. \textbf{R} is evaluated single-pass, whereas the ablation-family arms use flip-average TTA; a flip-TTA evaluation of \textbf{R} also exists (MAE $0.0167$) but is not the reported row, so the \textbf{R}-versus-\textbf{A0} rows mix TTA settings.
-All evaluation numbers are scored in original image coordinates: predictions are reverse-geometried out of the $384{\times}384$ padded model frame before any metric is computed.
+All evaluation numbers are scored in original image coordinates: predictions are mapped back from the $384{\times}384$ padded model frame before any metric is computed.
 
 \noindent\textbf{Metrics.} We report MAE and the structure measure $S_\phi$~\cite{struct-measure}, the enhanced-alignment measure $E_\phi^{\text{adp}}$~\cite{enhanced-measure} and the maximum F-measure $F_\beta^{\max}$~\cite{f-measure}, together with boundary MAE and boundary F1. MAE is the mean absolute difference~\cite{perazzi2012saliency} between the continuous prediction and the binary ground truth. For the threshold sweeps of Fig.~\ref{fig:pr}, given a threshold $t$ and the corresponding binary mask, we report precision $P(t)$, recall $R(t)$ and $F_\beta(t) = (1+\beta^2)PR/(\beta^2 P + R)$ with $\beta^2{=}0.3$~\cite{achanta2009frequency}, computed per image and averaged over the split.
 
@@ -530,23 +523,17 @@ SpatialMoE (3 scales) & $3 \times 4.28 = 12.84$ & 18.6\% \\
 \end{table}
 
 
-\noindent\textbf{What we find.} Four results, each backed by a table below.
-\begin{itemize}[leftmargin=*,nosep,topsep=2pt,itemsep=1pt]
-  \item \textbf{Competitive without weather labels.} MAE $0.0192$ on the 1{,}500 synthesized
-        test images leads all 18 published entries (19 with ours), including the
-        weather-supervised WFANet ($0.0229$); $0.0168$ on the 554 real images is second of
-        nineteen, ours included (Table~\ref{tab:compare}, Fig.~\ref{fig:ranking}).
-  \item \textbf{The prediction is stable under removal of the mixture.} Removing it entirely
-        leaves real-test MAE at $0.0195$, identical to the full model, and routing at one
-        pyramid scale instead of three gives the same $0.0195$ (Table~\ref{tab:ablate}).
-  \item \textbf{The router's gate distribution is nearly uniform.} Routing entropy sits at
-        $99.2\%$ or more of its $\log E$ ceiling in every functional arm except the
-        single-expert arm A3 ($97.7\%$ at $1/8$), so the decoder's entropy channel is nearly
-        constant (Tables~\ref{tab:routing} and~\ref{tab:diag}).
-  \item \textbf{Training budget matters more than any single design choice.} The same recipe at 14
-        epochs instead of 8 improves real-test MAE from $0.0195$ to $0.0174$, against a seed
-        spread of $\pm0.0004$ (Tables~\ref{tab:ablate} and~\ref{tab:seeds}).
-\end{itemize}
+\noindent Without weather labels the model reaches MAE $0.0192$ on the 1{,}500 synthesized
+test images, the lowest synthetic MAE among the 18 published entries and ahead of the
+weather-supervised WFANet ($0.0229$), with $0.0168$ on the 554 real images second behind
+WFANet (Table~\ref{tab:compare}, Fig.~\ref{fig:ranking}). The prediction is unchanged when the
+mixture is removed or reduced: removing it entirely leaves real-test MAE at $0.0195$,
+identical to the full model, routing at one pyramid scale instead of three gives the same
+$0.0195$, and the router's gate is nearly uniform, with entropy at $99.2\%$ or more of its
+$\log E$ ceiling in every functional arm except the single-expert arm A3 ($97.7\%$ at $1/8$),
+so the decoder's entropy channel is nearly constant (Tables~\ref{tab:ablate},
+\ref{tab:routing} and~\ref{tab:diag}). Longer training helped more than any single design
+change (Section~\ref{sec:ablations}).
 
 \subsection{Main Results}
 Table~\ref{tab:main} reports the headline metrics on both test splits, together with the
@@ -555,7 +542,7 @@ Table~\ref{tab:ext}.
 The model achieves MAE of $0.0192$ on synthetic data and $0.0168$ on real-world data.
 Real-world MAE ($0.0168$) is slightly lower than synthetic MAE ($0.0192$). Neither number is
 attributable to the routing mechanism under study; the backbone and the decoder were not
-ablated (Section~\ref{sec:why}).
+ablated (Section~\ref{sec:limits}).
 However, this comparison is confounded by test-set composition: the synthetic test set includes
 compound weather conditions (rain+fog, rain+snow, snow+fog) that are absent from the real-world
 test set, which may increase synthetic-test error independently of any domain-shift effect.
@@ -563,7 +550,7 @@ test set, which may increase synthetic-test error independently of any domain-sh
 \begin{table}[tbp]
 \centering
 \caption{Performance of the reported model on the WXSOD test splits (synthetic $N{=}1500$,
-real $N{=}554$). The two boundary rows are computed from the binarised saliency mask, not from
+real $N{=}554$). The two boundary rows are computed from the binarized saliency mask, not from
 the boundary head (see text).}
 \label{tab:main}
 \small
@@ -588,7 +575,7 @@ Boundary F1 $\uparrow$            & 0.5472 & 0.3601 \\
 \begin{table*}[!t]
 \centering
 \caption{Extended metrics for every arm on the real (left) and synthetic (right) test splits.
-bMAE and bF1 are boundary MAE and boundary F1 (computed from the binarised saliency mask);
+bMAE and bF1 are boundary MAE and boundary F1 (computed from the binarized saliency mask);
 arm codes follow Table~\ref{tab:ablate}.}
 \label{tab:ext}
 \footnotesize
@@ -619,8 +606,8 @@ Arm & $E^{\text{mean}}$ & $E^{\max}$ & $F^{\text{mean}}$ & $F^{\max}$ & bMAE & b
 \end{table*}
 
 
-One caveat on the two boundary numbers: they are computed from the \emph{saliency} prediction:
-the continuous map is binarised at $0.5$ and its morphological boundary band is compared
+The two boundary numbers need a caveat. They are computed from the saliency prediction:
+the continuous map is binarized at $0.5$ and its morphological boundary band is compared
 against the ground-truth boundary band at zero spatial tolerance, so they measure the
 agreement of the mask edge with a thin ground-truth band, not the accuracy of the separately
 trained boundary head, whose output is never scored. Boundary F1 is $0.3601$ on real test under
@@ -644,9 +631,9 @@ other method; on real $S_\phi$ it is fourth of nineteen ($0.9151$, behind WFANet
 GeleNet $0.9186$ and TCGNet $0.9185$).
 The published numbers were produced by their authors under their own protocol; ours are
 measured here, so this is a like-for-like comparison in dataset, splits and metrics rather
-than a re-implementation, and it is labelled as reported.
-Our model is also larger than WFANet (69.21M against 50.87M parameters), which we state
-plainly rather than present as an efficiency claim.
+than a re-implementation, and it is labeled as reported.
+Our model is also larger than WFANet (69.21M against 50.87M parameters), so the comparison is
+not one of efficiency.
 
 \begin{table}[tbp]
 \centering
@@ -691,10 +678,10 @@ WFANet~\cite{wxsod2025} \textit{(weather-supervised)} & 0.0229 & 0.9051 & \textb
 All nineteen entries of the WXSOD benchmark in one chart, ordered by synthetic MAE with
 the best entry at the top. Each row carries two bars on the same axis: the synthetic split
 in the stronger shade directly above the real split, which is drawn in a paler shade of
-the same colour.
-Grey: the 17 published SOD methods~\cite{minet,admnet,corrnet,iconet,hdnet,fsminet,a3net,aesinet,seanet,meanet,tracer,safinet,dcnet,msrmnet,gelenet,gponet,tcgnet};
+the same color.
+Gray: the 17 published SOD methods~\cite{minet,admnet,corrnet,iconet,hdnet,fsminet,a3net,aesinet,seanet,meanet,tracer,safinet,dcnet,msrmnet,gelenet,gponet,tcgnet};
 orange: WFANet, the benchmark's weather-supervised baseline; violet: ours; the two
-called-out row labels are coloured to match.
+called-out row labels are colored to match.
 Every published value is as reported in~\cite{wxsod2025} under the authors' own
 protocol; only the violet bars are measured in this work.
 Our model is first of the nineteen on the synthetic split on both MAE and $S_\phi$, and
@@ -712,48 +699,42 @@ nine-class weather supervision.}
 Table~\ref{tab:ablate} reports every arm we trained; arm codes are defined in the caption.
 The middle block shares one training recipe (router noise enabled, effective batch 32,
 8 epochs), and each row changes one field relative to the reference arm \textbf{A0}, with two
-exceptions we state plainly: A3 changes $E$ and $k$ together, and the A2--A6 arms were run at
+exceptions: A3 changes $E$ and $k$ together, and the A2--A6 arms were run at
 $E{=}4$ or $E{=}2$ while \textbf{A0} uses $E{=}8$, so expert count varies within the block and
 the $E{=}4$, $k{=}2$ reference arm was never run. Rows within the block are comparable only
 with those differences in mind.
 
-Three findings stand out.
-First, \textbf{removing the mixture-of-experts entirely leaves performance unchanged}: the
+The ablation shows that performance is robust to removing or reducing the mixture.
+Removing the mixture-of-experts entirely leaves the real-test MAE unchanged: the
 no-MoE arm scores 0.0195 on real test against 0.0195 for the full model, with $S_\phi$
-agreeing to 0.0010.
-Second, \textbf{reducing routing from three pyramid scales to one changes nothing} (0.0195),
-and replacing the routed experts with a single dense expert per scale leaves the point estimate
-unchanged (0.0191) but is the one architectural arm the paired test does not certify as
-equivalent (Table~\ref{tab:equiv}).
-Third, the one arm that clearly separates is A3, the single-expert arm: it costs $0.0017$ MAE
+agreeing to 0.0010. Reducing routing from three pyramid scales to one also changes nothing
+(0.0195), and replacing the routed experts with a single dense expert per scale is slightly
+lower (0.0191 against 0.0195) but is the one architectural arm the paired test does not certify
+as equivalent (Table~\ref{tab:equiv}). The one arm that clearly separates is A3, the
+single-expert arm: it costs $0.0017$ MAE
 ($0.0212$ against $0.0195$), roughly four times the seed spread of $\pm0.0004$ measured across
-seeds 42--44 (Table~\ref{tab:seeds}). A3 changes both $E$ and $k$ (Section~\ref{sec:k}), so it does not isolate top-$k$.
+seeds 42--44 (Table~\ref{tab:seeds}). A3 changes both $E$ and $k$ (Section~\ref{sec:k}), so it does not isolate top-$k$. A2 and A4 differ from the reference by $0.0002$ and $0.0001$, inside the $\pm0.0004$ seed spread; A5 differs by $0.0004$ ($0.0005$ in the paired mean), at the edge of it, and is not resolvable either way at this sample size.
 
-(The A2 and A4 point estimates of $0.0002$ and $0.0001$ sit inside that band, and A5's
-$0.0004$ ($0.0005$ in the paired mean) sits at or near the edge of it; the
-paired equivalence test of Table~\ref{tab:equiv} certifies A2, A4 and A6 as equivalent but not
-A5, whose $0.0005$ difference is not resolvable either way at this sample size.)
-
-That floor is measured on the reference configuration, and the remaining arms are single-seed,
-so their deltas are compared against a floor estimated elsewhere. A paired bootstrap~\cite{efron1993bootstrap} over
+A paired bootstrap~\cite{efron1993bootstrap} over
 per-image errors, with a TOST equivalence test~\cite{schuirmann1987tost,lakens2017equivalence}, is reported in Fig.~\ref{fig:forest} and Table~\ref{tab:equiv}; it tests
-against a margin of $\pm0.001$ rather than against that seed floor, and the arms share the
-reference's seed, so it is not an independent comparison.
+against a margin of $\pm0.001$, wider than the $\pm0.0004$ seed floor of
+Table~\ref{tab:seeds}. The remaining arms are single-seed and share the reference's seed, so
+their intervals are not independent.
 
-\textbf{Training budget is the largest single effect we measured}: the
+Training budget is the largest single effect we measured: the
 same recipe and seed trained for 14 epochs instead of 8 improves real-test MAE from 0.0195
 to 0.0174, larger than any individual architectural difference (the largest, A3, is $0.0017$)
 though not larger than their sum, and confounded with the number of optimizer steps.
-We therefore report the architecture as characterisation, not as a demonstrated improvement.
+These runs describe the architecture; they do not by themselves show an improvement from the mixture.
 
-The pipeline with the mixture removed already scores below WFANet on synthetic: at eight
+Even with the mixture removed, the pipeline has lower synthetic MAE than WFANet: at eight
 epochs the no-MoE arm A6 (synthetic MAE $0.0210$) and the ablation reference ($0.0214$)
 both lie below the weather-supervised WFANet ($0.0229$, Table~\ref{tab:compare}). Those two
 rows are scored with flip-average TTA (Table~\ref{tab:ablate}) while the WFANet value is as
-reported, so we read this as context rather than as a like-for-like claim; it attributes
+reported, so we present it as context, not a like-for-like claim; it attributes
 nothing to the backbone, decoder or loss, none of which is ablated.
 
-Fig.~\ref{fig:forest} summarises the paired comparison of Table~\ref{tab:equiv}, and
+Fig.~\ref{fig:forest} summarizes the paired comparison of Table~\ref{tab:equiv}, and
 Fig.~\ref{fig:armsdot} places every arm's accuracy beside its routing entropy.
 Fig.~\ref{fig:qualitative} renders the no-mixture comparison as an image: the full model and
 the arm with the mixture removed produce visually near-identical masks on the same scenes, and
@@ -843,8 +824,8 @@ and the ground truth; the remaining eight are arms drawn from Table~\ref{tab:abl
 the widest architectural spread the study contains: the reported model, the ablation
 reference, a 14-epoch run, an $E{=}2$ model, an $E{=}4$ $k{=}1$ model, a single-dense-expert
 model, the no-mixture model, and the dense-gate model.
-Every one of those eight columns is a \emph{different} model; the masks are nonetheless
-visually near-identical, with differences confined to small boundary details, and the two
+The eight columns come from eight different models, yet the masks look nearly identical, with
+differences confined to small boundary details; the two
 columns that do differ from the rest are the input and the
 ground truth.
 This is the ablation result of Table~\ref{tab:ablate} rendered as an image.}
@@ -857,13 +838,13 @@ This is the ablation result of Table~\ref{tab:ablate} rendered as an image.}
 $\Delta$ is the paired mean difference in per-image MAE (negative = arm better);
 the interval is a 20{,}000-resample paired bootstrap over image indices; TOST
 tests $H_0\!:|\mu_\Delta|\ge 0.001$ against equivalence, and an arm is
-\emph{equivalent} when $p<0.05$. A2, A4, A6 and the routing-scope variant are
+equivalent when $p<0.05$. A2, A4, A6 and the routing-scope variant are
 equivalent to the reference within the margin; A5 (dense expert type) and the two
 seed replicates are not, and A3 and the 14-epoch run differ in the opposite
 direction. The architectural arms share the reference's seed, so their intervals are
 not independent. B2 and B3 are batch-40 arms (Section~\ref{sec:ablations}), not like-for-like
-with the S32 arms; A7 (dense gate) is characterised by its routing entropy
-(Table~\ref{tab:diag}) rather than by a TOST here.}
+with the batch-32 arms; A7 (dense gate) is characterized by its routing entropy
+(Table~\ref{tab:diag}), not by a TOST here.}
 \label{tab:equiv}
 \small
 \begin{tabular}{@{}lrrr@{}}
@@ -892,19 +873,19 @@ B3 (E2 $k$1 S40, diverged) & $+0.035189$ & $[+0.032444,\,+0.038059]$ & $1.0000$ 
 
 \subsection{Inference-Time Ablations}
 \label{sec:proxy}
-Table~\ref{tab:proxy} perturbs the \emph{trained} reference model at inference only, so it
-isolates how much each component contributes to the final prediction rather than what
-training does.
-Replacing the learned router with \textbf{random routing}~\cite{roller2021hash,zuo2022thor} leaves real-test MAE within 0.0005
-of the full model; that comparison runs slightly in the \emph{wrong} direction, since random
+Table~\ref{tab:proxy} perturbs the trained reference model at inference only, so it
+isolates each component's contribution to the final prediction, separately from the effect
+of training.
+Replacing the learned router with random routing~\cite{roller2021hash,zuo2022thor} leaves real-test MAE within 0.0005
+of the full model; that comparison goes slightly against expectation, since random
 routing scores $0.0193$ against the learned router's $0.0197$ (Table~\ref{tab:proxy}). The
-$0.0004$ gain sits at the edge of the seed-noise band, so we read it as a further sign that
-selection is doing little work here rather than as evidence that random routing is
-preferable. Disabling entropy fusion changes it by 0.0001, and forcing every token at
-the $1/4$ scale to a single expert changes it by $-0.0001$.
-None of the mechanism's parts affects the output: the mixture, its routing and its entropy
-channel can each be removed or short-circuited at inference without changing the prediction.
-Section~\ref{sec:why} analyses this routing behaviour and discusses why that may be so.
+$0.0004$ gain sits at the edge of the seed-noise band, so it is not evidence that random
+routing is preferable. Disabling entropy fusion changes the mean MAE by less than $0.0001$
+($0.0197$ against $0.0197$ at the table's precision), and forcing every token at
+the $1/4$ scale to a single expert changes it by $-0.0001$. Removing or bypassing the
+routing, the mixture or the entropy channel at inference leaves the prediction essentially
+unchanged.
+Section~\ref{sec:why} analyzes this routing behavior and discusses why that may be so.
 
 \begin{table}[tbp]
 \centering
@@ -936,9 +917,9 @@ Force scale $1/4$ to one expert & 0.0196 & 0.9048 \\
 \caption{\textbf{The mixture does not change the prediction.}
 Read the four columns left to right: \textbf{(a) input}, \textbf{(b) ground truth},
 \textbf{(c) full MoE} and \textbf{(d) the identical architecture with the mixture removed}.
-Both predictions come from the \emph{matched} 8-epoch arms of Table~\ref{tab:ablate} --- the
+Both predictions come from the matched 8-epoch arms of Table~\ref{tab:ablate}: the
 ablation reference A0 (E8, $k{=}2$, real-test MAE $0.0195$) and the no-MoE arm A6 (E4,
-$k{=}2$, real-test MAE $0.0195$) --- not from the 14-epoch reported model, so the pair
+$k{=}2$, real-test MAE $0.0195$), not from the 14-epoch reported model, so the pair
 differs only in the mixture and in expert count (the $E{=}4$, $k{=}2$ reference arm was
 never run; Section~\ref{sec:limits}).
 Rows are real-world test images under fog, light and snow.
@@ -955,8 +936,8 @@ lowest MAE ($0.0094$, $N{=}90$), while light yields the highest ($0.0243$, $N{=}
 these extremes.
 The synthetic split spans nine conditions, three of them compound. The clean subset is the
 easiest (MAE $0.0142$) and rain+fog the hardest ($0.0237$), which suggests that compositing
-degradations compounds difficulty; but the other two compound conditions (rain+snow, snow+fog)
-sit mid-table, below single-degradation light, rain and dark, so the ordering is not simply the
+degradations compound difficulty; but the other two compound conditions (rain+snow, snow+fog)
+sit mid-table and have lower MAE than single-degradation light, rain and dark, so the ordering is not simply the
 number of degradation types.
 Fig.~\ref{fig:weatherbars} renders the same per-condition MAE as bars, with the sample
 count annotated on each bar.
@@ -1004,8 +985,8 @@ synthetic-split condition, ordered best to worst exactly as in the table, and ca
 real split's bar for that same condition directly below it (synthetic above in the stronger
 shade, real below in the paler one) on one shared axis that starts at $0$. Each row label
 gives the image count as $N$ for each split present.
-Four synthetic conditions have no real counterpart --- clean, and the compound ones
-(rain${+}$fog, rain${+}$snow, snow${+}$fog) --- so those rows carry a synthetic bar only and
+Four synthetic conditions have no real counterpart: clean and the compound ones
+(rain${+}$fog, rain${+}$snow, snow${+}$fog). Those rows carry a synthetic bar only and
 are marked $^{\ast}$, the real split's five conditions being fog, rain, snow, dark and
 light. The splits therefore differ in size. The bars carry no value labels, since the two
 bars of one row are close enough that annotated numbers would collide.
@@ -1018,14 +999,14 @@ Fig.~\ref{fig:failures} shows the three real-test images with the highest per-im
 selected by sorting the recomputed per-image errors with no manual choice. The three
 failures differ in kind. In the dark scene the annotation marks a small object ($5.2\%$ of
 the frame) while the model predicts a large one ($36.3\%$, IoU $0.14$), so it segments a
-different, unlabelled object; in the bright scene the prediction covers $32.7\%$ against a
+different, unlabeled object; in the bright scene the prediction covers $32.7\%$ against a
 $57.1\%$ annotation (IoU $0.57$) and falls short along the lower and side edges of the
 structure; and in the foggy scene, where two benches of the same design are visible, the
 annotation marks the farther bench and the model segments the nearer one, so the two masks do
 not overlap at all at a $0.5$ threshold (IoU $0.000$). We checked that last row for a
 geometry error rather than a model error: no rigid shift of up to $15$\,px recovers any
-overlap, and the archived predictions are aligned across the split --- flipping them raises
-global MAE from $0.0168$ to $0.105$ --- so it is a wrong-instance failure.
+overlap; the archived predictions are aligned across the split (flipping them raises
+global MAE from $0.0168$ to $0.105$), so it is a wrong-instance failure.
 
 \begin{figure*}[!t]
 \centering
@@ -1034,8 +1015,8 @@ global MAE from $0.0168$ to $0.105$ --- so it is a wrong-instance failure.
 Selection rule: of the 554 real-test images, the three with the highest per-image MAE,
 ranked by the recomputed per-image error with no manual selection; their MAEs are
 $0.3151$ (dark), $0.2504$ (light) and $0.1946$ (fog), against a split mean of $0.0168$.
-Columns: input, ground truth, prediction binarised at $0.5$, and the absolute error
-$|p-g|$ auto-levelled (bright $=$ disagreement).
+Columns: input, ground truth, prediction binarized at $0.5$, and the absolute error
+$|p-g|$ auto-leveled (bright $=$ disagreement).
 Error maps are computed from the archived prediction maps of the reported model.
 The middle and bottom rows were each checked against the input and ground truth with an
 overlay: the middle row under-segments a large structure, and the bottom row segments a
@@ -1053,12 +1034,11 @@ repository.}
 \includegraphics[width=\textwidth]{figures/fig_pr_curves.pdf}
 \caption{\textbf{Precision--recall and $F_\beta$ versus threshold, reported model.}
 One panel per real-world condition; the inset zooms the high-precision region.
-Curves are computed by sweeping the binarisation threshold over the continuous predictions
+Curves are computed by sweeping the binarization threshold over the continuous predictions
 and averaging $P(t)$, $R(t)$ and $F_\beta(t)$ ($\beta^2{=}0.3$) per image within each
 condition, then averaging over the condition.
 Only our model is plotted: no baseline predictions exist in this study, so this figure
-characterises the operating range of the reported model rather than comparing it with
-another method.}
+characterizes the operating range of the reported model.}
 \label{fig:pr}
 \end{figure*}
 
@@ -1071,10 +1051,10 @@ another method.}
 \caption{\textbf{Progressive refinement through the decoder.}
 Each column is a successive stage of the top-down decoder, from coarse to fine: the
 saliency head applied to the $1/16$ stage features, then to the $1/8$ stage, then to
-the $1/4$ stage, then the full-resolution saliency map, and finally the binarised
+the $1/4$ stage, then the full-resolution saliency map, and finally the binarized
 prediction beside the ground truth, on a representative scene per condition.
 The object is already located and largely outlined by the coarsest stage, and the later heads
-refine the boundary rather than change the decision.}
+refine the boundary without changing the decision.}
 \label{fig:stages}
 \end{figure*}
 
@@ -1083,10 +1063,10 @@ Table~\ref{tab:routing} reports the mean routing entropy per scale (left block).
 Entropy is taken over the full softmax over all $E{=}8$ experts, so the ceiling is
 $\log E = 2.0794$ nats; we therefore report both the raw value and its fraction of that
 maximum.
-The measured mean sits within \textbf{0.2\%} of the ceiling at every scale on both test
-splits: the gate distribution is nearly uniform in \emph{magnitude}. That is a statement about
-magnitude, not about the \emph{ranking} of the experts, and it is not a statement about
-indifference. The per-token hard assignment is in fact strongly skewed: at $1/8$ three
+The measured mean sits within 0.2\% of the ceiling at every scale on both test
+splits: the gate distribution is nearly uniform in magnitude. This describes the size
+of the gate probabilities, not the expert ranking, which is skewed. The per-token hard
+assignment is in fact strongly skewed: at $1/8$ three
 experts take about $84\%$ of assignments and two are dead (Table~\ref{tab:routing}, Fig.~\ref{fig:usage}), so a
 near-uniform softmax coexists with a consistent, and possibly token-independent, ranking.
 Section~\ref{sec:info} takes this up.
@@ -1094,29 +1074,22 @@ Section~\ref{sec:info} takes this up.
 
 \subsection{Expert Similarity and Usage}
 Table~\ref{tab:routing} compares expert pairs at each scale (right block).
-Pairwise cosine similarity between expert \emph{weights} is essentially zero, so the experts
+Pairwise cosine similarity between expert weights is essentially zero, so the experts
 are not copies of one another in parameter space. Cosine similarity between their
-\emph{activations} on real data is 0.6424 at scale $1/4$, 0.2733 at $1/8$ and 0.8617 at
+activations on real data is 0.6424 at scale $1/4$, 0.2733 at $1/8$ and 0.8617 at
 $1/16$. Those activation cosines are high because every expert adds the same residual
 $\bx$ to its own branch; the quantity that would matter for re-routing is the cosine similarity
-of the \emph{branch} differences, $\E_a(\bx_i) - \E_b(\bx_i)$, which we have not reported, and
+of the branch differences, $\E_a(\bx_i) - \E_b(\bx_i)$, which we have not reported, and
 the weight similarity alone does not settle it. Tables~\ref{tab:diag}
 and~\ref{tab:simall} extend both reported measurements to every arm.
-
-\emph{The gate's magnitude is near-uniform, but its ranking is not.} The hard assignment is
-strongly skewed (Fig.~\ref{fig:usage}), and the branch-difference similarity that would say
-whether the experts are actually distinguishable is not reported. Section~\ref{sec:why}
-examines the candidates (noise-dominated selection at initialisation, auxiliary losses that
-do not reward decisiveness, and near-identical experts that leave a static selector) and
-states the diagnostic that would separate them.
 
 
 \begin{table*}[!t]
 \centering
-\caption{Routing diagnostics per pyramid scale. \emph{Entropy} (reported model, both test
+\caption{Routing diagnostics per pyramid scale. Entropy (reported model, both test
 splits) is over the full distribution over all $E{=}8$ experts, so its ceiling is
 $\log E = 2.0794$ nats; values are shown in nats and as a percentage of that ceiling.
-\emph{A0 (the reference arm)} columns are measured at the final logged epoch: dead experts are those
+A0 (the reference arm) columns are measured at the final logged epoch: dead experts are those
 with hard-assignment usage below $2\%$ (listed by index; per-expert usage is plotted in
 Fig.~\ref{fig:usage}), and similarity is the mean pairwise cosine over expert pairs, on real
 test.}
@@ -1149,7 +1122,7 @@ near-uniform gate softmax (Table~\ref{tab:routing}) coexists with a strongly ske
 
 \begin{table}[!t]
 \centering
-\caption{Routing entropy per scale for every trained arm, normalised by $\log E$
+\caption{Routing entropy per scale for every trained arm, normalized by $\log E$
 ($1.000$ is a uniform distribution over the arm's expert pool), with the number of dead
 experts at each scale (hard usage below $2\%$). Arm codes follow
 Table~\ref{tab:ablate}. R is the reported checkpoint, measured by its own diagnostic
@@ -1250,30 +1223,24 @@ Seed & MAE & $S_\phi$ & $E^{\text{adp}}$ & MAE & $S_\phi$ & $E^{\text{adp}}$ \\
 
 
 \subsection{Discussion}
-The model demonstrates a weather-label-free pipeline for single-RGB SOD: it attains the lowest synthetic MAE of the 18 published entries (19 with ours) and the second-lowest real MAE of the nineteen, ours included, without any weather label (Table~\ref{tab:compare}). Several important limitations must be noted alongside that result.
-First, across the eleven arms of the ablation family and three
-inference-time interventions the spatial MoE has no measurable effect on output quality; we present this as an analysis of what drives the model's performance. Routing entropy sits at or above
-$99.2\%$ of its ceiling everywhere except the single-expert arm, so the decoder's entropy
-channel is nearly constant.
-Second, the comparison against prior methods uses the benchmark's published numbers rather than our own re-implementations, so it is a comparison as reported; WFANet still attains the best real-split MAE, so we do not claim state-of-the-art performance.
-Third, the reported boundary metrics are computed from the binarised saliency mask's edge
-against a thin ground-truth band at zero tolerance, not from the boundary head; F1 is $0.3601$
-on real test under that convention, and the boundary head's own accuracy is not measured here.
-Fourth, the model was trained once without replicate runs, so variance estimates for the
-reported configuration are unavailable.
-Fifth, the forced-expert analysis suggests that expert specialization may be limited, and the benefit of multi-expert routing over a single larger expert remains unclear.
+The model demonstrates a weather-label-free pipeline for single-RGB SOD: it attains the lowest
+synthetic MAE among the 18 published entries and the second-lowest real MAE (Table~\ref{tab:compare}) without any weather
+label. The ablation and the inference-time interventions show that this performance stays
+within the seed-variance floor when the mixture is removed or reduced, while
+routing entropy sits at or above $99.2\%$ of its ceiling everywhere except the single-expert
+arm, so the decoder's entropy channel is nearly constant. The forced-expert analysis suggests that expert specialization may be
+limited, and the benefit of multi-expert routing over a single larger expert remains unclear.
+Section~\ref{sec:limits} lists the remaining limitations of this evidence.
 
 % ============================================================
-\section{Analysis of Routing Behaviour}
+\section{Analysis of Routing Behavior}
 \label{sec:why}
 % ============================================================
 
 The ablation of Section~\ref{sec:ablations} and the interventions of Section~\ref{sec:proxy}
-establish \emph{that} the router does not matter measurably, at this recipe. This section asks
-\emph{why}. We keep the
-result and the explanation separate: the equivalence of the ablations is a finding, while the
-mechanism below is a ranked set of hypotheses, none of them established by a direct measurement
-of the router.
+establish that the router contributes no change larger than the seed-variance floor at
+this recipe. This section asks why. The equivalence is a measured result; the
+explanations below are ranked hypotheses.
 
 \subsection{Routing as a Sparse Selection Operator}
 Let $\bX \in \reals^{N \times C}$ be the token matrix at one scale and
@@ -1290,52 +1257,48 @@ The layer is then exactly the weighted selection of Eq.~\eqref{eq:selection}:
 \end{equation}
 where $\odot$ is the Hadamard product and $\E(\bX) \in \reals^{N \times E \times C}$ stacks
 the expert outputs. The routing enters the output only through the weighted selection
-$\bPi \odot \bg$; what that weighting acts on is the expert \emph{difference}, which is where
+$\bPi \odot \bg$; what that weighting acts on is the expert difference, which is where
 Section~\ref{sec:hyp} begins.
 
 
-\subsection{The Router Is at Its Entropy Ceiling From Initialisation}
+\subsection{The Router Is at Its Entropy Ceiling From Initialization}
 \label{sec:info}
 The entropy of the gate distribution is the natural first quantity to inspect, but it cannot
 carry the argument on its own. Table~\ref{tab:routing} measures $\Hs \in [0.9981, 0.9997]$ for
-the reported model, so the gate distribution is within a few millibits of uniform \emph{in
-magnitude}. Two caveats apply before any conclusion is drawn. First, magnitude is not ranking:
-top-$K$ selection depends only on the \emph{ranking} of the logits, and Fig.~\ref{fig:usage}
+the reported model, so the gate distribution is within $0.2\%$ of the uniform maximum. Two caveats apply before any conclusion is drawn. First, magnitude is not ranking:
+top-$K$ selection depends only on the ranking of the logits, and Fig.~\ref{fig:usage}
 shows that ranking is structured: at $1/8$ three experts take about $84\%$ of the hard
-assignments and two are dead. Second, any entropy functional has \emph{zero} gradient at the
-uniform fixed point, so its inability to move the distribution is expected rather than
-informative. Entropy alone therefore establishes neither indifference nor failure to train.
+assignments and two are dead. Second, any entropy functional has zero gradient at the
+uniform fixed point, so its inability to move the distribution is expected and
+carries no information. Entropy alone therefore establishes neither indifference nor failure to train.
 
-\paragraph{Initialisation.}
 Using the checkpoint's own configuration we build fresh models under five init seeds and read
-the normalised routing entropy at each scale from \texttt{MoEOutput.entropy}. At initialisation
+the normalized routing entropy at each scale from the model's routing output. At initialization
 the mean over seeds is $0.9991$, $0.9994$ and $0.9993$ of the $\log E$ ceiling at $1/16$, $1/8$
-and $1/4$. The router \emph{begins} at its ceiling.
+and $1/4$. The router begins at its ceiling.
 
-\paragraph{Training.}
-The reported checkpoint's own diagnostic pass gives normalised entropies of $0.9997$, $0.9997$
+The reported checkpoint's own diagnostic pass gives normalized entropies of $0.9997$, $0.9997$
 and $0.9982$ at $1/4$, $1/8$ and $1/16$ (Table~\ref{tab:diag}); a separate forensic pass over
 the same recipe on real-test tokens gives $0.9998$, $0.9999$ and $0.9968$. Relative to
-initialisation the entropy rises slightly at $1/4$ and $1/8$ and falls at $1/16$; the one scale
-that moved is the one that sharpened. What this shows is that the \emph{magnitude} of the gate
-distribution barely changes. It does not show that the \emph{top-2 assignment} is unchanged,
+initialization the entropy rises slightly at $1/4$ and $1/8$ and falls at $1/16$; the one scale
+that moved is the one that sharpened. The magnitude of the gate
+distribution barely changes. The top-2 assignment need not be unchanged,
 because a router can reshuffle which experts it selects with almost no change in entropy; the
 measurement that would settle it (agreement between the initial and trained top-2 assignments
 on identical tokens) has not been made.
 
-\paragraph{Consequence.}
 If the router contributes approximately an unweighted mean of whichever experts it selects,
 deleting the mixture should cost nothing, and it does not: arm A6, in which the MoE is disabled
 outright, is statistically equivalent to the full model within $\pm 0.001$ MAE
 (Table~\ref{tab:equiv}; TOST $p = 0.0001$, paired bootstrap over the 554 test images), as are
 A2, A4 and the routing-scope variant, subject to the expert-count difference noted in
-Section~\ref{sec:ablations}. That equivalence is the paper's firm result. The explanation is
-not, and Section~\ref{sec:hyp} ranks the candidates.
+Section~\ref{sec:ablations}. This equivalence is the main ablation result;
+Section~\ref{sec:hyp} ranks the candidate explanations.
 
 
 We describe the phenomenon as a router whose gate is near-uniform in magnitude but whose
-\emph{ranking} is skewed and possibly token-independent (a static selector), rather than an
-indifferent or collapsed~\cite{chi2022repcollapse,dai2024deepseekmoe} one. The hard usage at $1/8$ (three experts, $\approx84\%$; two dead)
+ranking is skewed and possibly token-independent (a static selector). This differs from
+an indifferent or collapsed~\cite{chi2022repcollapse,dai2024deepseekmoe} router. The hard usage at $1/8$ (three experts, $\approx84\%$; two dead)
 and the dead experts in nearly every arm support that reading; the branch-difference similarity
 that would confirm whether the experts are distinguishable is not reported.
 
@@ -1343,24 +1306,23 @@ that would confirm whether the experts are distinguishable is not reported.
 \label{sec:k}
 Most architectural variants in Table~\ref{tab:equiv} are equivalent to the reference; the one
 that separates in the opposite direction is A3, which selects a single expert and moves MAE to
-$0.0212$ against $0.0195$. Two properties of that arm are structural rather than incidental.
+$0.0212$ against $0.0195$. That arm has two structural properties.
 
-First, with one selected expert the gate weight is not a softmax over a choice but the constant
-$1$: renormalising over a single logit leaves $1$ regardless of that logit's value. The layer
-therefore computes one expert's output rather than a mean of two, and the averaging that would
+First, with one selected expert the gate weight is the constant
+$1$: renormalizing over a single logit leaves $1$ regardless of that logit's value. The layer
+therefore computes a single expert's output, not a mean of two, and the averaging that would
 suppress per-expert noise is absent.
 
-Second, and this is why $k{=}1$ differs from every other knob, the gate receives no
-gradient through the \emph{mixture}: with one selected expert the gate is the constant $1$, so
+Second, and this is why $k{=}1$ differs from every other setting, the gate receives no
+gradient through the mixture: with one selected expert the gate is the constant $1$, so
 the sum over selected experts has a single term and no difference $\E_a - \E_b$ survives to
 carry a signal. That is not the same as receiving no task gradient at all. The router logits are
 still differentiable inputs to the decoder through the entropy channel
 (Section~\ref{sec:entropy}), which is not detached, and to the load-balance, importance and Z
 terms; the entropy path is weak for a near-uniform router because
-$\partial\Hs/\partial h \to 0$ at uniformity, but it is not zero. The correct statement is that
-$k{=}1$ removes the mixture's own path to the router, not that the router is frozen.
+$\partial\Hs/\partial h \to 0$ at uniformity, but it is not zero.
 
-We state the confound plainly: A3 was built at $E{=}4$ with $k{=}1$, while the reference and the
+A3 was built at $E{=}4$ with $k{=}1$, while the reference and the
 other four-expert arms use $k{=}2$, so this arm varies $E$ and $k$ together and does not isolate
 $k$. The study also contains an $E{=}2$, $k{=}1$ run, but it diverged ($0.0546$;
 Table~\ref{tab:ablate}, B3) and is not evidence about $k$. Neither arm separates $k$ from $E$ or
@@ -1368,15 +1330,15 @@ from a training failure; a matched $E{=}2$, $k{=}2$ versus $E{=}2$, $k{=}1$ pair
 settings is what would isolate $k$, and we have not run one.
 
 \subsection{The Auxiliary Routing Losses Do Not Reward Decisiveness}
-Two of the auxiliary terms in Eq.~\eqref{eq:loss} are \emph{minimised by a uniform gate distribution}, and
-a third, active in the ablation recipe but not the reported one, penalises logit
-magnitude and therefore also pushes the gate towards uniform. They are a candidate explanation
+Two of the auxiliary terms in Eq.~\eqref{eq:loss} are minimized by a uniform gate distribution, and
+a third, active in the ablation recipe but not the reported one, penalizes logit
+magnitude and therefore also pushes the gate toward uniform. They are a candidate explanation
 for the flat gate, though the ablation evidence below cuts against their being the main cause.
 
 For the Shazeer load-balancing term, let $f_j$ be the (detached) hard assignment fraction and
 $P_j$ the differentiable mean gate mass, with $\sum_j f_j = \sum_j P_j = 1$. Because $f$ is
 computed from the very assignments that produce $P$, the two are positively coupled, and under
-that coupling $\sum_j f_j P_j$ is minimised when both are uniform (Eq.~\eqref{eq:lb-bound}):
+that coupling $\sum_j f_j P_j$ is minimized when both are uniform (Eq.~\eqref{eq:lb-bound}):
 \begin{equation}
   \sum_{j=1}^{E} f_j P_j \;\ge\; E \cdot \frac{1}{E}\cdot\frac{1}{E} \;=\; \frac{1}{E},
   \label{eq:lb-bound}
@@ -1386,34 +1348,32 @@ to be similarly ordered; they are, since both are computed from the same assignm
 bound would fail for anti-correlated $f$ and $P$. A concentrated routing table gives
 $\sum_j f_j P_j \to 1$, i.e. $E$ times the minimum. The gradient of $\mathcal{L}_{\text{LB}}$
 with respect to the router parameters is $E\sum_j f_j \,\partial_\theta P_j$, which is non-zero
-for any non-uniform $P$ and drives the gate mass \emph{toward} uniform.
+for any non-uniform $P$ and drives the gate mass toward uniform.
 
 The importance term,
 $\mathcal{L}_{\text{IMP}} = \bigl(\mathrm{std}(\bP)/\mathrm{mean}(\bP)\bigr)^2$, is likewise
-non-negative and exactly zero at uniform $\bP$. Neither term rewards \emph{decisiveness}; both
-penalise deviation from uniformity.
+non-negative and exactly zero at uniform $\bP$. Neither term rewards decisiveness; both
+penalize deviation from uniformity.
 
 A third term is stronger still. The ablation-family recipe (Section~\ref{sec:method}) enables a
 Z-loss, $\mathcal{L}_{\text{Z}} = \bigl(\log\sum_j e^{h_j}\bigr)^2$ with
-$\lambda_{\text{Z}}{=}0.001$, which the reported model disables. It is minimised by small router
-logits, and small logits make the softmax flat, so it pulls the gate towards uniform directly
-rather than merely failing to reward confidence.
+$\lambda_{\text{Z}}{=}0.001$, which the reported model disables. It is minimized by small router
+logits, and small logits make the softmax flat, so it pulls the gate toward uniform directly.
 
 The ablation evidence cuts against these terms being the main cause. Arm A4 removes the
 load-balance term (keeping the importance and Z terms at their family weights) and the router is
-\emph{still} essentially uniform ($\Hs = 0.9996$, $0.9998$, $0.9969$ at $1/4$, $1/8$, $1/16$),
+still essentially uniform ($\Hs = 0.9996$, $0.9998$, $0.9969$ at $1/4$, $1/8$, $1/16$),
 so removing load balance does not make the gate more decisive; and the reported model R has no
 Z-loss and is equally flat. A run with $\lambda_{\text{Z}}{=}0$ at the family recipe is the clean
 test of the Z-loss and has not been run.
 
-Two limits apply, and an alternative design, expert-choice routing, removes the load-balance term
-entirely~\cite{zhou2022expertchoice}. The load-balance and importance terms act on the batch-mean gate mass $P_j$,
+Two limits apply. Expert-choice routing~\cite{zhou2022expertchoice} removes the load-balance term
+entirely, so the term is not essential to sparse routing. The load-balance and importance terms act on the batch-mean gate mass $P_j$,
 not on each token's own distribution, so a router could be balanced on average while every token
 is decisive, which is how such losses are normally used; per-token evidence would be needed to
-tie them to per-token uniformity. And none of these terms is shown here to \emph{cause} the flat
-router: taken with the initialisation measurement, the defensible reading is that the objective
-contains no reward for decisiveness and at least one term that actively suppresses logit
-magnitude.
+tie them to per-token uniformity. None of these terms is shown here to cause the flat
+router. Taken with the initialization measurement, the most that can be said is that the
+objective has no term rewarding decisive routing and the Z-loss pushes logits toward zero.
 
 \subsection{Ranked Hypotheses}
 \label{sec:hyp}
@@ -1421,39 +1381,38 @@ Three mechanisms could leave the router near-uniform and unchanging. We state th
 evidence already in hand, which is suggestive but confounded by recipe differences, and the
 measurement that would discriminate each.
 
-\textbf{(H1) Selection is noise-dominated at initialisation.} Noisy top-$K$ adds Gaussian noise
+\textbf{(H1) Selection is noise-dominated at initialization.} Noisy top-$K$ adds Gaussian noise
 with a learned scale $\sigma_j(\bx_i) = \max\bigl(\mathrm{softplus}(w_j^\top\bx_i + b_j),\, 0.05\bigr)$, of order $0.7$
-at initialisation against logits of order $0.1$; training-time selection would then be close to
-random~\cite{zuo2022thor}. \emph{Evidence against:} the two noise-off batch-40 arms sit at $1.0000$ at $1/4$ and
+at initialization against logits of order $0.1$; training-time selection would then be close to
+random~\cite{zuo2022thor}. Evidence against: the two noise-off batch-40 arms sit at $1.0000$ at $1/4$ and
 $1/8$, flatter than \textbf{A0} with noise on, so removing the noise does not make the gate
 more structured. Confound: those arms also change the batch and gate mode.
 
 \textbf{(H2) The auxiliary and Z-loss terms do not reward decisiveness.} The load-balance and
-importance terms are minimised at a uniform gate, and the ablation recipe's Z-loss penalises
-logit magnitude. \emph{Evidence against their being the main cause:} arm A4 removes the
+importance terms are minimized at a uniform gate, and the ablation recipe's Z-loss penalizes
+logit magnitude. Evidence against their being the main cause: arm A4 removes the
 load-balance term and the router stays equally flat, so load balance is not what makes it flat;
 and the reported model \textbf{R} has no Z-loss yet is equally flat, so the Z-loss is not the
 main cause either. They remain at most contributors.
 
-\textbf{(H3) The experts are near-identical at initialisation, leaving the gate nothing to
+\textbf{(H3) The experts are near-identical at initialization, leaving the gate nothing to
 separate.} The mixture's own signal is $g_{ij}(\E_a - \E_b)$; with residual experts the shared
 $\bx$ cancels, so the signal is the difference of two MLP branches, which is $\approx 0$ if the
-experts start alike~\cite{komatsuzaki2023upcycling}. The gate is then a \emph{static selector}~\cite{chen2022understandingmoe,dai2022stablemoe}: small logits with a consistent,
+experts start alike~\cite{komatsuzaki2023upcycling}. The gate is then a static selector~\cite{chen2022understandingmoe,dai2022stablemoe}: small logits with a consistent,
 possibly token-independent ranking. Two observations support this and are not explained by
 gradient starvation~\cite{chi2022repcollapse}. First, the hard usage is strongly skewed with dead experts in nearly every
 arm, which a flat full-softmax entropy does not predict. Second, and opposite to a starvation
-story, arm A3, the arm with the least gradient through the mixture, is the \emph{least}
+story, arm A3, the arm with the least gradient through the mixture, is the least
 flat ($0.9766$ at $1/8$, with dead experts); this is one arm, confounded with expert count, so
 more starvation need not mean more flatness.
-Note that the dense-gate arm A7 being flat (Table~\ref{tab:diag}) is \emph{consistent} with H3,
+Note that the dense-gate arm A7 being flat (Table~\ref{tab:diag}) is consistent with H3,
 not evidence against it: a dense gate still multiplies the same expert difference. The discriminating measurements
 are the input-dependence of the assignment (decomposing the logit variance into
 token-independent and token-dependent parts, and the mutual information of the assignment with
 weather class and with spatial position), the initial-versus-trained top-2 agreement on
 identical tokens, and oracle routing by weather class as a positive control. None has been run.
 
-None of the three is established; all three predict a near-uniform gate, and each is confounded.
-We report them as ranked hypotheses rather than a settled mechanism.
+All three predict a near-uniform gate, and each is confounded.
 
 % ============================================================
 \section{Limitations}
@@ -1461,60 +1420,50 @@ We report them as ranked hypotheses rather than a settled mechanism.
 % ============================================================
 
 The results in this paper are one training run per configuration, and the evidence for the
-equivalence claims rests on deltas that are small in absolute terms. We state the consequences.
+equivalence claims rests on deltas that are small in absolute terms. The TOST margin of
+$\pm0.001$ MAE was chosen larger than the $\pm0.0004$ seed floor and fixed after the
+measurements were in hand; the test fails to certify the two seed replicates ($p=0.057$,
+$p=0.051$) while certifying architecturally different arms that share the reference's seed 42,
+so it measures the shared per-image error structure at least as much as the architecture.
+Comparisons of this kind are unreliable at a single seed~\cite{bouthillier2021variance,picard2021seed,melis2018state},
+and the clean benchmark is a seed-versus-seed comparison; until each arm is trained under
+independent seeds, these equivalence claims are provisional~\cite{lipton2019troubling}.
 
-\emph{The equivalence test is not an architectural comparison.} Table~\ref{tab:equiv} reports a
-paired bootstrap and a TOST against a margin of $\pm0.001$ MAE chosen larger than the
-$\pm0.0004$ seed floor and fixed after the measurements were in hand. The test fails to certify
-the two seed replicates ($p=0.057$, $p=0.051$) while certifying architecturally different arms
-that share the reference's seed 42, so it is measuring the shared per-image error structure at
-least as much as the architecture. Single-seed comparisons of this kind are known to be
-unreliable~\cite{bouthillier2021variance,picard2021seed,melis2018state}; the clean benchmark is a seed-versus-seed comparison, and until
-each arm is trained under independent seeds, these equivalence claims are provisional~\cite{lipton2019troubling}.
-
-\emph{The interventions cannot separate ``useless'' from ``untrained''.} The inference-time
-perturbations (Table~\ref{tab:proxy}) replace or disable the router in a model trained with noisy
-routing; if selection was already noise-dominated during training (H1), then random routing at
-inference is in-distribution, and its small effect is expected. The interventions become
+The inference-time perturbations (Table~\ref{tab:proxy}) replace or disable the router in a
+model trained with noisy routing, so they cannot separate a component that is unused from one
+that was never learned: if selection was already noise-dominated during training, random
+routing at inference is in-distribution and its small effect is expected. They become
 informative only once a model has been trained with routing noise off.
 
-\emph{The equivalence comparison does not use the reported recipe.} \textbf{R} is the
-earlier-recipe model and was never re-run against a matched no-MoE control; its closest
-ablation-family counterpart, A1, differs from it by $0.0010$ synthetic and $0.0006$ real, larger
-than anything the paper treats as noise. A three-seed no-MoE versus full-model comparison at
-\textbf{R}'s recipe, and at 14 epochs, is what would turn single-run equivalence into a real
-comparison, and it has not been run.
-
-\emph{The comparison is as reported.} Every baseline number in Table~\ref{tab:compare} and
-Fig.~\ref{fig:ranking} is the published authors' own measurement under their own protocol, not
-a re-run in this codebase. The one protocol difference we can state is the input convention
-(both score in original image coordinates). WFANet retains the best real-split MAE, so no
+The comparisons have limits. \textbf{R} is the earlier-recipe model and was never
+re-run against a matched no-MoE control; its closest ablation-family counterpart, A1, differs
+from it by $0.0010$ synthetic and $0.0006$ real, larger than anything the paper treats as
+noise, and a three-seed no-MoE versus full-model comparison at \textbf{R}'s recipe and at 14
+epochs has not been run. Every baseline number in Table~\ref{tab:compare} and
+Fig.~\ref{fig:ranking} is the published authors' own measurement under their own protocol
+rather than a re-run here, the one protocol difference we can state being the input convention
+(both score in original image coordinates); WFANet retains the best real-split MAE, so no
 state-of-the-art claim is made.
 
-\emph{The decoder and the backbone were not ablated.} All arms share a PVTv2-B4 backbone, a
-cross-attention decoder and the eight-term objective, so attributing performance to ``the
-backbone'' really attributes it to the backbone, decoder and loss together; nothing here
-separates them.
+The scope of the study is bounded in four ways. The decoder and the backbone were not
+ablated: all arms share a PVTv2-B4 backbone, a cross-attention decoder and the eight-term
+objective, so attributing performance to ``the backbone'' really attributes it to the
+backbone, decoder and loss together, and every result is on one dataset (WXSOD). The
+$E{=}4$, $k{=}2$ reference arm was never run, so expert count is bracketed by $E{=}2$ and
+$E{=}8$ and the midpoint was not measured. The forced-expert intervention was applied only to
+the $1/4$ scale, so the effect of forcing the other two scales is unknown. The reported
+boundary metrics come from the binarized saliency mask rather than the boundary head ($0.3601$
+F1 on real test under a zero-tolerance band overlap), so we cannot say whether the head is
+weak or how much it contributes.
 
-\emph{The $E{=}4$, $k{=}2$ reference arm was never run}, so expert count is bracketed by
-$E{=}2$ and $E{=}8$ rather than measured at the midpoint.
-
-\emph{One scale of the routing was probed.} The forced-expert intervention was applied only to
-the $1/4$ scale; the effect of forcing the other two scales is unknown.
-
-\emph{The boundary head is not measured.} The reported boundary metrics come from the binarised
-saliency mask, not the boundary head ($0.3601$ F1 on real test under a zero-tolerance band
-overlap), so we cannot say whether the head is weak or how much it contributes.
-
-\emph{The mechanism is a hypothesis.} The measurements establish equivalence; they do not
-establish why. None of the three hypotheses of Section~\ref{sec:hyp} has its discriminating
-measurement: neither the input-dependence of the routing nor the initial-versus-trained top-2
+The mechanism remains a hypothesis. The measurements establish equivalence, not why it holds:
+none of the three hypotheses of Section~\ref{sec:hyp} has its discriminating measurement,
+since neither the input-dependence of the routing nor the initial-versus-trained top-2
 agreement has been computed, and none of the noise-off, small-$\sigma$, zero-Z-loss or
 oracle-routing runs has been performed.
 
-\emph{Training-budget effects are unstudied.} The 14-epoch versus 8-epoch comparison is a
-single pair of runs and confounds epoch count with the number of optimizer steps; we report it
-as the largest effect observed, not as an established scaling law.
+Training-budget effects are unstudied; the 14-epoch versus 8-epoch comparison is a pair of
+runs that confounds epoch count with the number of optimizer steps (Section~\ref{sec:ablations}).
 
 % ============================================================
 \section{Conclusion}
@@ -1522,33 +1471,25 @@ as the largest effect observed, not as an established scaling law.
 
 We presented SpatialMoE-SOD, a weather-label-free model for adverse-weather salient object
 detection. On WXSOD it reaches the lowest synthetic MAE and the highest synthetic $S_\phi$ of
-the 18 published entries (19 with ours) --- MAE $0.0192$ and $S_\phi$ $0.9140$ on the 1{,}500 synthetic
-test images, against $0.0229$ and $0.9051$ for the weather-supervised WFANet --- and it is a
-close second on the real split --- MAE $0.0168$, within $0.0009$ of WFANet's $0.0159$ --- using
-no weather labels at training or inference. The reported numbers do not depend on the mixture:
-it can be removed, reduced to one pyramid scale, or replaced with a single dense expert,
-and the no-MoE, one-scale and no-load-balance variants each sit within the seed-noise band of
-the reference and pass a TOST equivalence test against it at a margin of $0.001$ MAE (the
-dense-expert variant does not), though the arms differ from the reference in expert count as
-well as the named field and share its seed. We do not
-attribute the performance to the backbone or the decoder either, because neither was ablated;
-the supportable claim is that it is not attributable to the mixture, at this one recipe.
-Fourteen epochs instead of 8 exceeds every architectural effect we measured.
+the 18 published entries (19 with ours): MAE $0.0192$ and $S_\phi$ $0.9140$ on the 1{,}500
+synthetic test images, against $0.0229$ and $0.9051$ for the weather-supervised WFANet. On the
+real split it is a close second, with MAE $0.0168$ within $0.0009$ of WFANet's $0.0159$. It
+uses no weather labels at training or inference. The reported performance is robust to the mixture:
+removing it entirely, reducing routing to one pyramid scale, replacing the routed experts with a
+single dense expert and removing the load-balancing loss all leave real-test MAE within the
+seed-noise band of the reference, and the no-MoE, one-scale and no-load-balance variants pass a
+TOST equivalence test against it at a margin of $0.001$ MAE (the dense-expert variant does not).
+The arms differ from the reference in expert count as well as the named field and share its
+seed. Routing to a single expert instead costs $0.0017$. We do not
+attribute the performance to the backbone or the decoder either, because neither was ablated:
+the results do not attribute it to the mixture at this recipe, and the largest effect we
+measured on accuracy is the training budget.
 
-The paper also asks why the routing contributes little measurably, and ranks three candidates:
-selection that is noise-dominated at initialisation; auxiliary and Z-loss terms that do not
+The paper also asks why the performance does not depend on the mixture, and ranks three candidates:
+selection that is noise-dominated at initialization; auxiliary and Z-loss terms that do not
 reward decisiveness; and experts that are
-near-identical at initialisation, leaving the gate nothing to separate and making it a static
-selector. We do not present the mechanism as settled:
-the measurements that would separate the three (the input-dependence of the routing, the
-initial-versus-trained top-2 agreement, and oracle routing as a positive control) have not
-been made. We claim nothing beyond this configuration.
-
-Removing the mixture, reducing routing to one scale, replacing routed experts with a dense
-expert and removing the load-balancing loss all leave
-real-test MAE within the seed-noise band of the reference, while routing to a single expert
-costs $0.0017$. The reported numbers are flat to the mixture itself at this recipe, and the largest
-effect we measured on accuracy is the training budget.
+near-identical at initialization, leaving the gate nothing to separate and making it a static
+selector.
 
 Future work should run the experiments that discriminate among the candidate mechanisms:
 noise off, a small initial $\sigma$, zero Z-loss, a router learning-rate multiplier, and oracle
@@ -1562,10 +1503,9 @@ protocol.
 \label{app:benchmark}
 % ============================================================
 
-Table~\ref{tab:full19} lists all nineteen entries --- the 18 published by the benchmark plus
-ours --- with both test
-splits and both metrics, so the rank claims (lowest synthetic MAE of the 18 published
-entries, second of nineteen on
+Table~\ref{tab:full19} lists all nineteen entries (the 18 published by the benchmark plus
+ours) with both test
+splits and both metrics, so the rank claims (lowest synthetic MAE among the 18 published entries and second on
 real) can be checked directly. Published values are as reported by the WXSOD
 benchmark~\cite{wxsod2025} (its Tables II and III); the \textbf{Ours} row is measured here.
 
