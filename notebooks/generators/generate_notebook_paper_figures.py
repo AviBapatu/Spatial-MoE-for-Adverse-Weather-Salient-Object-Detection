@@ -502,7 +502,6 @@ else:
             axes[len(rows) - 1, c].text(
                 0.5, -0.06, f"({chr(97 + c)})", transform=axes[len(rows) - 1, c].transAxes,
                 ha="center", va="top", fontsize=6.5)
-        fig.suptitle("Same scenes, eight different trained arms", fontsize=8.5, y=0.995)
         fig.savefig(FIGS / "fig_arms_grid.pdf", bbox_inches="tight", dpi=300)
         fig.savefig(FIGS / "fig_arms_grid.png", bbox_inches="tight", dpi=200)
         plt.close(fig)
@@ -512,7 +511,7 @@ else:
     # ---------------------------------------------------------- 06_fig_pr_curves
     add_markdown(r"""## 06_fig_pr_curves — Fig. 7
 
-Precision, recall and $F_\beta$ as the binarisation threshold sweeps 0–255, per real-world
+Precision, recall and $F_\beta$ as the binarization threshold sweeps 0–255, per real-world
 condition, for the reported model.
 
 The curves are accumulated from 256-bin histograms rather than by re-thresholding each
@@ -636,6 +635,8 @@ else:
         ax.text(0.5, -0.34, f"({PANEL[len(order) + c]})", transform=ax.transAxes,
                 ha="center", va="top", fontsize=7)
 
+    fig.suptitle("Reported model: threshold behavior on real-world test "
+                 r"($F_\beta$, $\beta^2$ = 0.3)", fontsize=8.5, y=0.995)
     fig.savefig(FIGS / "fig_pr_curves.pdf", bbox_inches="tight", dpi=300)
     fig.savefig(FIGS / "fig_pr_curves.png", bbox_inches="tight", dpi=200)
     plt.close(fig)
@@ -925,7 +926,7 @@ else:
 
             rows = [c for c in CONDITIONS if c in SCENES and gt_path(SCENES[c])]
             headers = ["Input", "Ground truth", "1/16", "1/8", "1/4", "full",
-                       "binarised"]
+                       "binarized"]
             fig, axes = plt.subplots(len(rows), len(headers),
                                      figsize=(1.55 * len(headers), 1.95 * len(rows)),
                                      gridspec_kw={"wspace": 0.05, "hspace": 0.12})
